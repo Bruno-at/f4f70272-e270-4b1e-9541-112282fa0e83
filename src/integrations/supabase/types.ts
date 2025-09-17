@@ -14,7 +14,281 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      classes: {
+        Row: {
+          class_name: string
+          created_at: string
+          id: string
+          section: string | null
+        }
+        Insert: {
+          class_name: string
+          created_at?: string
+          id?: string
+          section?: string | null
+        }
+        Update: {
+          class_name?: string
+          created_at?: string
+          id?: string
+          section?: string | null
+        }
+        Relationships: []
+      }
+      report_cards: {
+        Row: {
+          class_teacher_comment: string | null
+          created_at: string
+          fees_balance: number | null
+          generated_at: string | null
+          headteacher_comment: string | null
+          id: string
+          overall_average: number | null
+          overall_grade: string | null
+          student_id: string
+          term_id: string
+        }
+        Insert: {
+          class_teacher_comment?: string | null
+          created_at?: string
+          fees_balance?: number | null
+          generated_at?: string | null
+          headteacher_comment?: string | null
+          id?: string
+          overall_average?: number | null
+          overall_grade?: string | null
+          student_id: string
+          term_id: string
+        }
+        Update: {
+          class_teacher_comment?: string | null
+          created_at?: string
+          fees_balance?: number | null
+          generated_at?: string | null
+          headteacher_comment?: string | null
+          id?: string
+          overall_average?: number | null
+          overall_grade?: string | null
+          student_id?: string
+          term_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_cards_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_cards_term_id_fkey"
+            columns: ["term_id"]
+            isOneToOne: false
+            referencedRelation: "terms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      school_info: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          location: string | null
+          logo_url: string | null
+          motto: string | null
+          po_box: string | null
+          school_name: string
+          telephone: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          location?: string | null
+          logo_url?: string | null
+          motto?: string | null
+          po_box?: string | null
+          school_name: string
+          telephone?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          location?: string | null
+          logo_url?: string | null
+          motto?: string | null
+          po_box?: string | null
+          school_name?: string
+          telephone?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      student_marks: {
+        Row: {
+          created_at: string
+          grade: string | null
+          id: string
+          marks_obtained: number
+          remarks: string | null
+          student_id: string
+          subject_id: string
+          term_id: string
+        }
+        Insert: {
+          created_at?: string
+          grade?: string | null
+          id?: string
+          marks_obtained: number
+          remarks?: string | null
+          student_id: string
+          subject_id: string
+          term_id: string
+        }
+        Update: {
+          created_at?: string
+          grade?: string | null
+          id?: string
+          marks_obtained?: number
+          remarks?: string | null
+          student_id?: string
+          subject_id?: string
+          term_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_marks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_marks_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_marks_term_id_fkey"
+            columns: ["term_id"]
+            isOneToOne: false
+            referencedRelation: "terms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          class_id: string
+          created_at: string
+          gender: string
+          house: string | null
+          id: string
+          name: string
+          student_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          gender: string
+          house?: string | null
+          id?: string
+          name: string
+          student_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          gender?: string
+          house?: string | null
+          id?: string
+          name?: string
+          student_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subjects: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          max_marks: number | null
+          subject_name: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          max_marks?: number | null
+          subject_name: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          max_marks?: number | null
+          subject_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subjects_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      terms: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          is_active: boolean | null
+          start_date: string
+          term_name: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          is_active?: boolean | null
+          start_date: string
+          term_name: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean | null
+          start_date?: string
+          term_name?: string
+          year?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
