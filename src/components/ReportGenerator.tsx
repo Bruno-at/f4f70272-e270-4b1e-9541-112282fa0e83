@@ -34,7 +34,7 @@ const ReportGenerator = () => {
   const fetchData = async () => {
     try {
       const [studentsResult, termsResult, classesResult, subjectsResult, schoolResult] = await Promise.all([
-        supabase.from('students').select('*, classes(*)').order('name'),
+        supabase.from('students').select('*, classes!students_class_id_fkey(*)').order('name'),
         supabase.from('terms').select('*').order('year', { ascending: false }),
         supabase.from('classes').select('*').order('class_name'),
         supabase.from('subjects').select('*').order('subject_name'),
@@ -141,7 +141,7 @@ const ReportGenerator = () => {
       .from('student_marks')
       .select(`
         *,
-        subjects(*)
+        subjects!student_marks_subject_id_fkey(*)
       `)
       .eq('student_id', studentId)
       .eq('term_id', selectedTerm);

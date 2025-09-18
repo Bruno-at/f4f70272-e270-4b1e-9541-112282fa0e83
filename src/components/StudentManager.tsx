@@ -34,7 +34,7 @@ const StudentManager = () => {
   const fetchData = async () => {
     try {
       const [studentsResult, classesResult] = await Promise.all([
-        supabase.from('students').select('*, classes(*)').order('name'),
+        supabase.from('students').select('*, classes!students_class_id_fkey(*)').order('name'),
         supabase.from('classes').select('*').order('class_name')
       ]);
 
