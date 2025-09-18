@@ -74,6 +74,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_report_cards_student_id"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_report_cards_term_id"
+            columns: ["term_id"]
+            isOneToOne: false
+            referencedRelation: "terms"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "report_cards_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
@@ -164,6 +178,27 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_student_marks_student_id"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_student_marks_subject_id"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_student_marks_term_id"
+            columns: ["term_id"]
+            isOneToOne: false
+            referencedRelation: "terms"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "student_marks_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: false
@@ -219,6 +254,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_students_class_id"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "students_class_id_fkey"
             columns: ["class_id"]
             isOneToOne: false
@@ -250,6 +292,13 @@ export type Database = {
           subject_name?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_subjects_class_id"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "subjects_class_id_fkey"
             columns: ["class_id"]
