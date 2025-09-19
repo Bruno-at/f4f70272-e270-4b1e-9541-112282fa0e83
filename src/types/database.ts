@@ -71,6 +71,9 @@ export interface ReportCard {
   headteacher_comment?: string;
   fees_balance?: number;
   generated_at?: string;
+  template?: 'classic' | 'modern' | 'elegant' | 'professional';
+  status?: 'draft' | 'final' | 'locked';
+  pdf_url?: string;
   created_at: string;
   students?: Student;
   terms?: Term;
