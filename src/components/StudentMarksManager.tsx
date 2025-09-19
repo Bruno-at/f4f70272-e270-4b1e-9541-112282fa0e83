@@ -22,7 +22,7 @@ const StudentMarksManager = () => {
   const { toast } = useToast();
 
   const [selectedTerm, setSelectedTerm] = useState('');
-  const [selectedClass, setSelectedClass] = useState('');
+  const [selectedClass, setSelectedClass] = useState('all');
   const [selectedStudent, setSelectedStudent] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
 
@@ -195,7 +195,7 @@ const StudentMarksManager = () => {
     return 'F';
   };
 
-  const filteredStudents = selectedClass 
+  const filteredStudents = selectedClass && selectedClass !== 'all'
     ? students.filter(student => student.class_id === selectedClass)
     : students;
 
@@ -243,7 +243,7 @@ const StudentMarksManager = () => {
                     <SelectValue placeholder="All classes" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Classes</SelectItem>
+                    <SelectItem value="all">All Classes</SelectItem>
                     {classes.map((cls) => (
                       <SelectItem key={cls.id} value={cls.id}>
                         {cls.class_name} {cls.section ? `- ${cls.section}` : ''}

@@ -15,7 +15,7 @@ const SubjectsManager = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [selectedClass, setSelectedClass] = useState<string>('');
+  const [selectedClass, setSelectedClass] = useState<string>('all');
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -155,7 +155,7 @@ const SubjectsManager = () => {
     }
   };
 
-  const filteredSubjects = selectedClass 
+  const filteredSubjects = selectedClass && selectedClass !== 'all'
     ? subjects.filter(subject => subject.class_id === selectedClass)
     : subjects;
 
@@ -266,7 +266,7 @@ const SubjectsManager = () => {
                     <SelectValue placeholder="All classes" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Classes</SelectItem>
+                    <SelectItem value="all">All Classes</SelectItem>
                     {classes.map((cls) => (
                       <SelectItem key={cls.id} value={cls.id}>
                         {cls.class_name} {cls.section ? `- ${cls.section}` : ''}
@@ -279,7 +279,7 @@ const SubjectsManager = () => {
 
             {filteredSubjects.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">
-                {selectedClass ? 'No subjects found for this class.' : 'No subjects found. Add your first subject above.'}
+                {selectedClass && selectedClass !== 'all' ? 'No subjects found for this class.' : 'No subjects found. Add your first subject above.'}
               </p>
             ) : (
               <div className="grid gap-4">

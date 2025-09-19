@@ -20,7 +20,7 @@ const ReportGenerator = () => {
   const [generating, setGenerating] = useState(false);
   
   const [selectedTerm, setSelectedTerm] = useState('');
-  const [selectedClass, setSelectedClass] = useState('');
+  const [selectedClass, setSelectedClass] = useState('all');
   const [selectedStudent, setSelectedStudent] = useState('');
   const [teacherComment, setTeacherComment] = useState('');
   const [headteacherComment, setHeadteacherComment] = useState('');
@@ -70,7 +70,7 @@ const ReportGenerator = () => {
     }
   };
 
-  const filteredStudents = selectedClass 
+  const filteredStudents = selectedClass && selectedClass !== 'all'
     ? students.filter(student => student.class_id === selectedClass)
     : students;
 
@@ -254,7 +254,7 @@ const ReportGenerator = () => {
               <SelectValue placeholder="All classes" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All Classes</SelectItem>
+              <SelectItem value="all">All Classes</SelectItem>
               {classes.map((cls) => (
                 <SelectItem key={cls.id} value={cls.id}>
                   {cls.class_name} {cls.section ? `- ${cls.section}` : ''}
@@ -271,7 +271,7 @@ const ReportGenerator = () => {
               <SelectValue placeholder="Select student" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Select for single report</SelectItem>
+              <SelectItem value="single">Select for single report</SelectItem>
               {filteredStudents.map((student) => (
                 <SelectItem key={student.id} value={student.id}>
                   {student.name}
