@@ -24,7 +24,7 @@ const Index = () => {
     );
   }
 
-  if (!user || !profile) {
+  if (!user) {
     return null; // This should not happen due to ProtectedRoute, but just in case
   }
 
@@ -41,7 +41,7 @@ const Index = () => {
             <div>
               <h1 className="text-3xl font-bold">School Report System</h1>
               <p className="text-muted-foreground">
-                Welcome back, {profile.full_name}
+                Welcome back, {profile?.full_name || 'Loading...'}
               </p>
             </div>
           </div>
@@ -66,7 +66,13 @@ const Index = () => {
           </div>
         </div>
 
-        {isAdmin ? (
+        {!profile ? (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <p className="text-muted-foreground">Loading your profile...</p>
+            </CardContent>
+          </Card>
+        ) : isAdmin ? (
           <Tabs defaultValue="approvals" className="space-y-6">
             <TabsList className="grid grid-cols-2 lg:grid-cols-4 w-full">
               <TabsTrigger value="approvals">Pending Approvals</TabsTrigger>

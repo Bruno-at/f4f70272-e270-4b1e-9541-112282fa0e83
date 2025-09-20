@@ -44,9 +44,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+        setLoading(false); // Set loading to false immediately
         
         if (session?.user) {
-          // Fetch user profile - defer Supabase calls with setTimeout
+          // Fetch user profile in background - defer Supabase calls with setTimeout
           setTimeout(async () => {
             const { data: profileData } = await supabase
               .from('profiles')
@@ -55,11 +56,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               .single();
             
             setProfile(profileData);
-            setLoading(false);
           }, 0);
         } else {
           setProfile(null);
-          setLoading(false);
         }
       }
     );
@@ -68,6 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false); // Set loading to false immediately
       
       if (session?.user) {
         setTimeout(async () => {
@@ -78,10 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .single();
           
           setProfile(profileData);
-          setLoading(false);
         }, 0);
-      } else {
-        setLoading(false);
       }
     });
 
