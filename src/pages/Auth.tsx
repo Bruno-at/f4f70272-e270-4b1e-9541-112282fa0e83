@@ -20,7 +20,7 @@ const Auth = () => {
     email: '',
     password: '',
     fullName: '',
-    role: 'teacher'
+    role: ''
   });
 
   const { signIn, signUp, user, loading } = useAuth();
@@ -177,16 +177,22 @@ const Auth = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="signup-role">Role</Label>
-                    <Select value={signUpData.role} onValueChange={(value) => setSignUpData({...signUpData, role: value})}>
+                    <Label htmlFor="signup-role">Role *</Label>
+                    <Select value={signUpData.role} onValueChange={(value) => setSignUpData({...signUpData, role: value})} required>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select your role" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="admin">
                           <div className="flex items-center gap-2">
                             <Shield className="w-4 h-4" />
                             Administrator
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="headteacher">
+                          <div className="flex items-center gap-2">
+                            <GraduationCap className="w-4 h-4" />
+                            Head Teacher
                           </div>
                         </SelectItem>
                         <SelectItem value="teacher">
@@ -198,7 +204,7 @@ const Auth = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
+                  <Button type="submit" className="w-full" disabled={isLoading || !signUpData.role}>
                     {isLoading ? 'Creating Account...' : 'Sign Up'}
                   </Button>
                 </form>

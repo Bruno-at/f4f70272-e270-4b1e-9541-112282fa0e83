@@ -11,7 +11,7 @@ import ReportCardManager from '@/components/ReportCardManager';
 import { LogOut, GraduationCap, Shield, Users } from 'lucide-react';
 
 const Index = () => {
-  const { user, profile, signOut, loading, isAdmin, isTeacher } = useAuth();
+  const { user, profile, signOut, loading, isAdmin, isHeadteacher, isTeacher } = useAuth();
 
   if (loading) {
     return (
@@ -51,6 +51,11 @@ const Index = () => {
                 <>
                   <Shield className="w-4 h-4" />
                   <Badge variant="secondary">Administrator</Badge>
+                </>
+              ) : isHeadteacher ? (
+                <>
+                  <GraduationCap className="w-4 h-4" />
+                  <Badge variant="default">Head Teacher</Badge>
                 </>
               ) : (
                 <>
@@ -107,6 +112,26 @@ const Index = () => {
               </Card>
             </TabsContent>
           </Tabs>
+        ) : isHeadteacher ? (
+          <Tabs defaultValue="approvals" className="space-y-6">
+            <TabsList className="grid grid-cols-2 lg:grid-cols-3 w-full">
+              <TabsTrigger value="approvals">Pending Approvals</TabsTrigger>
+              <TabsTrigger value="reports">Report Cards</TabsTrigger>
+              <TabsTrigger value="generator">Generate Reports</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="approvals">
+              <AdminApproval />
+            </TabsContent>
+
+            <TabsContent value="reports">
+              <ReportCardManager />
+            </TabsContent>
+
+            <TabsContent value="generator">
+              <ReportCardGenerator />
+            </TabsContent>
+          </Tabs>
         ) : isTeacher ? (
           <Tabs defaultValue="submissions" className="space-y-6">
             <TabsList className="grid grid-cols-1 w-full max-w-md">
@@ -121,7 +146,7 @@ const Index = () => {
           <Card>
             <CardContent className="p-8 text-center">
               <p className="text-muted-foreground">
-                Your account role is not recognized. Please contact an administrator.
+                Your account role ({profile?.role}) is not recognized. Please contact an administrator.
               </p>
             </CardContent>
           </Card>
