@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, School, Users, Download, BookOpen, User, FileText } from 'lucide-react';
-import SchoolInfoManager from './SchoolInfoManager';
+import SchoolInfoTable from './SchoolInfoTable';
 import StudentManager from './StudentManager';
 import ReportGenerator from './ReportGenerator';
 import TermsManager from './TermsManager';
@@ -67,7 +67,7 @@ const ReportCardGenerator = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <SchoolInfoManager />
+                <SchoolInfoTable />
               </CardContent>
             </Card>
           </TabsContent>

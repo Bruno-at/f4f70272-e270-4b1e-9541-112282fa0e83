@@ -8,7 +8,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { SchoolInfo } from '@/types/database';
 import { Save, Upload } from 'lucide-react';
 
-const SchoolInfoManager = () => {
+interface SchoolInfoManagerProps {
+  onSuccess?: () => void;
+}
+
+const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
   const [schoolInfo, setSchoolInfo] = useState<SchoolInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -93,6 +97,9 @@ const SchoolInfoManager = () => {
 
       // Refresh data
       await fetchSchoolInfo();
+      
+      // Call onSuccess callback if provided
+      onSuccess?.();
     } catch (error) {
       console.error('Error saving school info:', error);
       toast({
