@@ -1,392 +1,651 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Student, Term, Class, Subject, StudentMark } from '@/types/database';
-import { Plus, BookOpen, User, FileText } from 'lucide-react';
+import { Student, Subject, Term, StudentMark, Class } from '@/types/database';
+import { Plus, Edit, Trash2, Upload } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const StudentMarksManager = () => {
   const [students, setStudents] = useState<Student[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [terms, setTerms] = useState<Term[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [marks, setMarks] = useState<StudentMark[]>([]);
+  const [filteredMarks, setFilteredMarks] = useState<StudentMark[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
-
-  const [selectedTerm, setSelectedTerm] = useState('');
-  const [selectedClass, setSelectedClass] = useState('all');
-  const [selectedStudent, setSelectedStudent] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState('');
-
+  const [selectedClass, setSelectedClass] = useState<string>('');
+  const [selectedTerm, setSelectedTerm] = useState<string>('');
+  const [selectedSubject, setSelectedSubject] = useState<string>('');
+  const [editingMark, setEditingMark] = useState<StudentMark | null>(null);
+  
+  // Form fields for new O-level assessment structure
   const [formData, setFormData] = useState({
-    marks_obtained: '',
-    grade: '',
-    remarks: ''
+    student_id: '',
+    subject_id: '',
+    term_id: '',
+    subject_code: '',
+    a1_score: '',
+    a2_score: '',
+    a3_score: '',
+    average_score: '',
+    twenty_percent: '',
+    eighty_percent: '',
+    hundred_percent: '',
+    identifier: '',
+    final_grade: '',
+    achievement_level: '',
+    teacher_initials: ''
   });
+
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchData();
   }, []);
 
   useEffect(() => {
-    if (selectedClass) {
-      fetchSubjects();
-    }
-  }, [selectedClass]);
-
-  useEffect(() => {
-    if (selectedStudent && selectedTerm) {
-      fetchStudentMarks();
-    }
-  }, [selectedStudent, selectedTerm]);
+    filterMarks();
+  }, [marks, selectedClass, selectedTerm, selectedSubject]);
 
   const fetchData = async () => {
     try {
-      const [studentsResult, termsResult, classesResult] = await Promise.all([
+      const [studentsRes, subjectsRes, termsRes, classesRes, marksRes] = await Promise.all([
         supabase.from('students').select('*, classes!students_class_id_fkey(*)').order('name'),
+        supabase.from('subjects').select('*').order('subject_name'),
         supabase.from('terms').select('*').order('year', { ascending: false }),
-        supabase.from('classes').select('*').order('class_name')
+        supabase.from('classes').select('*').order('class_name'),
+        supabase.from('student_marks').select('*, subjects!student_marks_subject_id_fkey(*), students!student_marks_student_id_fkey(name, classes!students_class_id_fkey(id, class_name, section))').order('created_at', { ascending: false })
       ]);
 
-      if (studentsResult.error) throw studentsResult.error;
-      if (termsResult.error) throw termsResult.error;
-      if (classesResult.error) throw classesResult.error;
+      if (studentsRes.error) throw studentsRes.error;
+      if (subjectsRes.error) throw subjectsRes.error;
+      if (termsRes.error) throw termsRes.error;
+      if (classesRes.error) throw classesRes.error;
+      if (marksRes.error) throw marksRes.error;
 
-      setStudents(studentsResult.data || []);
-      setTerms(termsResult.data || []);
-      setClasses(classesResult.data || []);
-
-      // Set active term as default
-      const activeTerm = termsResult.data?.find(term => term.is_active);
-      if (activeTerm) {
-        setSelectedTerm(activeTerm.id);
-      }
+      setStudents(studentsRes.data || []);
+      setSubjects(subjectsRes.data || []);
+      setTerms(termsRes.data || []);
+      setClasses(classesRes.data || []);
+      setMarks(marksRes.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
-        title: "Error",
-        description: "Failed to load data",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to fetch data',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchSubjects = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('subjects')
-        .select('*')
-        .eq('class_id', selectedClass)
-        .order('subject_name');
+  const filterMarks = () => {
+    let filtered = marks;
 
-      if (error) throw error;
-      setSubjects(data || []);
-    } catch (error) {
-      console.error('Error fetching subjects:', error);
+    if (selectedClass) {
+      filtered = filtered.filter(mark => 
+        mark.students?.classes?.id === selectedClass
+      );
     }
+
+    if (selectedTerm) {
+      filtered = filtered.filter(mark => mark.term_id === selectedTerm);
+    }
+
+    if (selectedSubject) {
+      filtered = filtered.filter(mark => mark.subject_id === selectedSubject);
+    }
+
+    setFilteredMarks(filtered);
   };
 
-  const fetchStudentMarks = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('student_marks')
-        .select(`
-          *,
-          subjects!student_marks_subject_id_fkey(subject_name, max_marks)
-        `)
-        .eq('student_id', selectedStudent)
-        .eq('term_id', selectedTerm)
-        .order('created_at');
+  const calculateAverage = () => {
+    const a1 = parseFloat(formData.a1_score) || 0;
+    const a2 = parseFloat(formData.a2_score) || 0;
+    const a3 = parseFloat(formData.a3_score) || 0;
+    const avg = (a1 + a2 + a3) / 3;
+    setFormData(prev => ({ ...prev, average_score: avg.toFixed(1) }));
+  };
 
-      if (error) throw error;
-      setMarks((data as any) || []);
-    } catch (error) {
-      console.error('Error fetching student marks:', error);
-    }
+  const calculateGrade = (percentage: number): string => {
+    if (percentage >= 80) return 'A';
+    if (percentage >= 70) return 'B';
+    if (percentage >= 60) return 'C';
+    if (percentage >= 40) return 'D';
+    return 'E';
+  };
+
+  const calculateAchievementLevel = (identifier: number): string => {
+    if (identifier >= 2.5) return 'Outstanding';
+    if (identifier >= 1.5) return 'Moderate';
+    return 'Basic';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!selectedStudent || !selectedTerm || !selectedSubject || !formData.marks_obtained) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      return;
-    }
 
-    setSaving(true);
     try {
-      const subject = subjects.find(s => s.id === selectedSubject);
-      const marksObtained = parseInt(formData.marks_obtained);
-      const maxMarks = subject?.max_marks || 100;
-      const percentage = (marksObtained / maxMarks) * 100;
-
-      // Auto-calculate grade if not provided
-      const grade = formData.grade || calculateGrade(percentage);
-
       const markData = {
-        student_id: selectedStudent,
-        term_id: selectedTerm,
-        subject_id: selectedSubject,
-        marks_obtained: marksObtained,
-        grade,
-        remarks: formData.remarks || 'Good'
+        student_id: formData.student_id,
+        subject_id: formData.subject_id,
+        term_id: formData.term_id,
+        subject_code: formData.subject_code || null,
+        a1_score: parseFloat(formData.a1_score) || null,
+        a2_score: parseFloat(formData.a2_score) || null,
+        a3_score: parseFloat(formData.a3_score) || null,
+        average_score: parseFloat(formData.average_score) || null,
+        twenty_percent: parseFloat(formData.twenty_percent) || null,
+        eighty_percent: parseFloat(formData.eighty_percent) || null,
+        hundred_percent: parseFloat(formData.hundred_percent) || null,
+        identifier: parseInt(formData.identifier) || null,
+        final_grade: formData.final_grade || null,
+        achievement_level: formData.achievement_level || null,
+        teacher_initials: formData.teacher_initials || null
       };
 
-      // Check if mark already exists
-      const existingMark = marks.find(m => m.subject_id === selectedSubject);
-      
-      if (existingMark) {
-        const { error } = await supabase
+      let result;
+      if (editingMark) {
+        result = await supabase
           .from('student_marks')
           .update(markData)
-          .eq('id', existingMark.id);
-
-        if (error) throw error;
-        toast({ title: "Success", description: "Mark updated successfully" });
+          .eq('id', editingMark.id);
       } else {
-        const { error } = await supabase
+        result = await supabase
           .from('student_marks')
           .insert([markData]);
-
-        if (error) throw error;
-        toast({ title: "Success", description: "Mark added successfully" });
       }
 
-      setFormData({
-        marks_obtained: '',
-        grade: '',
-        remarks: ''
+      if (result.error) throw result.error;
+
+      toast({
+        title: 'Success',
+        description: `Student mark ${editingMark ? 'updated' : 'added'} successfully`,
       });
-      setSelectedSubject('');
-      await fetchStudentMarks();
+
+      setIsDialogOpen(false);
+      resetForm();
+      fetchData();
     } catch (error) {
       console.error('Error saving mark:', error);
       toast({
-        title: "Error",
-        description: "Failed to save mark",
-        variant: "destructive"
+        title: 'Error',
+        description: 'Failed to save student mark',
+        variant: 'destructive',
       });
-    } finally {
-      setSaving(false);
     }
   };
 
-  const calculateGrade = (percentage: number): string => {
-    if (percentage >= 90) return 'A+';
-    if (percentage >= 80) return 'A';
-    if (percentage >= 70) return 'B+';
-    if (percentage >= 60) return 'B';
-    if (percentage >= 50) return 'C+';
-    if (percentage >= 40) return 'C';
-    return 'F';
+  const handleEdit = (mark: StudentMark) => {
+    setEditingMark(mark);
+    setFormData({
+      student_id: mark.student_id,
+      subject_id: mark.subject_id,
+      term_id: mark.term_id,
+      subject_code: mark.subject_code || '',
+      a1_score: mark.a1_score?.toString() || '',
+      a2_score: mark.a2_score?.toString() || '',
+      a3_score: mark.a3_score?.toString() || '',
+      average_score: mark.average_score?.toString() || '',
+      twenty_percent: mark.twenty_percent?.toString() || '',
+      eighty_percent: mark.eighty_percent?.toString() || '',
+      hundred_percent: mark.hundred_percent?.toString() || '',
+      identifier: mark.identifier?.toString() || '',
+      final_grade: mark.final_grade || '',
+      achievement_level: mark.achievement_level || '',
+      teacher_initials: mark.teacher_initials || ''
+    });
+    setIsDialogOpen(true);
   };
 
-  const filteredStudents = selectedClass && selectedClass !== 'all'
-    ? students.filter(student => student.class_id === selectedClass)
-    : students;
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('student_marks')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Student mark deleted successfully',
+      });
+
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting mark:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete student mark',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      student_id: '',
+      subject_id: '',
+      term_id: '',
+      subject_code: '',
+      a1_score: '',
+      a2_score: '',
+      a3_score: '',
+      average_score: '',
+      twenty_percent: '',
+      eighty_percent: '',
+      hundred_percent: '',
+      identifier: '',
+      final_grade: '',
+      achievement_level: '',
+      teacher_initials: ''
+    });
+    setEditingMark(null);
+  };
 
   if (loading) {
-    return <div className="flex justify-center p-8">Loading...</div>;
+    return <div className="flex justify-center items-center h-64">Loading...</div>;
   }
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Add Student Marks
-          </CardTitle>
-          <CardDescription>
-            Record marks for students in different subjects
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {/* Filters */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="term">Select Term *</Label>
-                <Select value={selectedTerm} onValueChange={setSelectedTerm}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select term" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {terms.map((term) => (
-                      <SelectItem key={term.id} value={term.id}>
-                        {term.term_name} {term.year}
-                        {term.is_active && ' (Active)'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="class">Filter by Class</Label>
-                <Select value={selectedClass} onValueChange={setSelectedClass}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All classes" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Classes</SelectItem>
-                    {classes.map((cls) => (
-                      <SelectItem key={cls.id} value={cls.id}>
-                        {cls.class_name} {cls.section ? `- ${cls.section}` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="student">Select Student *</Label>
-                <Select value={selectedStudent} onValueChange={setSelectedStudent}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select student" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredStudents.map((student) => (
-                      <SelectItem key={student.id} value={student.id}>
-                        {student.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Mark Entry Form */}
-            {selectedStudent && selectedTerm && (
-              <form onSubmit={handleSubmit} className="space-y-4 border-t pt-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <Label htmlFor="subject">Subject *</Label>
-                    <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select subject" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {subjects.map((subject) => (
-                          <SelectItem key={subject.id} value={subject.id}>
-                            {subject.subject_name} (Max: {subject.max_marks})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="marks">Marks Obtained *</Label>
-                    <Input
-                      id="marks"
-                      type="number"
-                      value={formData.marks_obtained}
-                      onChange={(e) => setFormData(prev => ({ ...prev, marks_obtained: e.target.value }))}
-                      placeholder="Enter marks"
-                      min="0"
-                      max={subjects.find(s => s.id === selectedSubject)?.max_marks || 100}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="grade">Grade (Auto-calculated)</Label>
-                    <Input
-                      id="grade"
-                      value={formData.grade}
-                      onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
-                      placeholder="Auto-calculated"
-                    />
-                  </div>
-
-                  <div className="md:col-span-4">
-                    <Label htmlFor="remarks">Remarks</Label>
-                    <Textarea
-                      id="remarks"
-                      value={formData.remarks}
-                      onChange={(e) => setFormData(prev => ({ ...prev, remarks: e.target.value }))}
-                      placeholder="Enter remarks (optional)"
-                      rows={2}
-                    />
-                  </div>
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-2xl font-bold">Student Marks Management</h2>
+          <p className="text-muted-foreground">Record and manage O-level student assessment marks</p>
+        </div>
+        
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={resetForm}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Student Mark
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editingMark ? 'Edit Student Mark' : 'Add New Student Mark'}</DialogTitle>
+              <DialogDescription>
+                Enter the O-level assessment scores for the student
+              </DialogDescription>
+            </DialogHeader>
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="student_id">Student</Label>
+                  <Select value={formData.student_id} onValueChange={(value) => setFormData(prev => ({...prev, student_id: value}))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select student" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {students.map((student) => (
+                        <SelectItem key={student.id} value={student.id}>
+                          {student.name} - {student.classes?.class_name} {student.classes?.section}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
-                <Button type="submit" disabled={saving}>
-                  {saving ? 'Saving...' : (
-                    <>
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add/Update Mark
-                    </>
-                  )}
+                <div>
+                  <Label htmlFor="subject_id">Subject</Label>
+                  <Select value={formData.subject_id} onValueChange={(value) => setFormData(prev => ({...prev, subject_id: value}))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subjects.map((subject) => (
+                        <SelectItem key={subject.id} value={subject.id}>
+                          {subject.subject_code} {subject.subject_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="term_id">Term</Label>
+                  <Select value={formData.term_id} onValueChange={(value) => setFormData(prev => ({...prev, term_id: value}))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select term" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {terms.map((term) => (
+                        <SelectItem key={term.id} value={term.id}>
+                          {term.term_name} {term.year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="subject_code">Subject Code</Label>
+                  <Input
+                    id="subject_code"
+                    value={formData.subject_code}
+                    onChange={(e) => setFormData(prev => ({...prev, subject_code: e.target.value}))}
+                    placeholder="e.g., 535"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-4">
+                <div>
+                  <Label htmlFor="a1_score">A1 Score</Label>
+                  <Input
+                    id="a1_score"
+                    type="number"
+                    step="0.1"
+                    value={formData.a1_score}
+                    onChange={(e) => setFormData(prev => ({...prev, a1_score: e.target.value}))}
+                    onBlur={calculateAverage}
+                    placeholder="0.0"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="a2_score">A2 Score</Label>
+                  <Input
+                    id="a2_score"
+                    type="number"
+                    step="0.1"
+                    value={formData.a2_score}
+                    onChange={(e) => setFormData(prev => ({...prev, a2_score: e.target.value}))}
+                    onBlur={calculateAverage}
+                    placeholder="0.0"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="a3_score">A3 Score</Label>
+                  <Input
+                    id="a3_score"
+                    type="number"
+                    step="0.1"
+                    value={formData.a3_score}
+                    onChange={(e) => setFormData(prev => ({...prev, a3_score: e.target.value}))}
+                    onBlur={calculateAverage}
+                    placeholder="0.0"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="average_score">AVG</Label>
+                  <Input
+                    id="average_score"
+                    type="number"
+                    step="0.1"
+                    value={formData.average_score}
+                    onChange={(e) => setFormData(prev => ({...prev, average_score: e.target.value}))}
+                    placeholder="0.0"
+                    readOnly
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="twenty_percent">20% Score</Label>
+                  <Input
+                    id="twenty_percent"
+                    type="number"
+                    step="0.1"
+                    value={formData.twenty_percent}
+                    onChange={(e) => setFormData(prev => ({...prev, twenty_percent: e.target.value}))}
+                    placeholder="0.0"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="eighty_percent">80% Score</Label>
+                  <Input
+                    id="eighty_percent"
+                    type="number"
+                    step="0.1"
+                    value={formData.eighty_percent}
+                    onChange={(e) => setFormData(prev => ({...prev, eighty_percent: e.target.value}))}
+                    placeholder="0.0"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="hundred_percent">100% Score</Label>
+                  <Input
+                    id="hundred_percent"
+                    type="number"
+                    step="0.1"
+                    value={formData.hundred_percent}
+                    onChange={(e) => setFormData(prev => ({...prev, hundred_percent: e.target.value}))}
+                    placeholder="0.0"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-4 gap-4">
+                <div>
+                  <Label htmlFor="identifier">Identifier</Label>
+                  <Select value={formData.identifier} onValueChange={(value) => setFormData(prev => ({...prev, identifier: value}))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 - Basic</SelectItem>
+                      <SelectItem value="2">2 - Moderate</SelectItem>
+                      <SelectItem value="3">3 - Outstanding</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="final_grade">Grade</Label>
+                  <Select value={formData.final_grade} onValueChange={(value) => setFormData(prev => ({...prev, final_grade: value}))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A">A</SelectItem>
+                      <SelectItem value="B">B</SelectItem>
+                      <SelectItem value="C">C</SelectItem>
+                      <SelectItem value="D">D</SelectItem>
+                      <SelectItem value="E">E</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="achievement_level">Achievement Level</Label>
+                  <Select value={formData.achievement_level} onValueChange={(value) => setFormData(prev => ({...prev, achievement_level: value}))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Basic">Basic</SelectItem>
+                      <SelectItem value="Satisfactory">Satisfactory</SelectItem>
+                      <SelectItem value="Outstanding">Outstanding</SelectItem>
+                      <SelectItem value="Exceptional">Exceptional</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="teacher_initials">Teacher Initials</Label>
+                  <Input
+                    id="teacher_initials"
+                    value={formData.teacher_initials}
+                    onChange={(e) => setFormData(prev => ({...prev, teacher_initials: e.target.value}))}
+                    placeholder="e.g., B.S"
+                    maxLength={5}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
                 </Button>
-              </form>
-            )}
+                <Button type="submit">
+                  {editingMark ? 'Update Mark' : 'Add Mark'}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label>Class</Label>
+              <Select value={selectedClass} onValueChange={setSelectedClass}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All classes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All classes</SelectItem>
+                  {classes.map((classItem) => (
+                    <SelectItem key={classItem.id} value={classItem.id}>
+                      {classItem.class_name} {classItem.section}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Term</Label>
+              <Select value={selectedTerm} onValueChange={setSelectedTerm}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All terms" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All terms</SelectItem>
+                  {terms.map((term) => (
+                    <SelectItem key={term.id} value={term.id}>
+                      {term.term_name} {term.year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label>Subject</Label>
+              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All subjects" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All subjects</SelectItem>
+                  {subjects.map((subject) => (
+                    <SelectItem key={subject.id} value={subject.id}>
+                      {subject.subject_code} {subject.subject_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Existing Marks */}
-      {selectedStudent && selectedTerm && marks.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Existing Marks</CardTitle>
-            <CardDescription>
-              Current marks for selected student and term
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4">
-              {marks.map((mark) => {
-                const subject = mark.subjects as any;
-                const percentage = ((mark.marks_obtained / (subject?.max_marks || 100)) * 100).toFixed(1);
-                
-                return (
-                  <div key={mark.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <h3 className="font-medium">{subject?.subject_name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {mark.marks_obtained}/{subject?.max_marks || 100} ({percentage}%)
-                      </p>
-                      {mark.remarks && (
-                        <p className="text-sm text-muted-foreground italic">
-                          "{mark.remarks}"
-                        </p>
-                      )}
-                    </div>
-                    <Badge variant={mark.grade === 'F' ? 'destructive' : 'default'}>
-                      {mark.grade}
-                    </Badge>
-                  </div>
-                );
-              })}
-              <div className="border-t pt-4">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">Average:</span>
-                  <span className="font-bold">
-                    {marks.length > 0 
-                      ? (marks.reduce((sum, mark) => sum + mark.marks_obtained, 0) / marks.length).toFixed(1)
-                      : '0'}%
-                  </span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Marks Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Student Marks ({filteredMarks.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Student</TableHead>
+                  <TableHead>Subject</TableHead>
+                  <TableHead>A1</TableHead>
+                  <TableHead>A2</TableHead>
+                  <TableHead>A3</TableHead>
+                  <TableHead>AVG</TableHead>
+                  <TableHead>20%</TableHead>
+                  <TableHead>80%</TableHead>
+                  <TableHead>100%</TableHead>
+                  <TableHead>Grade</TableHead>
+                  <TableHead>Achievement</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredMarks.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={12} className="text-center text-muted-foreground">
+                      No marks found
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredMarks.map((mark) => (
+                    <TableRow key={mark.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{mark.students?.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {mark.students?.classes?.class_name} {mark.students?.classes?.section}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{mark.subject_code} {mark.subjects?.subject_name}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{mark.a1_score?.toFixed(1) || '-'}</TableCell>
+                      <TableCell>{mark.a2_score?.toFixed(1) || '-'}</TableCell>
+                      <TableCell>{mark.a3_score?.toFixed(1) || '-'}</TableCell>
+                      <TableCell>{mark.average_score?.toFixed(1) || '-'}</TableCell>
+                      <TableCell>{mark.twenty_percent?.toFixed(1) || '-'}</TableCell>
+                      <TableCell>{mark.eighty_percent?.toFixed(1) || '-'}</TableCell>
+                      <TableCell>{mark.hundred_percent?.toFixed(1) || '-'}</TableCell>
+                      <TableCell>
+                        <Badge variant={mark.final_grade === 'A' ? 'default' : mark.final_grade === 'B' ? 'secondary' : 'outline'}>
+                          {mark.final_grade || '-'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={mark.achievement_level === 'Outstanding' ? 'default' : mark.achievement_level === 'Exceptional' ? 'secondary' : 'outline'}>
+                          {mark.achievement_level || '-'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" onClick={() => handleEdit(mark)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => handleDelete(mark.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -170,9 +170,13 @@ const ReportGenerator = () => {
       class_teacher_comment: teacherComment || 'Good work, keep it up!',
       headteacher_comment: headteacherComment || 'Excellent progress this term.',
       overall_average: marks && marks.length > 0 ? 
-        marks.reduce((sum, mark) => sum + mark.marks_obtained, 0) / marks.length : 0,
+        marks.reduce((sum, mark) => sum + (mark.hundred_percent || 0), 0) / marks.length : 0,
       overall_grade: calculateGrade(marks && marks.length > 0 ? 
-        marks.reduce((sum, mark) => sum + mark.marks_obtained, 0) / marks.length : 0),
+        marks.reduce((sum, mark) => sum + (mark.hundred_percent || 0), 0) / marks.length : 0),
+      overall_identifier: marks && marks.length > 0 ?
+        Math.round(marks.reduce((sum, mark) => sum + (mark.identifier || 2), 0) / marks.length) : 2,
+      achievement_level: calculateAchievementLevel(marks && marks.length > 0 ?
+        Math.round(marks.reduce((sum, mark) => sum + (mark.identifier || 2), 0) / marks.length) : 2),
       generated_at: new Date().toISOString()
     };
 
@@ -193,19 +197,30 @@ const ReportGenerator = () => {
       term,
       schoolInfo: schoolInfo!,
       marks: marks || [],
-      reportData,
+      reportData: {
+        overall_average: reportData.overall_average,
+        overall_grade: reportData.overall_grade,
+        overall_identifier: reportData.overall_identifier,
+        achievement_level: reportData.achievement_level,
+        class_teacher_comment: reportData.class_teacher_comment,
+        headteacher_comment: reportData.headteacher_comment,
+      },
       subjects
     });
   };
 
   const calculateGrade = (average: number): string => {
-    if (average >= 90) return 'A+';
     if (average >= 80) return 'A';
-    if (average >= 70) return 'B+';
-    if (average >= 60) return 'B';
-    if (average >= 50) return 'C+';
-    if (average >= 40) return 'C';
-    return 'F';
+    if (average >= 70) return 'B';
+    if (average >= 60) return 'C';
+    if (average >= 40) return 'D';
+    return 'E';
+  };
+
+  const calculateAchievementLevel = (identifier: number): string => {
+    if (identifier >= 2.5) return 'Outstanding';
+    if (identifier >= 1.5) return 'Moderate';
+    return 'Basic';
   };
 
   if (loading) {

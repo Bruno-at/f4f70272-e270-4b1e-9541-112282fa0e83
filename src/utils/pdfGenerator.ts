@@ -9,6 +9,8 @@ interface ReportCardData {
   reportData: {
     overall_average: number;
     overall_grade: string;
+    overall_identifier: number;
+    achievement_level: string;
     class_teacher_comment: string;
     headteacher_comment: string;
   };
@@ -27,223 +29,298 @@ export const generateReportCardPDF = async (data: ReportCardData) => {
   const primaryColor = '#1e40af';
   const secondaryColor = '#64748b';
   const lightGray = '#f1f5f9';
+  const redLine = '#dc2626';
   
-  let yPosition = 20;
+  let yPosition = 15;
   
-  // Header Section
-  pdf.setFillColor(primaryColor);
-  pdf.rect(0, 0, pageWidth, 40, 'F');
+  // Header Section with school info
+  pdf.setFillColor(255, 255, 255);
+  pdf.rect(0, 0, pageWidth, 50, 'F');
   
   // School Logo (if available)
   if (schoolInfo.logo_url && schoolInfo.logo_url.startsWith('data:image')) {
     try {
-      pdf.addImage(schoolInfo.logo_url, 'PNG', 15, 5, 30, 30);
+      pdf.addImage(schoolInfo.logo_url, 'PNG', 10, 8, 25, 25);
     } catch (error) {
       console.log('Could not add logo to PDF');
     }
   }
   
-  // School Name and Info
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(20);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text(schoolInfo.school_name, schoolInfo.logo_url ? 50 : 20, 20);
-  
-  pdf.setFontSize(12);
-  pdf.setFont('helvetica', 'normal');
-  if (schoolInfo.motto) {
-    pdf.text(`"${schoolInfo.motto}"`, schoolInfo.logo_url ? 50 : 20, 28);
+  // Student Photo (if available)
+  if (student.photo_url && student.photo_url.startsWith('data:image')) {
+    try {
+      pdf.addImage(student.photo_url, 'PNG', pageWidth - 45, 8, 35, 35);
+    } catch (error) {
+      console.log('Could not add student photo to PDF');
+    }
   }
+  
+  // School Name and Info
+  pdf.setTextColor(primaryColor);
+  pdf.setFontSize(18);
+  pdf.setFont('helvetica', 'bold');
+  const schoolNameX = schoolInfo.logo_url ? 40 : 15;
+  pdf.text(schoolInfo.school_name.toUpperCase(), schoolNameX, 20);
+  
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
   
   // School contact info
-  pdf.setFontSize(8);
-  const contactInfo = [
-    schoolInfo.location,
-    schoolInfo.po_box,
-    schoolInfo.telephone,
-    schoolInfo.email,
-    schoolInfo.website
-  ].filter(Boolean).join(' • ');
+  const contactLines = [
+    `Location: ${schoolInfo.location || ''}`,
+    `P.O BOX: ${schoolInfo.po_box || ''}`,
+    `TEL: ${schoolInfo.telephone || ''}`,
+    `Email: ${schoolInfo.email || ''} Website: ${schoolInfo.website || ''}`
+  ];
   
-  if (contactInfo) {
-    pdf.text(contactInfo, schoolInfo.logo_url ? 50 : 20, 35);
-  }
+  contactLines.forEach((line, index) => {
+    if (line.split(': ')[1]) {
+      pdf.text(line, schoolNameX, 26 + (index * 4));
+    }
+  });
   
   yPosition = 55;
   
   // Report Title
-  pdf.setTextColor(0, 0, 0);
-  pdf.setFontSize(16);
+  pdf.setFillColor(primaryColor);
+  pdf.rect(0, yPosition - 3, pageWidth, 12, 'F');
+  
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(14);
   pdf.setFont('helvetica', 'bold');
-  const reportTitle = 'STUDENT REPORT CARD';
+  const reportTitle = `TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`;
   const titleWidth = pdf.getStringUnitWidth(reportTitle) * pdf.getFontSize() / pdf.internal.scaleFactor;
-  pdf.text(reportTitle, (pageWidth - titleWidth) / 2, yPosition);
+  pdf.text(reportTitle, (pageWidth - titleWidth) / 2, yPosition + 5);
   
   yPosition += 20;
   
-  // Term and Date Info
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'normal');
-  const termInfo = `${term.term_name} ${term.year}`;
-  const currentDate = new Date().toLocaleDateString();
+  // Red separator line
+  pdf.setDrawColor(redLine);
+  pdf.setLineWidth(1);
+  pdf.line(15, yPosition, pageWidth - 15, yPosition);
   
-  pdf.text(`Term: ${termInfo}`, 20, yPosition);
-  pdf.text(`Generated: ${currentDate}`, pageWidth - 60, yPosition);
-  
-  yPosition += 15;
+  yPosition += 10;
   
   // Student Information Section
-  pdf.setFillColor(lightGray);
-  pdf.rect(15, yPosition - 5, pageWidth - 30, 30, 'F');
-  
-  pdf.setFontSize(12);
-  pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(0, 0, 0);
-  pdf.text('STUDENT INFORMATION', 20, yPosition + 5);
-  
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'normal');
   
   const studentInfo = [
-    [`Name: ${student.name}`, `Gender: ${student.gender}`],
-    [`Class: ${student.classes?.class_name || 'N/A'} ${student.classes?.section || ''}`, `House: ${student.house || 'N/A'}`],
-    [`Student ID: ${student.student_id || 'N/A'}`, '']
+    [`NAME: ${student.name.toUpperCase()}`, `GENDER: ${student.gender.toUpperCase()}`],
+    [`SECTION: ${student.classes?.section || 'N/A'}`, `CLASS: ${student.classes?.class_name || 'N/A'}`, `TERM: ${term.term_name.toUpperCase()}`],
+    [`House: ${student.house || 'N/A'}`, `Age: ${student.age || 'N/A'}`, `Printed on: ${new Date().toLocaleDateString('en-GB')}`]
   ];
   
   studentInfo.forEach((row, index) => {
-    pdf.text(row[0], 20, yPosition + 15 + (index * 5));
-    if (row[1]) {
-      pdf.text(row[1], pageWidth / 2, yPosition + 15 + (index * 5));
-    }
+    row.forEach((info, colIndex) => {
+      if (info) {
+        const xPos = 15 + (colIndex * (pageWidth - 30) / 3);
+        pdf.text(info, xPos, yPosition + (index * 6));
+      }
+    });
   });
   
-  yPosition += 40;
+  yPosition += 25;
   
-  // Academic Performance Table
-  pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(12);
-  pdf.text('ACADEMIC PERFORMANCE', 20, yPosition);
+  // Red separator line
+  pdf.setDrawColor(redLine);
+  pdf.line(15, yPosition, pageWidth - 15, yPosition);
   
   yPosition += 10;
   
-  // Table headers
-  const tableStartY = yPosition;
-  const colWidths = [80, 25, 25, 25, 45]; // Subject, Marks, Grade, %, Remarks
-  const colPositions = [20, 100, 125, 150, 175];
-  
+  // Performance Records Title
   pdf.setFillColor(primaryColor);
-  pdf.rect(15, yPosition - 3, pageWidth - 30, 10, 'F');
+  pdf.rect(0, yPosition - 3, pageWidth, 12, 'F');
   
   pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(10);
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  const perfTitle = 'PERFORMANCE RECORDS';
+  const perfTitleWidth = pdf.getStringUnitWidth(perfTitle) * pdf.getFontSize() / pdf.internal.scaleFactor;
+  pdf.text(perfTitle, (pageWidth - perfTitleWidth) / 2, yPosition + 5);
+  
+  yPosition += 20;
+  
+  // Table headers
+  pdf.setTextColor(primaryColor);
+  pdf.setFontSize(8);
   pdf.setFont('helvetica', 'bold');
   
-  const headers = ['Subject', 'Marks', 'Grade', '%', 'Remarks'];
+  const headers = ['Code Subject', 'A1', 'A2', 'A3', 'AVG', '20%', '80%', '100%', 'Ident', 'GRADE', 'Remarks/Descriptors', 'TR'];
+  const colWidths = [30, 12, 12, 12, 12, 15, 15, 15, 15, 18, 40, 15];
+  let xPos = 15;
+  
   headers.forEach((header, index) => {
-    pdf.text(header, colPositions[index], yPosition + 4);
+    pdf.text(header, xPos, yPosition);
+    xPos += colWidths[index];
   });
   
-  yPosition += 12;
-  pdf.setTextColor(0, 0, 0);
-  pdf.setFont('helvetica', 'normal');
+  yPosition += 8;
   
-  // Subject rows
+  // Table content
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  
   marks.forEach((mark, index) => {
     const bgColor = index % 2 === 0 ? '#ffffff' : lightGray;
     
-    if (index % 2 === 0) {
-      pdf.setFillColor(bgColor);
-      pdf.rect(15, yPosition - 3, pageWidth - 30, 8, 'F');
+    if (index % 2 !== 0) {
+      pdf.setFillColor(lightGray);
+      pdf.rect(10, yPosition - 2, pageWidth - 20, 6, 'F');
     }
     
-    const percentage = ((mark.marks_obtained / (mark.subjects?.max_marks || 100)) * 100).toFixed(0);
-    
     const rowData = [
-      mark.subjects?.subject_name || 'Unknown Subject',
-      `${mark.marks_obtained}/${mark.subjects?.max_marks || 100}`,
-      mark.grade || calculateGrade(parseInt(percentage)),
-      `${percentage}%`,
-      mark.remarks || 'Good'
+      `${mark.subject_code || ''} ${mark.subjects?.subject_name || 'Unknown Subject'}`,
+      mark.a1_score?.toFixed(1) || '',
+      mark.a2_score?.toFixed(1) || '',
+      mark.a3_score?.toFixed(1) || '',
+      mark.average_score?.toFixed(1) || '',
+      mark.twenty_percent?.toFixed(1) || '',
+      mark.eighty_percent?.toFixed(1) || '',
+      mark.hundred_percent?.toFixed(1) || '',
+      mark.identifier?.toString() || '',
+      mark.final_grade || '',
+      mark.achievement_level || '',
+      mark.teacher_initials || ''
     ];
     
+    xPos = 15;
     rowData.forEach((data, colIndex) => {
-      pdf.text(data, colPositions[colIndex], yPosition + 3);
+      pdf.text(data, xPos, yPosition + 2);
+      xPos += colWidths[colIndex];
     });
     
-    yPosition += 8;
+    yPosition += 6;
   });
   
-  // Overall Performance
-  yPosition += 10;
-  pdf.setFillColor(lightGray);
-  pdf.rect(15, yPosition - 3, pageWidth - 30, 12, 'F');
+  yPosition += 5;
   
+  // Average row
   pdf.setFont('helvetica', 'bold');
-  pdf.text('OVERALL PERFORMANCE', 20, yPosition + 4);
+  pdf.text('AVERAGE:', 15, yPosition);
+  pdf.text(reportData.overall_identifier?.toString() || '2', 131, yPosition);
+  pdf.text(reportData.overall_average?.toFixed(1) || '0.0', 146, yPosition);
+  pdf.text(reportData.overall_average?.toFixed(1) || '0.0', 161, yPosition);
   
-  const overallText = `Average: ${reportData.overall_average.toFixed(1)}% | Grade: ${reportData.overall_grade}`;
-  pdf.text(overallText, pageWidth - 120, yPosition + 4);
+  yPosition += 8;
+  
+  // Overall Performance Summary
+  pdf.setFontSize(9);
+  pdf.text(`Overall Identifier: ${reportData.overall_identifier || 2}`, 15, yPosition);
+  pdf.text(`Overall Achievement: ${reportData.achievement_level || 'Moderate'}`, 80, yPosition);
+  pdf.text(`Overall grade: ${reportData.overall_grade || 'B'}`, 150, yPosition);
+  
+  yPosition += 10;
+  
+  // Grade Scale
+  pdf.setFontSize(10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('GRADE', 50, yPosition);
+  pdf.text('A', 70, yPosition);
+  pdf.text('B', 90, yPosition);
+  pdf.text('C', 110, yPosition);
+  pdf.text('D', 130, yPosition);
+  pdf.text('E', 150, yPosition);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('SCORES', 30, yPosition + 6);
+  pdf.text('100 - 80', 65, yPosition + 6);
+  pdf.text('80 - 70', 85, yPosition + 6);
+  pdf.text('69 - 60', 105, yPosition + 6);
+  pdf.text('60 - 40', 125, yPosition + 6);
+  pdf.text('40 - 0', 145, yPosition + 6);
   
   yPosition += 20;
   
   // Comments Section
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(11);
-  pdf.text('CLASS TEACHER\'S COMMENT', 20, yPosition);
-  
-  yPosition += 8;
-  pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(10);
+  pdf.text("Class teacher's", 15, yPosition);
+  pdf.text("Comment:", 15, yPosition + 5);
   
-  // Word wrap for teacher comment
+  yPosition += 12;
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(9);
+  
   const teacherCommentLines = pdf.splitTextToSize(
     reportData.class_teacher_comment || 'No comment provided.',
-    pageWidth - 40
+    pageWidth - 30
   );
   
   teacherCommentLines.forEach((line: string) => {
-    pdf.text(line, 20, yPosition);
-    yPosition += 5;
+    pdf.text(line, 15, yPosition);
+    yPosition += 4;
+  });
+  
+  yPosition += 8;
+  
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(10);
+  pdf.text("Headteacher's", 15, yPosition);
+  pdf.text("Comment:", 15, yPosition + 5);
+  
+  yPosition += 12;
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(9);
+  
+  const headteacherCommentLines = pdf.splitTextToSize(
+    reportData.headteacher_comment || 'No comment provided.',
+    pageWidth - 30
+  );
+  
+  headteacherCommentLines.forEach((line: string) => {
+    pdf.text(line, 15, yPosition);
+    yPosition += 4;
   });
   
   yPosition += 10;
   
+  // Key to Terms Used
+  pdf.setFillColor(lightGray);
+  pdf.rect(10, yPosition - 2, pageWidth - 20, 25, 'F');
+  
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HEADTEACHER\'S COMMENT', 20, yPosition);
+  pdf.setFontSize(9);
+  pdf.text('Key to Terms Used:', 15, yPosition + 5);
+  pdf.text('A1 Average Chapter Assessment  80% End of term assessment', 40, yPosition + 5);
   
-  yPosition += 8;
   pdf.setFont('helvetica', 'normal');
+  const keyTerms = [
+    '1 - Basic      0.9-1.49 Few LOs achieved, but not sufficient for overall achievement',
+    '2 - Moderate   1.5-2.49 Many LOs achieved, enough for overall achievement',
+    '3 - Outstanding 2.5-3.0 Most or all LOs achieved for overall achievement'
+  ];
   
-  const headteacherCommentLines = pdf.splitTextToSize(
-    reportData.headteacher_comment || 'No comment provided.',
-    pageWidth - 40
-  );
-  
-  headteacherCommentLines.forEach((line: string) => {
-    pdf.text(line, 20, yPosition);
-    yPosition += 5;
+  keyTerms.forEach((term, index) => {
+    pdf.text(term, 15, yPosition + 10 + (index * 4));
   });
   
   // Footer
-  yPosition = pageHeight - 30;
+  yPosition = pageHeight - 25;
   
-  pdf.setDrawColor(primaryColor);
-  pdf.line(20, yPosition, pageWidth - 20, yPosition);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(9);
   
-  yPosition += 8;
-  pdf.setFontSize(8);
-  pdf.setTextColor(secondaryColor);
+  const termEndDate = new Date(term.end_date).toLocaleDateString('en-GB');
+  const nextTermDate = new Date(new Date(term.end_date).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB');
   
-  const footerInfo = [
-    `Term Dates: ${new Date(term.start_date).toLocaleDateString()} - ${new Date(term.end_date).toLocaleDateString()}`,
-    'Next Term Begins: Please check school calendar',
-    'Fees Balance: Contact bursar for details'
-  ];
+  pdf.text(`${termEndDate}`, 15, yPosition);
+  pdf.text(`${nextTermDate}`, 65, yPosition);
+  pdf.text('FEES BALANCE  FEES NEXT TERM  Other Requirement', 115, yPosition);
   
-  footerInfo.forEach((info) => {
-    pdf.text(info, 20, yPosition);
-    yPosition += 4;
-  });
+  pdf.text('TERM ENDED ON', 15, yPosition + 4);
+  pdf.text('NEXT TERM BEGINS', 65, yPosition + 4);
+  
+  yPosition += 12;
+  
+  // Motivational message
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(10);
+  const motivationalMsg = 'Work hard to excel';
+  const msgWidth = pdf.getStringUnitWidth(motivationalMsg) * pdf.getFontSize() / pdf.internal.scaleFactor;
+  pdf.text(motivationalMsg, (pageWidth - msgWidth) / 2, yPosition);
   
   // Save the PDF
   const fileName = `${student.name.replace(/\s+/g, '_')}_Report_${term.term_name}_${term.year}.pdf`;
@@ -251,11 +328,17 @@ export const generateReportCardPDF = async (data: ReportCardData) => {
 };
 
 const calculateGrade = (percentage: number): string => {
-  if (percentage >= 90) return 'A+';
   if (percentage >= 80) return 'A';
-  if (percentage >= 70) return 'B+';
-  if (percentage >= 60) return 'B';
-  if (percentage >= 50) return 'C+';
-  if (percentage >= 40) return 'C';
-  return 'F';
+  if (percentage >= 70) return 'B';
+  if (percentage >= 60) return 'C';
+  if (percentage >= 40) return 'D';
+  return 'E';
 };
+
+const calculateAchievementLevel = (identifier: number): string => {
+  if (identifier >= 2.5) return 'Outstanding';
+  if (identifier >= 1.5) return 'Moderate';
+  return 'Basic';
+};
+
+export { calculateGrade, calculateAchievementLevel };
