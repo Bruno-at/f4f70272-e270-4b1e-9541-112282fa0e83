@@ -35,117 +35,6 @@ export type Database = {
         }
         Relationships: []
       }
-      pending_submissions: {
-        Row: {
-          created_at: string | null
-          grade: string | null
-          id: string
-          marks_obtained: number
-          remarks: string | null
-          review_comments: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          status: string
-          student_id: string
-          subject_id: string
-          submitted_at: string | null
-          teacher_id: string
-          term_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          grade?: string | null
-          id?: string
-          marks_obtained: number
-          remarks?: string | null
-          review_comments?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          student_id: string
-          subject_id: string
-          submitted_at?: string | null
-          teacher_id: string
-          term_id: string
-        }
-        Update: {
-          created_at?: string | null
-          grade?: string | null
-          id?: string
-          marks_obtained?: number
-          remarks?: string | null
-          review_comments?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          student_id?: string
-          subject_id?: string
-          submitted_at?: string | null
-          teacher_id?: string
-          term_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pending_submissions_reviewed_by_fkey"
-            columns: ["reviewed_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pending_submissions_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pending_submissions_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subjects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pending_submissions_teacher_id_fkey"
-            columns: ["teacher_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pending_submissions_term_id_fkey"
-            columns: ["term_id"]
-            isOneToOne: false
-            referencedRelation: "terms"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      profiles: {
-        Row: {
-          created_at: string | null
-          full_name: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          full_name: string
-          id: string
-          role?: Database["public"]["Enums"]["app_role"]
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          full_name?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       report_cards: {
         Row: {
           class_teacher_comment: string | null
@@ -156,10 +45,7 @@ export type Database = {
           id: string
           overall_average: number | null
           overall_grade: string | null
-          pdf_url: string | null
-          status: string | null
           student_id: string
-          template: Database["public"]["Enums"]["template_type"] | null
           term_id: string
         }
         Insert: {
@@ -171,10 +57,7 @@ export type Database = {
           id?: string
           overall_average?: number | null
           overall_grade?: string | null
-          pdf_url?: string | null
-          status?: string | null
           student_id: string
-          template?: Database["public"]["Enums"]["template_type"] | null
           term_id: string
         }
         Update: {
@@ -186,10 +69,7 @@ export type Database = {
           id?: string
           overall_average?: number | null
           overall_grade?: string | null
-          pdf_url?: string | null
-          status?: string | null
           student_id?: string
-          template?: Database["public"]["Enums"]["template_type"] | null
           term_id?: string
         }
         Relationships: [
@@ -428,42 +308,6 @@ export type Database = {
           },
         ]
       }
-      teacher_subjects: {
-        Row: {
-          created_at: string | null
-          id: string
-          subject_id: string
-          teacher_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          subject_id: string
-          teacher_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          subject_id?: string
-          teacher_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "teacher_subjects_subject_id_fkey"
-            columns: ["subject_id"]
-            isOneToOne: false
-            referencedRelation: "subjects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "teacher_subjects_teacher_id_fkey"
-            columns: ["teacher_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       terms: {
         Row: {
           created_at: string
@@ -499,17 +343,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
-      app_role: "admin" | "teacher" | "student" | "headteacher"
-      template_type: "classic" | "modern" | "elegant" | "professional"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -636,9 +473,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      app_role: ["admin", "teacher", "student", "headteacher"],
-      template_type: ["classic", "modern", "elegant", "professional"],
-    },
+    Enums: {},
   },
 } as const
