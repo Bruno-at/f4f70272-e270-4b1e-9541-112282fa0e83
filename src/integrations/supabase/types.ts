@@ -59,6 +59,72 @@ export type Database = {
         }
         Relationships: []
       }
+      comment_templates: {
+        Row: {
+          comment_text: string
+          comment_type: string
+          created_at: string
+          id: string
+          is_active: boolean | null
+          max_average: number
+          min_average: number
+          updated_at: string
+        }
+        Insert: {
+          comment_text: string
+          comment_type: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          max_average: number
+          min_average: number
+          updated_at?: string
+        }
+        Update: {
+          comment_text?: string
+          comment_type?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          max_average?: number
+          min_average?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      grading_systems: {
+        Row: {
+          created_at: string
+          description: string | null
+          grade_name: string
+          id: string
+          is_active: boolean | null
+          max_percentage: number
+          min_percentage: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          grade_name: string
+          id?: string
+          is_active?: boolean | null
+          max_percentage: number
+          min_percentage: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          grade_name?: string
+          id?: string
+          is_active?: boolean | null
+          max_percentage?: number
+          min_percentage?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pending_submissions: {
         Row: {
           created_at: string | null

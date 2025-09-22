@@ -164,15 +164,47 @@ const ReportGenerator = () => {
       .eq('term_id', selectedTerm)
       .maybeSingle();
 
+    const overallAverage = marks && marks.length > 0 ? 
+      marks.reduce((sum, mark) => sum + (mark.hundred_percent || 0), 0) / marks.length : 0;
+
+    // Auto-generate comments based on overall average
+    let autoClassTeacherComment = teacherComment || 'Good work, keep it up!';
+    let autoHeadteacherComment = headteacherComment || 'Excellent progress this term.';
+
+    if (overallAverage > 0) {
+      const { data: classTeacherCommentTemplate } = await supabase
+        .from('comment_templates')
+        .select('comment_text')
+        .eq('comment_type', 'class_teacher')
+        .eq('is_active', true)
+        .lte('min_average', overallAverage)
+        .gte('max_average', overallAverage)
+        .maybeSingle();
+
+      const { data: headteacherCommentTemplate } = await supabase
+        .from('comment_templates')
+        .select('comment_text')
+        .eq('comment_type', 'headteacher')
+        .eq('is_active', true)
+        .lte('min_average', overallAverage)
+        .gte('max_average', overallAverage)
+        .maybeSingle();
+
+      if (classTeacherCommentTemplate) {
+        autoClassTeacherComment = classTeacherCommentTemplate.comment_text;
+      }
+      if (headteacherCommentTemplate) {
+        autoHeadteacherComment = headteacherCommentTemplate.comment_text;
+      }
+    }
+
     const reportData = {
       student_id: studentId,
       term_id: selectedTerm,
-      class_teacher_comment: teacherComment || 'Good work, keep it up!',
-      headteacher_comment: headteacherComment || 'Excellent progress this term.',
-      overall_average: marks && marks.length > 0 ? 
-        marks.reduce((sum, mark) => sum + (mark.hundred_percent || 0), 0) / marks.length : 0,
-      overall_grade: calculateGrade(marks && marks.length > 0 ? 
-        marks.reduce((sum, mark) => sum + (mark.hundred_percent || 0), 0) / marks.length : 0),
+      class_teacher_comment: autoClassTeacherComment,
+      headteacher_comment: autoHeadteacherComment,
+      overall_average: overallAverage,
+      overall_grade: calculateGrade(overallAverage),
       overall_identifier: marks && marks.length > 0 ?
         Math.round(marks.reduce((sum, mark) => sum + (mark.identifier || 2), 0) / marks.length) : 2,
       achievement_level: calculateAchievementLevel(marks && marks.length > 0 ?

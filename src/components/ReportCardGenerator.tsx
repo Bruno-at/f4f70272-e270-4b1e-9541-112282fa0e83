@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, School, Users, Download, BookOpen, User, FileText } from 'lucide-react';
+import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare } from 'lucide-react';
 import SchoolInfoTable from './SchoolInfoTable';
 import StudentManager from './StudentManager';
 import ReportGenerator from './ReportGenerator';
@@ -9,6 +9,8 @@ import TermsManager from './TermsManager';
 import ClassesManager from './ClassesManager';
 import SubjectsManager from './SubjectsManager';
 import StudentMarksManager from './StudentMarksManager';
+import GradingSystemManager from './GradingSystemManager';
+import CommentTemplatesManager from './CommentTemplatesManager';
 
 const ReportCardGenerator = () => {
   const [activeTab, setActiveTab] = useState('school');
@@ -24,7 +26,7 @@ const ReportCardGenerator = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 mb-8 h-auto p-2 gap-2">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 lg:grid-cols-9 mb-8 h-auto p-2 gap-1">
             <TabsTrigger value="school" className="flex items-center gap-1 text-xs">
               <School className="w-3 h-3" />
               School
@@ -48,6 +50,14 @@ const ReportCardGenerator = () => {
             <TabsTrigger value="marks" className="flex items-center gap-1 text-xs">
               <FileText className="w-3 h-3" />
               Marks
+            </TabsTrigger>
+            <TabsTrigger value="grading" className="flex items-center gap-1 text-xs">
+              <Settings className="w-3 h-3" />
+              Grading
+            </TabsTrigger>
+            <TabsTrigger value="comments" className="flex items-center gap-1 text-xs">
+              <MessageSquare className="w-3 h-3" />
+              Comments
             </TabsTrigger>
             <TabsTrigger value="reports" className="flex items-center gap-1 text-xs">
               <Download className="w-3 h-3" />
@@ -153,6 +163,40 @@ const ReportCardGenerator = () => {
               </CardHeader>
               <CardContent>
                 <StudentMarksManager />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="grading">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  Grading System Management
+                </CardTitle>
+                <CardDescription>
+                  Configure the school's grading system and grade boundaries
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <GradingSystemManager />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="comments">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" />
+                  Comment Templates Management
+                </CardTitle>
+                <CardDescription>
+                  Configure automatic comments based on student performance
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CommentTemplatesManager />
               </CardContent>
             </Card>
           </TabsContent>

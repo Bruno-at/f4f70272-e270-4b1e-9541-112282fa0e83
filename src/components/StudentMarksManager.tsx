@@ -116,6 +116,27 @@ const StudentMarksManager = () => {
     setFormData(prev => ({ ...prev, average_score: avg.toFixed(1) }));
   };
 
+  const [gradingSystems, setGradingSystems] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchGradingSystems();
+  }, []);
+
+  const fetchGradingSystems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('grading_systems')
+        .select('*')
+        .eq('is_active', true)
+        .order('min_percentage', { ascending: false });
+
+      if (error) throw error;
+      setGradingSystems(data || []);
+    } catch (error) {
+      console.error('Error fetching grading systems:', error);
+    }
+  };
+
   const calculateGradeAndLevel = () => {
     const hundredPercent = parseFloat(formData.hundred_percent) || 0;
     const grade = calculateGrade(hundredPercent);
@@ -130,6 +151,15 @@ const StudentMarksManager = () => {
   };
 
   const calculateGrade = (percentage: number): string => {
+    // Use configurable grading system if available
+    if (gradingSystems.length > 0) {
+      const grade = gradingSystems.find(g => 
+        percentage >= g.min_percentage && percentage <= g.max_percentage
+      );
+      return grade ? grade.grade_name : 'E';
+    }
+    
+    // Fallback to default grading system
     if (percentage >= 80) return 'A';
     if (percentage >= 70) return 'B';
     if (percentage >= 60) return 'C';
