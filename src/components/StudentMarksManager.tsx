@@ -116,6 +116,19 @@ const StudentMarksManager = () => {
     setFormData(prev => ({ ...prev, average_score: avg.toFixed(1) }));
   };
 
+  const calculateGradeAndLevel = () => {
+    const hundredPercent = parseFloat(formData.hundred_percent) || 0;
+    const grade = calculateGrade(hundredPercent);
+    const identifier = parseInt(formData.identifier) || 1;
+    const achievementLevel = calculateAchievementLevel(identifier);
+    
+    setFormData(prev => ({ 
+      ...prev, 
+      final_grade: grade,
+      achievement_level: achievementLevel
+    }));
+  };
+
   const calculateGrade = (percentage: number): string => {
     if (percentage >= 80) return 'A';
     if (percentage >= 70) return 'B';
@@ -427,6 +440,7 @@ const StudentMarksManager = () => {
                     step="0.1"
                     value={formData.hundred_percent}
                     onChange={(e) => setFormData(prev => ({...prev, hundred_percent: e.target.value}))}
+                    onBlur={calculateGradeAndLevel}
                     placeholder="0.0"
                   />
                 </div>
@@ -435,7 +449,10 @@ const StudentMarksManager = () => {
               <div className="grid grid-cols-4 gap-4">
                 <div>
                   <Label htmlFor="identifier">Identifier</Label>
-                  <Select value={formData.identifier} onValueChange={(value) => setFormData(prev => ({...prev, identifier: value}))}>
+                  <Select value={formData.identifier} onValueChange={(value) => {
+                    setFormData(prev => ({...prev, identifier: value}));
+                    setTimeout(calculateGradeAndLevel, 0);
+                  }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>
@@ -448,34 +465,25 @@ const StudentMarksManager = () => {
                 </div>
 
                 <div>
-                  <Label htmlFor="final_grade">Grade</Label>
-                  <Select value={formData.final_grade} onValueChange={(value) => setFormData(prev => ({...prev, final_grade: value}))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="A">A</SelectItem>
-                      <SelectItem value="B">B</SelectItem>
-                      <SelectItem value="C">C</SelectItem>
-                      <SelectItem value="D">D</SelectItem>
-                      <SelectItem value="E">E</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="final_grade">Grade (Auto-calculated)</Label>
+                  <Input
+                    id="final_grade"
+                    value={formData.final_grade}
+                    placeholder="Auto-calculated"
+                    readOnly
+                    className="bg-muted"
+                  />
                 </div>
 
                 <div>
-                  <Label htmlFor="achievement_level">Achievement Level</Label>
-                  <Select value={formData.achievement_level} onValueChange={(value) => setFormData(prev => ({...prev, achievement_level: value}))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Basic">Basic</SelectItem>
-                      <SelectItem value="Satisfactory">Satisfactory</SelectItem>
-                      <SelectItem value="Outstanding">Outstanding</SelectItem>
-                      <SelectItem value="Exceptional">Exceptional</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="achievement_level">Achievement Level (Auto-calculated)</Label>
+                  <Input
+                    id="achievement_level"
+                    value={formData.achievement_level}
+                    placeholder="Auto-calculated"
+                    readOnly
+                    className="bg-muted"
+                  />
                 </div>
 
                 <div>
