@@ -21,9 +21,9 @@ const StudentMarksManager = () => {
   const [filteredMarks, setFilteredMarks] = useState<StudentMark[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [selectedClass, setSelectedClass] = useState<string>('');
-  const [selectedTerm, setSelectedTerm] = useState<string>('');
-  const [selectedSubject, setSelectedSubject] = useState<string>('');
+  const [selectedClass, setSelectedClass] = useState<string>('all-classes');
+  const [selectedTerm, setSelectedTerm] = useState<string>('all-terms');
+  const [selectedSubject, setSelectedSubject] = useState<string>('all-subjects');
   const [editingMark, setEditingMark] = useState<StudentMark | null>(null);
   
   // Form fields for new O-level assessment structure
@@ -91,17 +91,17 @@ const StudentMarksManager = () => {
   const filterMarks = () => {
     let filtered = marks;
 
-    if (selectedClass) {
+    if (selectedClass && selectedClass !== 'all-classes') {
       filtered = filtered.filter(mark => 
         mark.students?.classes?.id === selectedClass
       );
     }
 
-    if (selectedTerm) {
+    if (selectedTerm && selectedTerm !== 'all-terms') {
       filtered = filtered.filter(mark => mark.term_id === selectedTerm);
     }
 
-    if (selectedSubject) {
+    if (selectedSubject && selectedSubject !== 'all-subjects') {
       filtered = filtered.filter(mark => mark.subject_id === selectedSubject);
     }
 
@@ -517,7 +517,7 @@ const StudentMarksManager = () => {
                   <SelectValue placeholder="All classes" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All classes</SelectItem>
+                  <SelectItem value="all-classes">All classes</SelectItem>
                   {classes.map((classItem) => (
                     <SelectItem key={classItem.id} value={classItem.id}>
                       {classItem.class_name} {classItem.section}
@@ -534,7 +534,7 @@ const StudentMarksManager = () => {
                   <SelectValue placeholder="All terms" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All terms</SelectItem>
+                  <SelectItem value="all-terms">All terms</SelectItem>
                   {terms.map((term) => (
                     <SelectItem key={term.id} value={term.id}>
                       {term.term_name} {term.year}
@@ -551,7 +551,7 @@ const StudentMarksManager = () => {
                   <SelectValue placeholder="All subjects" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All subjects</SelectItem>
+                  <SelectItem value="all-subjects">All subjects</SelectItem>
                   {subjects.map((subject) => (
                     <SelectItem key={subject.id} value={subject.id}>
                       {subject.subject_code} {subject.subject_name}
