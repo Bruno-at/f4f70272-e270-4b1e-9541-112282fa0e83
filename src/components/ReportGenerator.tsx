@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Student, Term, Class, Subject, SchoolInfo } from '@/types/database';
 import { Download, FileText, Users } from 'lucide-react';
 import { generateReportCardPDF } from '@/utils/pdfGenerator';
+import { TemplateSelector, TemplateType } from '@/components/TemplateSelector';
 
 const ReportGenerator = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -24,6 +25,7 @@ const ReportGenerator = () => {
   const [selectedStudent, setSelectedStudent] = useState('');
   const [teacherComment, setTeacherComment] = useState('');
   const [headteacherComment, setHeadteacherComment] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('classic');
 
   const { toast } = useToast();
 
@@ -242,7 +244,8 @@ const ReportGenerator = () => {
         class_teacher_comment: reportData.class_teacher_comment,
         headteacher_comment: reportData.headteacher_comment,
       },
-      subjects
+      subjects,
+      template: selectedTemplate
     });
   };
 
@@ -281,6 +284,18 @@ const ReportGenerator = () => {
 
   return (
     <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Template Selection</CardTitle>
+          <CardDescription>
+            Choose a report card template design. Preview each template to see how it looks.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TemplateSelector value={selectedTemplate} onChange={setSelectedTemplate} />
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
           <Label htmlFor="term">Select Term *</Label>
