@@ -30,7 +30,7 @@ const ClassesManager = () => {
         .from('classes')
         .select(`
           *,
-          students(count)
+          students!students_class_id_fkey(count)
         `)
         .order('class_name');
 

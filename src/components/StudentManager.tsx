@@ -68,11 +68,22 @@ const StudentManager = () => {
     }
 
     try {
+      // Handle empty student_id as null to avoid unique constraint issues
+      const dataToInsert = {
+        ...formData,
+        student_id: formData.student_id.trim() || null
+      };
+
       const { error } = await supabase
         .from('students')
-        .insert([formData]);
+        .insert([dataToInsert]);
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '23505' && error.message.includes('student_id')) {
+          throw new Error('A student with this ID already exists. Please use a different ID or leave it empty.');
+        }
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -88,11 +99,11 @@ const StudentManager = () => {
       });
 
       await fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding student:', error);
       toast({
         title: "Error",
-        description: "Failed to add student",
+        description: error.message || "Failed to add student",
         variant: "destructive"
       });
     }
@@ -138,7 +149,7 @@ const StudentManager = () => {
                 gender: row.gender as 'Male' | 'Female',
                 class_id: classRecord.id,
                 house: row.house || null,
-                student_id: row.student_id || null
+                student_id: row.student_id?.trim() || null
               });
             }
           }
@@ -163,11 +174,15 @@ const StudentManager = () => {
               variant: "destructive"
             });
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Error importing students:', error);
+          const errorMessage = error.code === '23505' && error.message?.includes('student_id')
+            ? 'Some students have duplicate IDs. Please ensure all student IDs are unique.'
+            : 'Failed to import students from CSV';
+          
           toast({
             title: "Error",
-            description: "Failed to import students from CSV",
+            description: errorMessage,
             variant: "destructive"
           });
         } finally {
