@@ -168,34 +168,39 @@ const ReportGenerator = () => {
       marks.reduce((sum, mark) => sum + (mark.hundred_percent || 0), 0) / marks.length : 0;
 
     // Auto-generate comments based on overall average
-    let autoClassTeacherComment = teacherComment || 'Good work, keep it up!';
-    let autoHeadteacherComment = headteacherComment || 'Excellent progress this term.';
+    let autoClassTeacherComment = 'Good work, keep it up!';
+    let autoHeadteacherComment = 'Excellent progress this term.';
 
-    if (overallAverage > 0) {
-      const { data: classTeacherCommentTemplate } = await supabase
-        .from('comment_templates')
-        .select('comment_text')
-        .eq('comment_type', 'class_teacher')
-        .eq('is_active', true)
-        .lte('min_average', overallAverage)
-        .gte('max_average', overallAverage)
-        .maybeSingle();
+    // Fetch comment templates based on the student's specific average
+    const { data: classTeacherCommentTemplate } = await supabase
+      .from('comment_templates')
+      .select('comment_text')
+      .eq('comment_type', 'class_teacher')
+      .eq('is_active', true)
+      .lte('min_average', overallAverage)
+      .gte('max_average', overallAverage)
+      .maybeSingle();
 
-      const { data: headteacherCommentTemplate } = await supabase
-        .from('comment_templates')
-        .select('comment_text')
-        .eq('comment_type', 'headteacher')
-        .eq('is_active', true)
-        .lte('min_average', overallAverage)
-        .gte('max_average', overallAverage)
-        .maybeSingle();
+    const { data: headteacherCommentTemplate } = await supabase
+      .from('comment_templates')
+      .select('comment_text')
+      .eq('comment_type', 'headteacher')
+      .eq('is_active', true)
+      .lte('min_average', overallAverage)
+      .gte('max_average', overallAverage)
+      .maybeSingle();
 
-      if (classTeacherCommentTemplate) {
-        autoClassTeacherComment = classTeacherCommentTemplate.comment_text;
-      }
-      if (headteacherCommentTemplate) {
-        autoHeadteacherComment = headteacherCommentTemplate.comment_text;
-      }
+    // Use template comments if available, otherwise use manual comments if provided
+    if (classTeacherCommentTemplate) {
+      autoClassTeacherComment = classTeacherCommentTemplate.comment_text;
+    } else if (teacherComment.trim()) {
+      autoClassTeacherComment = teacherComment;
+    }
+
+    if (headteacherCommentTemplate) {
+      autoHeadteacherComment = headteacherCommentTemplate.comment_text;
+    } else if (headteacherComment.trim()) {
+      autoHeadteacherComment = headteacherComment;
     }
 
     const reportData = {
@@ -331,25 +336,31 @@ const ReportGenerator = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="teacher-comment">Class Teacher's Comment</Label>
+          <Label htmlFor="teacher-comment">Class Teacher's Comment (Optional Override)</Label>
           <Textarea
             id="teacher-comment"
             value={teacherComment}
             onChange={(e) => setTeacherComment(e.target.value)}
-            placeholder="Enter class teacher's comment..."
+            placeholder="Comments will be auto-filled from templates based on student averages. Enter here only to override..."
             rows={3}
           />
+          <p className="text-xs text-muted-foreground mt-1">
+            Leave empty to use automatic comments from Comment Templates
+          </p>
         </div>
 
         <div>
-          <Label htmlFor="headteacher-comment">Headteacher's Comment</Label>
+          <Label htmlFor="headteacher-comment">Headteacher's Comment (Optional Override)</Label>
           <Textarea
             id="headteacher-comment"
             value={headteacherComment}
             onChange={(e) => setHeadteacherComment(e.target.value)}
-            placeholder="Enter headteacher's comment..."
+            placeholder="Comments will be auto-filled from templates based on student averages. Enter here only to override..."
             rows={3}
           />
+          <p className="text-xs text-muted-foreground mt-1">
+            Leave empty to use automatic comments from Comment Templates
+          </p>
         </div>
       </div>
 
