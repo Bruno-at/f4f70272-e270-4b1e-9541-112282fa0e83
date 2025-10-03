@@ -126,8 +126,8 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'bold');
   
-  const headers = ['Code Subject', 'A1', 'A2', 'A3', 'AVG', '20%', '80%', '100%', 'Ident', 'GRADE', 'Remarks/Descriptors', 'TR'];
-  const colWidths = [30, 12, 12, 12, 12, 15, 15, 15, 15, 18, 40, 15];
+  const headers = ['Subject', 'A1', 'A2', 'A3', 'AVG', '20%', '80%', '100%', 'Grade', 'Achievement'];
+  const colWidths = [45, 12, 12, 12, 12, 15, 15, 15, 18, 35];
   let xPos = 15;
   
   headers.forEach((header, index) => {
@@ -154,10 +154,8 @@ export const generateClassicTemplate = (data: TemplateData) => {
       mark.twenty_percent?.toFixed(1) || '',
       mark.eighty_percent?.toFixed(1) || '',
       mark.hundred_percent?.toFixed(1) || '',
-      mark.identifier?.toString() || '',
       mark.final_grade || '',
-      mark.achievement_level || '',
-      mark.teacher_initials || ''
+      mark.achievement_level || ''
     ];
     
     xPos = 15;
@@ -172,17 +170,17 @@ export const generateClassicTemplate = (data: TemplateData) => {
   yPosition += 5;
   
   pdf.setFont('helvetica', 'bold');
-  pdf.text('AVERAGE:', 15, yPosition);
-  pdf.text(reportData.overall_identifier?.toString() || '2', 131, yPosition);
-  pdf.text(reportData.overall_average?.toFixed(1) || '0.0', 146, yPosition);
-  pdf.text(reportData.overall_average?.toFixed(1) || '0.0', 161, yPosition);
+  pdf.text('OVERALL:', 15, yPosition);
+  pdf.text(reportData.overall_average?.toFixed(1) || '0.0', 119, yPosition);
+  pdf.text(reportData.overall_grade || 'B', 134, yPosition);
+  pdf.text(reportData.achievement_level || 'Moderate', 152, yPosition);
   
   yPosition += 8;
   
   pdf.setFontSize(9);
-  pdf.text(`Overall Identifier: ${reportData.overall_identifier || 2}`, 15, yPosition);
-  pdf.text(`Overall Achievement: ${reportData.achievement_level || 'Moderate'}`, 80, yPosition);
-  pdf.text(`Overall grade: ${reportData.overall_grade || 'B'}`, 150, yPosition);
+  pdf.text(`Overall Average: ${reportData.overall_average?.toFixed(1) || '0.0'}%`, 15, yPosition);
+  pdf.text(`Overall Grade: ${reportData.overall_grade || 'B'}`, 80, yPosition);
+  pdf.text(`Achievement Level: ${reportData.achievement_level || 'Moderate'}`, 130, yPosition);
   
   yPosition += 10;
   
@@ -249,9 +247,9 @@ export const generateClassicTemplate = (data: TemplateData) => {
   
   pdf.setFont('helvetica', 'normal');
   const keyTerms = [
-    '1 - Basic      0.9-1.49 Few LOs achieved, but not sufficient for overall achievement',
-    '2 - Moderate   1.5-2.49 Many LOs achieved, enough for overall achievement',
-    '3 - Outstanding 2.5-3.0 Most or all LOs achieved for overall achievement'
+    'Basic: Few Learning Outcomes achieved, not sufficient for overall achievement',
+    'Moderate: Many Learning Outcomes achieved, sufficient for overall achievement',
+    'Outstanding: Most or all Learning Outcomes achieved for overall achievement'
   ];
   
   keyTerms.forEach((term, index) => {
@@ -532,12 +530,12 @@ export const generateProfessionalTemplate = (data: TemplateData) => {
   pdf.setDrawColor(200, 200, 200);
   pdf.setLineWidth(0.5);
   
-  const headers = ['SUBJECT', 'SCORE (%)', 'GRADE', 'ACHIEVEMENT'];
-  const colWidths = [70, 35, 35, 45];
+  const headers = ['SUBJECT', 'A1', 'A2', 'A3', 'AVG', '20%', '80%', '100%', 'GRADE', 'ACHIEVEMENT'];
+  const colWidths = [40, 15, 15, 15, 15, 15, 15, 15, 18, 32];
   let xPos = 20;
   
   pdf.setTextColor(50, 50, 50);
-  pdf.setFontSize(9);
+  pdf.setFontSize(8);
   pdf.setFont('helvetica', 'bold');
   
   headers.forEach((header, index) => {
@@ -550,6 +548,7 @@ export const generateProfessionalTemplate = (data: TemplateData) => {
   // Table rows
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(8);
   
   marks.forEach((mark, index) => {
     if (yPosition > pageHeight - 60) {
@@ -567,9 +566,15 @@ export const generateProfessionalTemplate = (data: TemplateData) => {
     xPos = 20;
     const rowData = [
       `${mark.subject_code || ''} ${mark.subjects?.subject_name || 'Unknown'}`,
-      mark.hundred_percent?.toFixed(1) || '0.0',
-      mark.final_grade || 'N/A',
-      mark.achievement_level || 'N/A'
+      mark.a1_score?.toFixed(1) || '',
+      mark.a2_score?.toFixed(1) || '',
+      mark.a3_score?.toFixed(1) || '',
+      mark.average_score?.toFixed(1) || '',
+      mark.twenty_percent?.toFixed(1) || '',
+      mark.eighty_percent?.toFixed(1) || '',
+      mark.hundred_percent?.toFixed(1) || '',
+      mark.final_grade || '',
+      mark.achievement_level || ''
     ];
     
     rowData.forEach((data, colIndex) => {
