@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare } from 'lucide-react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
+import { ThemeToggle } from './ThemeToggle';
 import SchoolInfoTable from './SchoolInfoTable';
 import StudentManager from './StudentManager';
 import ReportGenerator from './ReportGenerator';
@@ -184,12 +185,13 @@ const ReportCardGenerator = () => {
         <main className="flex-1">
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
             <SidebarTrigger />
-            <div>
+            <div className="flex-1">
               <h1 className="text-2xl font-bold text-primary">Report Card Generator</h1>
               <p className="text-sm text-muted-foreground">
                 Professional student report card generation system
               </p>
             </div>
+            <ThemeToggle />
           </header>
           
           <div className="p-6">
