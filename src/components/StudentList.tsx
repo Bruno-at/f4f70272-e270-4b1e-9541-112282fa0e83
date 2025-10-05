@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Student } from '@/types/database';
-import { Trash2, Search, Users } from 'lucide-react';
+import { Trash2, Search, Users, Pencil } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,9 +23,10 @@ import {
 interface StudentListProps {
   students: Student[];
   onRefresh: () => void;
+  onEdit: (student: Student) => void;
 }
 
-const StudentList = ({ students, onRefresh }: StudentListProps) => {
+const StudentList = ({ students, onRefresh, onEdit }: StudentListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [deleting, setDeleting] = useState<string | null>(null);
   const { toast } = useToast();
@@ -119,16 +120,24 @@ const StudentList = ({ students, onRefresh }: StudentListProps) => {
                   <TableCell>{student.house || '-'}</TableCell>
                   <TableCell>{student.student_id || '-'}</TableCell>
                   <TableCell>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={deleting === student.id}
-                        >
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </AlertDialogTrigger>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit(student)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={deleting === student.id}
+                          >
+                            <Trash2 className="w-4 h-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete Student</AlertDialogTitle>
@@ -147,6 +156,7 @@ const StudentList = ({ students, onRefresh }: StudentListProps) => {
                         </AlertDialogFooter>
                       </AlertDialogContent>
                     </AlertDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

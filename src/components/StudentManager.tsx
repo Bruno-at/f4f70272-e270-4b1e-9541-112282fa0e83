@@ -17,6 +17,8 @@ const StudentManager = () => {
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [activeTab, setActiveTab] = useState('add');
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -91,6 +93,36 @@ const StudentManager = () => {
     return publicUrl;
   };
 
+  const handleEdit = (student: Student) => {
+    setEditingStudent(student);
+    setFormData({
+      name: student.name,
+      gender: student.gender,
+      class_id: student.class_id,
+      house: student.house || '',
+      student_id: student.student_id || '',
+      age: student.age?.toString() || '',
+      photo_url: student.photo_url || ''
+    });
+    setPhotoPreview(student.photo_url || '');
+    setActiveTab('add');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingStudent(null);
+    setFormData({
+      name: '',
+      gender: '',
+      class_id: '',
+      house: '',
+      student_id: '',
+      age: '',
+      photo_url: ''
+    });
+    setPhotoFile(null);
+    setPhotoPreview('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -112,47 +144,57 @@ const StudentManager = () => {
       }
 
       // Handle empty student_id as null to avoid unique constraint issues
-      const dataToInsert = {
+      const dataToSubmit = {
         ...formData,
         student_id: formData.student_id.trim() || null,
         age: formData.age ? parseInt(formData.age) : null,
         photo_url: photoUrl || null
       };
 
-      const { error } = await supabase
-        .from('students')
-        .insert([dataToInsert]);
+      if (editingStudent) {
+        // Update existing student
+        const { error } = await supabase
+          .from('students')
+          .update(dataToSubmit)
+          .eq('id', editingStudent.id);
 
-      if (error) {
-        if (error.code === '23505' && error.message.includes('student_id')) {
-          throw new Error('A student with this ID already exists. Please use a different ID or leave it empty.');
+        if (error) {
+          if (error.code === '23505' && error.message.includes('student_id')) {
+            throw new Error('A student with this ID already exists. Please use a different ID or leave it empty.');
+          }
+          throw error;
         }
-        throw error;
+
+        toast({
+          title: "Success",
+          description: "Student updated successfully"
+        });
+      } else {
+        // Insert new student
+        const { error } = await supabase
+          .from('students')
+          .insert([dataToSubmit]);
+
+        if (error) {
+          if (error.code === '23505' && error.message.includes('student_id')) {
+            throw new Error('A student with this ID already exists. Please use a different ID or leave it empty.');
+          }
+          throw error;
+        }
+
+        toast({
+          title: "Success",
+          description: "Student added successfully"
+        });
       }
 
-      toast({
-        title: "Success",
-        description: "Student added successfully"
-      });
-
-      setFormData({
-        name: '',
-        gender: '',
-        class_id: '',
-        house: '',
-        student_id: '',
-        age: '',
-        photo_url: ''
-      });
-      setPhotoFile(null);
-      setPhotoPreview('');
-
+      handleCancelEdit();
       await fetchData();
     } catch (error: any) {
-      console.error('Error adding student:', error);
+      console.error('Error saving student:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to add student",
+        description: error.message || `Failed to ${editingStudent ? 'update' : 'add'} student`,
         variant: "destructive"
       });
     }
@@ -266,14 +308,22 @@ Jane Smith,Female,Grade 7,B,Blue House,ST002`;
   }
 
   return (
-    <Tabs defaultValue="add" className="w-full">
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="add">Add Student</TabsTrigger>
+        <TabsTrigger value="add">{editingStudent ? 'Edit Student' : 'Add Student'}</TabsTrigger>
         <TabsTrigger value="import">Import CSV</TabsTrigger>
         <TabsTrigger value="list">View Students</TabsTrigger>
       </TabsList>
 
       <TabsContent value="add" className="space-y-6">
+        {editingStudent && (
+          <div className="flex items-center justify-between bg-muted/50 p-3 rounded-lg">
+            <span className="text-sm font-medium">Editing: {editingStudent.name}</span>
+            <Button variant="ghost" size="sm" onClick={handleCancelEdit}>
+              Cancel Edit
+            </Button>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -372,7 +422,7 @@ Jane Smith,Female,Grade 7,B,Blue House,ST002`;
 
           <Button type="submit" className="w-full md:w-auto">
             <Plus className="w-4 h-4 mr-2" />
-            Add Student
+            {editingStudent ? 'Update Student' : 'Add Student'}
           </Button>
         </form>
       </TabsContent>
@@ -420,7 +470,7 @@ Jane Smith,Female,Grade 7,B,Blue House,ST002`;
       </TabsContent>
 
       <TabsContent value="list">
-        <StudentList students={students} onRefresh={fetchData} />
+        <StudentList students={students} onRefresh={fetchData} onEdit={handleEdit} />
       </TabsContent>
     </Tabs>
   );
