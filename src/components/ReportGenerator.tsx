@@ -137,6 +137,23 @@ const ReportGenerator = () => {
     }
   };
 
+  // Helper function to convert image URL to base64
+  const urlToBase64 = async (url: string): Promise<string> => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error converting image to base64:', error);
+      return '';
+    }
+  };
+
   const generateReportForStudent = async (studentId: string) => {
     // Fetch student marks for the selected term
     const { data: marks, error: marksError } = await supabase
@@ -230,11 +247,22 @@ const ReportGenerator = () => {
         .insert([reportData]);
     }
 
+    // Convert images to base64 for PDF
+    const studentWithBase64Photo = { ...student };
+    if (student.photo_url && !student.photo_url.startsWith('data:image')) {
+      studentWithBase64Photo.photo_url = await urlToBase64(student.photo_url);
+    }
+
+    const schoolInfoWithBase64Logo = { ...schoolInfo! };
+    if (schoolInfo?.logo_url && !schoolInfo.logo_url.startsWith('data:image')) {
+      schoolInfoWithBase64Logo.logo_url = await urlToBase64(schoolInfo.logo_url);
+    }
+
     // Generate PDF
     await generateReportCardPDF({
-      student,
+      student: studentWithBase64Photo,
       term,
-      schoolInfo: schoolInfo!,
+      schoolInfo: schoolInfoWithBase64Logo,
       marks: marks || [],
       reportData: {
         overall_average: reportData.overall_average,
