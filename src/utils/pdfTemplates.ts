@@ -56,13 +56,28 @@ export const generateClassicTemplate = (data: TemplateData) => {
     }
   }
   
-  // Right: Student photo
+  // Right: Student photo demarcation box
+  const photoBoxX = pageWidth - 45;
+  const photoBoxY = 8;
+  const photoBoxSize = 35;
+  
+  // Draw demarcated box for student photo
+  pdf.setDrawColor(0, 0, 0);
+  pdf.setLineWidth(0.8);
+  pdf.rect(photoBoxX, photoBoxY, photoBoxSize, photoBoxSize);
+  
+  // Add photo if available
   if (student.photo_url && student.photo_url.startsWith('data:image')) {
     try {
-      pdf.addImage(student.photo_url, 'PNG', pageWidth - 45, 8, 35, 35);
+      pdf.addImage(student.photo_url, 'PNG', photoBoxX + 1, photoBoxY + 1, photoBoxSize - 2, photoBoxSize - 2);
     } catch (error) {
       console.log('Could not add photo');
     }
+  } else {
+    // Add placeholder text if no photo
+    pdf.setFontSize(8);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text('Image', photoBoxX + photoBoxSize / 2, photoBoxY + photoBoxSize / 2, { align: 'center' });
   }
   
   // Center: School details
@@ -393,12 +408,28 @@ export const generateModernTemplate = (data: TemplateData) => {
     }
   }
   
+  // Right: Student photo demarcation box
+  const photoBoxX = pageWidth - 45;
+  const photoBoxY = 8;
+  const photoBoxSize = 35;
+  
+  // Draw demarcated box for student photo
+  pdf.setDrawColor(0, 0, 0);
+  pdf.setLineWidth(0.8);
+  pdf.rect(photoBoxX, photoBoxY, photoBoxSize, photoBoxSize);
+  
+  // Add photo if available
   if (student.photo_url && student.photo_url.startsWith('data:image')) {
     try {
-      pdf.addImage(student.photo_url, 'PNG', pageWidth - 45, 8, 35, 35);
+      pdf.addImage(student.photo_url, 'PNG', photoBoxX + 1, photoBoxY + 1, photoBoxSize - 2, photoBoxSize - 2);
     } catch (error) {
       console.log('Could not add photo');
     }
+  } else {
+    // Add placeholder text if no photo
+    pdf.setFontSize(8);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text('Image', photoBoxX + photoBoxSize / 2, photoBoxY + photoBoxSize / 2, { align: 'center' });
   }
   
   pdf.setTextColor(30, 64, 175);
@@ -713,12 +744,28 @@ export const generateProfessionalTemplate = (data: TemplateData) => {
     }
   }
   
+  // Right: Student photo demarcation box
+  const photoBoxX = pageWidth - 45;
+  const photoBoxY = 8;
+  const photoBoxSize = 35;
+  
+  // Draw demarcated box for student photo
+  pdf.setDrawColor(0, 0, 0);
+  pdf.setLineWidth(0.8);
+  pdf.rect(photoBoxX, photoBoxY, photoBoxSize, photoBoxSize);
+  
+  // Add photo if available
   if (student.photo_url && student.photo_url.startsWith('data:image')) {
     try {
-      pdf.addImage(student.photo_url, 'PNG', pageWidth - 45, 8, 35, 35);
+      pdf.addImage(student.photo_url, 'PNG', photoBoxX + 1, photoBoxY + 1, photoBoxSize - 2, photoBoxSize - 2);
     } catch (error) {
       console.log('Could not add photo');
     }
+  } else {
+    // Add placeholder text if no photo
+    pdf.setFontSize(8);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text('Image', photoBoxX + photoBoxSize / 2, photoBoxY + photoBoxSize / 2, { align: 'center' });
   }
   
   pdf.setTextColor(30, 64, 175);
@@ -1033,12 +1080,28 @@ export const generateMinimalTemplate = (data: TemplateData) => {
     }
   }
   
+  // Right: Student photo demarcation box
+  const photoBoxX = pageWidth - 45;
+  const photoBoxY = 8;
+  const photoBoxSize = 35;
+  
+  // Draw demarcated box for student photo
+  pdf.setDrawColor(0, 0, 0);
+  pdf.setLineWidth(0.8);
+  pdf.rect(photoBoxX, photoBoxY, photoBoxSize, photoBoxSize);
+  
+  // Add photo if available
   if (student.photo_url && student.photo_url.startsWith('data:image')) {
     try {
-      pdf.addImage(student.photo_url, 'PNG', pageWidth - 45, 8, 35, 35);
+      pdf.addImage(student.photo_url, 'PNG', photoBoxX + 1, photoBoxY + 1, photoBoxSize - 2, photoBoxSize - 2);
     } catch (error) {
       console.log('Could not add photo');
     }
+  } else {
+    // Add placeholder text if no photo
+    pdf.setFontSize(8);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text('Image', photoBoxX + photoBoxSize / 2, photoBoxY + photoBoxSize / 2, { align: 'center' });
   }
   
   pdf.setTextColor(30, 64, 175);

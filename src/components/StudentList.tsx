@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Student } from '@/types/database';
@@ -86,6 +87,7 @@ const StudentList = ({ students, onRefresh }: StudentListProps) => {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Photo</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Gender</TableHead>
               <TableHead>Class</TableHead>
@@ -98,6 +100,12 @@ const StudentList = ({ students, onRefresh }: StudentListProps) => {
             {filteredStudents.length > 0 ? (
               filteredStudents.map((student) => (
                 <TableRow key={student.id}>
+                  <TableCell>
+                    <Avatar className="w-10 h-10 border-2 border-border">
+                      <AvatarImage src={student.photo_url || undefined} alt={student.name} />
+                      <AvatarFallback>{student.name.charAt(0).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                  </TableCell>
                   <TableCell className="font-medium">{student.name}</TableCell>
                   <TableCell>
                     <Badge variant={student.gender === 'Male' ? 'default' : 'secondary'}>
@@ -144,7 +152,7 @@ const StudentList = ({ students, onRefresh }: StudentListProps) => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   {searchTerm ? 'No students found matching your search' : 'No students added yet'}
                 </TableCell>
               </TableRow>
