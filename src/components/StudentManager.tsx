@@ -24,8 +24,12 @@ const StudentManager = () => {
     gender: '',
     class_id: '',
     house: '',
-    student_id: ''
+    student_id: '',
+    age: '',
+    photo_url: ''
   });
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string>('');
 
   useEffect(() => {
     fetchData();
@@ -55,6 +59,38 @@ const StudentManager = () => {
     }
   };
 
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadPhoto = async (file: File): Promise<string | null> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('student-photos')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('student-photos')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -68,10 +104,19 @@ const StudentManager = () => {
     }
 
     try {
+      let photoUrl = formData.photo_url;
+
+      // Upload photo if a new file is selected
+      if (photoFile) {
+        photoUrl = await uploadPhoto(photoFile) || '';
+      }
+
       // Handle empty student_id as null to avoid unique constraint issues
       const dataToInsert = {
         ...formData,
-        student_id: formData.student_id.trim() || null
+        student_id: formData.student_id.trim() || null,
+        age: formData.age ? parseInt(formData.age) : null,
+        photo_url: photoUrl || null
       };
 
       const { error } = await supabase
@@ -95,8 +140,12 @@ const StudentManager = () => {
         gender: '',
         class_id: '',
         house: '',
-        student_id: ''
+        student_id: '',
+        age: '',
+        photo_url: ''
       });
+      setPhotoFile(null);
+      setPhotoPreview('');
 
       await fetchData();
     } catch (error: any) {
@@ -277,7 +326,20 @@ Jane Smith,Female,Grade 7,B,Blue House,ST002`;
               />
             </div>
 
-            <div className="md:col-span-2">
+            <div>
+              <Label htmlFor="age">Age</Label>
+              <Input
+                id="age"
+                type="number"
+                value={formData.age}
+                onChange={(e) => setFormData(prev => ({ ...prev, age: e.target.value }))}
+                placeholder="Enter age"
+                min="1"
+                max="100"
+              />
+            </div>
+
+            <div>
               <Label htmlFor="student_id">Student ID</Label>
               <Input
                 id="student_id"
@@ -285,6 +347,26 @@ Jane Smith,Female,Grade 7,B,Blue House,ST002`;
                 onChange={(e) => setFormData(prev => ({ ...prev, student_id: e.target.value }))}
                 placeholder="Enter student ID (optional)"
               />
+            </div>
+
+            <div className="md:col-span-2">
+              <Label htmlFor="photo">Student Photo</Label>
+              <Input
+                id="photo"
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoChange}
+                className="cursor-pointer"
+              />
+              {photoPreview && (
+                <div className="mt-2">
+                  <img 
+                    src={photoPreview} 
+                    alt="Student preview" 
+                    className="w-32 h-32 object-cover rounded-lg border"
+                  />
+                </div>
+              )}
             </div>
           </div>
 
