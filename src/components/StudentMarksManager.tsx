@@ -412,7 +412,7 @@ const StudentMarksManager = () => {
               Add Student Mark
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogContent className="max-w-6xl max-h-[90vh]">
             <DialogHeader>
               <DialogTitle>Add New Student Mark</DialogTitle>
               <DialogDescription>
@@ -420,7 +420,7 @@ const StudentMarksManager = () => {
               </DialogDescription>
             </DialogHeader>
             
-            <form onSubmit={handleBatchSubmit} className="flex flex-col gap-4 flex-1 overflow-hidden">
+            <form onSubmit={handleBatchSubmit} className="flex flex-col gap-4">
               {/* Student Selection with Search & Sort */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -480,8 +480,8 @@ const StudentMarksManager = () => {
               </div>
 
               {/* Subject Forms Container */}
-              <div className="flex-1 overflow-hidden flex flex-col">
-                <div className="flex justify-between items-center mb-3">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
                   <h3 className="text-sm font-medium">Subject Marks</h3>
                   <Button type="button" onClick={addSubjectForm} size="sm">
                     <Plus className="w-4 h-4 mr-1" />
@@ -489,7 +489,7 @@ const StudentMarksManager = () => {
                   </Button>
                 </div>
                 
-                <ScrollArea className="flex-1 pr-4">
+                <ScrollArea className="h-[50vh] pr-4">
                   <div className="space-y-4">
                     {subjectForms.map((form, index) => (
                       <Card key={form.id} className="animate-in fade-in slide-in-from-top-2 duration-200">
