@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,6 +49,8 @@ const StudentMarksManager = () => {
   const [batchTermId, setBatchTermId] = useState('');
   const [studentSearch, setStudentSearch] = useState('');
   const [studentSort, setStudentSort] = useState<'a-z' | 'z-a' | 'new-old' | 'old-new'>('a-z');
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const lastFormRef = useRef<HTMLDivElement>(null);
   const [subjectForms, setSubjectForms] = useState<SubjectFormData[]>([{
     id: crypto.randomUUID(),
     subject_id: '',
@@ -244,6 +246,11 @@ const StudentMarksManager = () => {
       achievement_level: '',
       teacher_initials: ''
     }]);
+    
+    // Auto-scroll to the newly added form
+    setTimeout(() => {
+      lastFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 100);
   };
 
   const removeSubjectForm = (formId: string) => {
@@ -412,17 +419,19 @@ const StudentMarksManager = () => {
               Add Student Mark
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
-            <DialogHeader>
-              <DialogTitle>Add New Student Mark</DialogTitle>
-              <DialogDescription>
-                Enter the O-level assessment scores for the student
-              </DialogDescription>
-            </DialogHeader>
+          <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col p-0">
+            <div className="p-6 pb-0">
+              <DialogHeader>
+                <DialogTitle>Add New Student Mark</DialogTitle>
+                <DialogDescription>
+                  Enter the O-level assessment scores for the student
+                </DialogDescription>
+              </DialogHeader>
+            </div>
             
-            <form onSubmit={handleBatchSubmit} className="flex flex-col gap-4 flex-1 overflow-hidden">
+            <form onSubmit={handleBatchSubmit} className="flex flex-col flex-1 overflow-hidden min-h-0">
               {/* Student Selection with Search & Sort */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 px-6 pt-4">
                 <div className="space-y-2">
                   <Label>Student</Label>
                   <div className="flex gap-2">
@@ -462,7 +471,7 @@ const StudentMarksManager = () => {
                   </Select>
                 </div>
 
-                <div>
+                <div className="space-y-2">
                   <Label>Term</Label>
                   <Select value={batchTermId} onValueChange={setBatchTermId}>
                     <SelectTrigger>
@@ -480,21 +489,25 @@ const StudentMarksManager = () => {
               </div>
 
               {/* Subject Forms Container */}
-              <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-                <div className="flex justify-between items-center mb-3">
+              <div className="flex-1 overflow-hidden flex flex-col min-h-0 px-6">
+                <div className="flex justify-between items-center mb-3 flex-shrink-0">
                   <h3 className="text-sm font-medium">Subject Marks</h3>
-                  <Button type="button" onClick={addSubjectForm} size="sm">
+                  <Button type="button" onClick={addSubjectForm} size="sm" variant="outline">
                     <Plus className="w-4 h-4 mr-1" />
                     New Subject
                   </Button>
                 </div>
                 
-                <ScrollArea className="flex-1 pr-4">
-                  <div className="space-y-4">
+                <ScrollArea ref={scrollAreaRef} className="flex-1 pr-4">
+                  <div className="space-y-4 pb-4">
                     {subjectForms.map((form, index) => (
-                      <Card key={form.id} className="animate-in fade-in slide-in-from-top-2 duration-200">
-                        <CardContent className="pt-4">
-                          <div className="flex justify-between items-start mb-3">
+                      <Card 
+                        key={form.id} 
+                        ref={index === subjectForms.length - 1 ? lastFormRef : null}
+                        className="animate-in fade-in slide-in-from-top-2 duration-200"
+                      >
+                        <CardContent className="pt-6">
+                          <div className="flex justify-between items-center mb-4">
                             <h4 className="text-sm font-medium">Subject {index + 1}</h4>
                             {subjectForms.length > 1 && (
                               <Button
@@ -509,170 +522,179 @@ const StudentMarksManager = () => {
                             )}
                           </div>
 
-                          <div className="space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <Label className="text-xs">Subject</Label>
-                                <Select 
-                                  value={form.subject_id} 
-                                  onValueChange={(value) => updateSubjectForm(form.id, 'subject_id', value)}
-                                >
-                                  <SelectTrigger className="h-9">
-                                    <SelectValue placeholder="Select subject" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {subjects.map((subject) => (
-                                      <SelectItem key={subject.id} value={subject.id}>
-                                        {subject.subject_name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div>
-                                <Label className="text-xs">Subject Code</Label>
-                                <Input
-                                  value={form.subject_code}
-                                  onChange={(e) => updateSubjectForm(form.id, 'subject_code', e.target.value)}
-                                  placeholder="e.g. 535"
-                                  className="h-9"
-                                />
-                              </div>
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <Label>Subject</Label>
+                              <Select
+                                value={form.subject_id}
+                                onValueChange={(value) => updateSubjectForm(form.id, 'subject_id', value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select subject" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {subjects.map((subject) => (
+                                    <SelectItem key={subject.id} value={subject.id}>
+                                      {subject.subject_name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
 
-                            <div className="grid grid-cols-4 gap-2">
-                              <div>
-                                <Label className="text-xs">A1 Score</Label>
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={form.a1_score}
-                                  onChange={(e) => updateSubjectForm(form.id, 'a1_score', e.target.value)}
-                                  onBlur={() => calculateAverageForForm(form.id, form.a1_score, form.a2_score, form.a3_score)}
-                                  placeholder="0.0"
-                                  className="h-9"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs">A2 Score</Label>
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={form.a2_score}
-                                  onChange={(e) => updateSubjectForm(form.id, 'a2_score', e.target.value)}
-                                  onBlur={() => calculateAverageForForm(form.id, form.a1_score, form.a2_score, form.a3_score)}
-                                  placeholder="0.0"
-                                  className="h-9"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs">A3 Score</Label>
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={form.a3_score}
-                                  onChange={(e) => updateSubjectForm(form.id, 'a3_score', e.target.value)}
-                                  onBlur={() => calculateAverageForForm(form.id, form.a1_score, form.a2_score, form.a3_score)}
-                                  placeholder="0.0"
-                                  className="h-9"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs">AVG</Label>
-                                <Input
-                                  value={form.average_score}
-                                  placeholder="0.0"
-                                  readOnly
-                                  className="h-9 bg-muted"
-                                />
-                              </div>
+                            <div className="space-y-2">
+                              <Label>Subject Code</Label>
+                              <Input
+                                value={form.subject_code}
+                                onChange={(e) => updateSubjectForm(form.id, 'subject_code', e.target.value)}
+                                placeholder="e.g., MATH101"
+                              />
                             </div>
 
-                            <div className="grid grid-cols-4 gap-2">
-                              <div>
-                                <Label className="text-xs">20% Score</Label>
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={form.twenty_percent}
-                                  onChange={(e) => updateSubjectForm(form.id, 'twenty_percent', e.target.value)}
-                                  placeholder="0.0"
-                                  className="h-9"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs">80% Score</Label>
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={form.eighty_percent}
-                                  onChange={(e) => updateSubjectForm(form.id, 'eighty_percent', e.target.value)}
-                                  placeholder="0.0"
-                                  className="h-9"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs">100% Score</Label>
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={form.hundred_percent}
-                                  onChange={(e) => updateSubjectForm(form.id, 'hundred_percent', e.target.value)}
-                                  onBlur={() => calculateGradeAndLevelForForm(form.id, form.hundred_percent, form.identifier)}
-                                  placeholder="0.0"
-                                  className="h-9"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs">Teacher Initials</Label>
-                                <Input
-                                  value={form.teacher_initials}
-                                  onChange={(e) => updateSubjectForm(form.id, 'teacher_initials', e.target.value)}
-                                  placeholder="e.g. B.S."
-                                  maxLength={5}
-                                  className="h-9"
-                                />
-                              </div>
+                            <div className="space-y-2">
+                              <Label>Teacher Initials</Label>
+                              <Input
+                                value={form.teacher_initials}
+                                onChange={(e) => updateSubjectForm(form.id, 'teacher_initials', e.target.value)}
+                                placeholder="e.g., JD"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-4 mt-4">
+                            <div className="space-y-2">
+                              <Label>A1 Score</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={form.a1_score}
+                                onChange={(e) => {
+                                  updateSubjectForm(form.id, 'a1_score', e.target.value);
+                                  const a2 = form.a2_score;
+                                  const a3 = form.a3_score;
+                                  calculateAverageForForm(form.id, e.target.value, a2, a3);
+                                }}
+                                placeholder="0"
+                              />
                             </div>
 
-                            <div className="grid grid-cols-3 gap-2">
-                              <div>
-                                <Label className="text-xs">Identifier</Label>
-                                <Select 
-                                  value={form.identifier} 
-                                  onValueChange={(value) => {
-                                    updateSubjectForm(form.id, 'identifier', value);
-                                    setTimeout(() => calculateGradeAndLevelForForm(form.id, form.hundred_percent, value), 0);
-                                  }}
-                                >
-                                  <SelectTrigger className="h-9">
-                                    <SelectValue placeholder="Select" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="1">1</SelectItem>
-                                    <SelectItem value="2">2</SelectItem>
-                                    <SelectItem value="3">3</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div>
-                                <Label className="text-xs">Grade (Auto-calculated)</Label>
-                                <Input
-                                  value={form.final_grade}
-                                  placeholder="Auto"
-                                  readOnly
-                                  className="h-9 bg-muted"
-                                />
-                              </div>
-                              <div>
-                                <Label className="text-xs">Achievement Level (Auto-ccal...)</Label>
-                                <Input
-                                  value={form.achievement_level}
-                                  placeholder="Auto"
-                                  readOnly
-                                  className="h-9 bg-muted"
-                                />
-                              </div>
+                            <div className="space-y-2">
+                              <Label>A2 Score</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={form.a2_score}
+                                onChange={(e) => {
+                                  updateSubjectForm(form.id, 'a2_score', e.target.value);
+                                  const a1 = form.a1_score;
+                                  const a3 = form.a3_score;
+                                  calculateAverageForForm(form.id, a1, e.target.value, a3);
+                                }}
+                                placeholder="0"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>A3 Score</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={form.a3_score}
+                                onChange={(e) => {
+                                  updateSubjectForm(form.id, 'a3_score', e.target.value);
+                                  const a1 = form.a1_score;
+                                  const a2 = form.a2_score;
+                                  calculateAverageForForm(form.id, a1, a2, e.target.value);
+                                }}
+                                placeholder="0"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-4 mt-4">
+                            <div className="space-y-2">
+                              <Label>Average Score</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={form.average_score}
+                                onChange={(e) => {
+                                  updateSubjectForm(form.id, 'average_score', e.target.value);
+                                  const hundred = form.hundred_percent;
+                                  const ident = form.identifier;
+                                  calculateGradeAndLevelForForm(form.id, hundred, ident);
+                                }}
+                                placeholder="Auto-calculated"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>20% (from average)</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={form.twenty_percent}
+                                onChange={(e) => updateSubjectForm(form.id, 'twenty_percent', e.target.value)}
+                                placeholder="Auto-calculated"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>80% Score</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={form.eighty_percent}
+                                onChange={(e) => updateSubjectForm(form.id, 'eighty_percent', e.target.value)}
+                                placeholder="Enter 80% score"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-4 gap-4 mt-4">
+                            <div className="space-y-2">
+                              <Label>100% Total</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={form.hundred_percent}
+                                onChange={(e) => {
+                                  updateSubjectForm(form.id, 'hundred_percent', e.target.value);
+                                  const ident = form.identifier;
+                                  calculateGradeAndLevelForForm(form.id, e.target.value, ident);
+                                }}
+                                placeholder="Auto-calculated"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Identifier</Label>
+                              <Input
+                                type="number"
+                                value={form.identifier}
+                                onChange={(e) => updateSubjectForm(form.id, 'identifier', e.target.value)}
+                                placeholder="e.g., 1"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Final Grade</Label>
+                              <Input
+                                value={form.final_grade}
+                                onChange={(e) => updateSubjectForm(form.id, 'final_grade', e.target.value)}
+                                placeholder="Auto-calculated"
+                                readOnly
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Achievement Level</Label>
+                              <Input
+                                value={form.achievement_level}
+                                onChange={(e) => updateSubjectForm(form.id, 'achievement_level', e.target.value)}
+                                placeholder="Auto-calculated"
+                                readOnly
+                              />
                             </div>
                           </div>
                         </CardContent>
@@ -682,11 +704,21 @@ const StudentMarksManager = () => {
                 </ScrollArea>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4 border-t mt-4 bg-background">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+              {/* Fixed Bottom Actions */}
+              <div className="sticky bottom-0 flex justify-end gap-2 p-6 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10 flex-shrink-0">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsDialogOpen(false)}
+                  className="bg-transparent border-border/50 hover:bg-accent/50"
+                >
                   Cancel
                 </Button>
-                <Button type="submit">
+                <Button 
+                  type="submit"
+                  className="bg-transparent border border-primary/50 text-primary hover:bg-primary/10"
+                  variant="outline"
+                >
                   Add Marks
                 </Button>
               </div>
