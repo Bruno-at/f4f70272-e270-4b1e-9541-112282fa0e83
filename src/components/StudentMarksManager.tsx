@@ -247,9 +247,15 @@ const StudentMarksManager = () => {
       teacher_initials: ''
     }]);
     
-    // Auto-scroll to the newly added form
+    // Auto-scroll to the newly added form (smooth)
     setTimeout(() => {
-      lastFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      // Prefer scrolling the last card into view
+      lastFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' });
+
+      // Fallback: scroll the ScrollArea viewport to bottom if available
+      const root = scrollAreaRef.current as HTMLElement | null;
+      const viewport = root?.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement | null;
+      viewport?.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
     }, 100);
   };
 
@@ -522,7 +528,7 @@ const StudentMarksManager = () => {
                             )}
                           </div>
 
-                          <div className="grid grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div className="space-y-2">
                               <Label>Subject</Label>
                               <Select
@@ -561,7 +567,7 @@ const StudentMarksManager = () => {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-4 mt-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                             <div className="space-y-2">
                               <Label>A1 Score</Label>
                               <Input
@@ -611,7 +617,7 @@ const StudentMarksManager = () => {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-4 mt-4">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                             <div className="space-y-2">
                               <Label>Average Score</Label>
                               <Input
@@ -651,7 +657,7 @@ const StudentMarksManager = () => {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-4 gap-4 mt-4">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                             <div className="space-y-2">
                               <Label>100% Total</Label>
                               <Input
@@ -716,10 +722,17 @@ const StudentMarksManager = () => {
                 </Button>
                 <Button 
                   type="submit"
-                  className="bg-transparent border border-primary/50 text-primary hover:bg-primary/10"
                   variant="outline"
+                  className="bg-transparent border-border/60 text-foreground hover:bg-accent/40"
                 >
                   Add Marks
+                </Button>
+                <Button 
+                  type="submit"
+                  variant="outline"
+                  className="bg-transparent border border-primary/50 text-primary hover:bg-primary/10"
+                >
+                  Save All
                 </Button>
               </div>
             </form>
