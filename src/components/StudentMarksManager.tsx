@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -67,6 +67,10 @@ const StudentMarksManager = () => {
   }]);
 
   const { toast } = useToast();
+  
+  // Refs for scrolling
+  const subjectsScrollRef = useRef<HTMLDivElement>(null);
+  const lastSubjectRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchData();
@@ -244,6 +248,15 @@ const StudentMarksManager = () => {
       achievement_level: '',
       teacher_initials: ''
     }]);
+    
+    // Auto-scroll to the newly added subject form
+    setTimeout(() => {
+      lastSubjectRef.current?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'end',
+        inline: 'nearest' 
+      });
+    }, 100);
   };
 
   const removeSubjectForm = (formId: string) => {
@@ -412,17 +425,17 @@ const StudentMarksManager = () => {
               Add Student Mark
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-6xl max-h-[90vh]">
-            <DialogHeader>
+          <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle>Add New Student Mark</DialogTitle>
               <DialogDescription>
                 Enter the O-level assessment scores for the student
               </DialogDescription>
             </DialogHeader>
             
-            <form onSubmit={handleBatchSubmit} className="flex flex-col gap-4">
+            <form onSubmit={handleBatchSubmit} className="flex flex-col gap-4 flex-1 overflow-hidden min-h-0">
               {/* Student Selection with Search & Sort */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-shrink-0">
                 <div className="space-y-2">
                   <Label>Student</Label>
                   <div className="flex gap-2">
@@ -480,8 +493,8 @@ const StudentMarksManager = () => {
               </div>
 
               {/* Subject Forms Container */}
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
+              <div className="flex flex-col gap-3 flex-1 overflow-hidden min-h-0">
+                <div className="flex justify-between items-center flex-shrink-0">
                   <h3 className="text-sm font-medium">Subject Marks</h3>
                   <Button type="button" onClick={addSubjectForm} size="sm">
                     <Plus className="w-4 h-4 mr-1" />
@@ -489,11 +502,15 @@ const StudentMarksManager = () => {
                   </Button>
                 </div>
                 
-                <ScrollArea className="h-[50vh] pr-4">
-                  <div className="space-y-4">
+                <ScrollArea className="flex-1 pr-4" ref={subjectsScrollRef}>
+                  <div className="space-y-4 pb-4">
                     {subjectForms.map((form, index) => (
-                      <Card key={form.id} className="animate-in fade-in slide-in-from-top-2 duration-200">
-                        <CardContent className="pt-4">
+                      <Card 
+                        key={form.id} 
+                        ref={index === subjectForms.length - 1 ? lastSubjectRef : null}
+                        className="animate-in fade-in slide-in-from-top-2 duration-200"
+                      >
+                        <CardContent className="pt-4 overflow-x-auto">
                           <div className="flex justify-between items-start mb-3">
                             <h4 className="text-sm font-medium">Subject {index + 1}</h4>
                             {subjectForms.length > 1 && (
@@ -510,8 +527,8 @@ const StudentMarksManager = () => {
                           </div>
 
                           <div className="space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="min-w-0">
                                 <Label className="text-xs">Subject</Label>
                                 <Select 
                                   value={form.subject_id} 
@@ -529,7 +546,7 @@ const StudentMarksManager = () => {
                                   </SelectContent>
                                 </Select>
                               </div>
-                              <div>
+                              <div className="min-w-0">
                                 <Label className="text-xs">Subject Code</Label>
                                 <Input
                                   value={form.subject_code}
@@ -540,8 +557,8 @@ const StudentMarksManager = () => {
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-4 gap-2">
-                              <div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              <div className="min-w-0">
                                 <Label className="text-xs">A1 Score</Label>
                                 <Input
                                   type="number"
@@ -553,7 +570,7 @@ const StudentMarksManager = () => {
                                   className="h-9"
                                 />
                               </div>
-                              <div>
+                              <div className="min-w-0">
                                 <Label className="text-xs">A2 Score</Label>
                                 <Input
                                   type="number"
@@ -565,7 +582,7 @@ const StudentMarksManager = () => {
                                   className="h-9"
                                 />
                               </div>
-                              <div>
+                              <div className="min-w-0">
                                 <Label className="text-xs">A3 Score</Label>
                                 <Input
                                   type="number"
@@ -577,7 +594,7 @@ const StudentMarksManager = () => {
                                   className="h-9"
                                 />
                               </div>
-                              <div>
+                              <div className="min-w-0">
                                 <Label className="text-xs">AVG</Label>
                                 <Input
                                   value={form.average_score}
@@ -588,8 +605,8 @@ const StudentMarksManager = () => {
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-4 gap-2">
-                              <div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              <div className="min-w-0">
                                 <Label className="text-xs">20% Score</Label>
                                 <Input
                                   type="number"
@@ -600,7 +617,7 @@ const StudentMarksManager = () => {
                                   className="h-9"
                                 />
                               </div>
-                              <div>
+                              <div className="min-w-0">
                                 <Label className="text-xs">80% Score</Label>
                                 <Input
                                   type="number"
@@ -611,7 +628,7 @@ const StudentMarksManager = () => {
                                   className="h-9"
                                 />
                               </div>
-                              <div>
+                              <div className="min-w-0">
                                 <Label className="text-xs">100% Score</Label>
                                 <Input
                                   type="number"
@@ -623,7 +640,7 @@ const StudentMarksManager = () => {
                                   className="h-9"
                                 />
                               </div>
-                              <div>
+                              <div className="min-w-0">
                                 <Label className="text-xs">Teacher Initials</Label>
                                 <Input
                                   value={form.teacher_initials}
@@ -635,8 +652,8 @@ const StudentMarksManager = () => {
                               </div>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-2">
-                              <div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              <div className="min-w-0">
                                 <Label className="text-xs">Identifier</Label>
                                 <Select 
                                   value={form.identifier} 
@@ -655,7 +672,7 @@ const StudentMarksManager = () => {
                                   </SelectContent>
                                 </Select>
                               </div>
-                              <div>
+                              <div className="min-w-0">
                                 <Label className="text-xs">Grade (Auto-calculated)</Label>
                                 <Input
                                   value={form.final_grade}
@@ -664,8 +681,8 @@ const StudentMarksManager = () => {
                                   className="h-9 bg-muted"
                                 />
                               </div>
-                              <div>
-                                <Label className="text-xs">Achievement Level (Auto-ccal...)</Label>
+                              <div className="min-w-0">
+                                <Label className="text-xs">Achievement Level (Auto-cal...)</Label>
                                 <Input
                                   value={form.achievement_level}
                                   placeholder="Auto"
@@ -682,11 +699,20 @@ const StudentMarksManager = () => {
                 </ScrollArea>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsDialogOpen(false)}
+                  className="bg-transparent border-border/50 hover:bg-accent/50"
+                >
                   Cancel
                 </Button>
-                <Button type="submit">
+                <Button 
+                  type="submit"
+                  variant="outline"
+                  className="bg-transparent border-primary/50 text-primary hover:bg-primary/10"
+                >
                   Add Marks
                 </Button>
               </div>
