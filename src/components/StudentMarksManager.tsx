@@ -248,15 +248,6 @@ const StudentMarksManager = () => {
       achievement_level: '',
       teacher_initials: ''
     }]);
-    
-    // Auto-scroll to the newly added subject form
-    setTimeout(() => {
-      lastSubjectRef.current?.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'end',
-        inline: 'nearest' 
-      });
-    }, 100);
   };
 
   const removeSubjectForm = (formId: string) => {
@@ -433,7 +424,7 @@ const StudentMarksManager = () => {
               </DialogDescription>
             </DialogHeader>
             
-            <form onSubmit={handleBatchSubmit} className="flex flex-col gap-4 flex-1 overflow-hidden min-h-0">
+            <form onSubmit={handleBatchSubmit} className="flex flex-col gap-4 flex-1 overflow-y-auto overflow-x-auto min-h-0 touch-pan-y touch-pan-x">
               {/* Student Selection with Search & Sort */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-shrink-0">
                 <div className="space-y-2">
@@ -493,7 +484,7 @@ const StudentMarksManager = () => {
               </div>
 
               {/* Subject Forms Container */}
-              <div className="flex flex-col gap-3 flex-1 overflow-hidden min-h-0">
+              <div className="flex flex-col gap-3 flex-1 min-h-0">
                 <div className="flex justify-between items-center flex-shrink-0">
                   <h3 className="text-sm font-medium">Subject Marks</h3>
                   <Button type="button" onClick={addSubjectForm} size="sm">
@@ -502,15 +493,15 @@ const StudentMarksManager = () => {
                   </Button>
                 </div>
                 
-                <ScrollArea className="flex-1 pr-4" ref={subjectsScrollRef}>
-                  <div className="space-y-4 pb-4">
+                <ScrollArea className="flex-1 pr-2 h-[400px]" ref={subjectsScrollRef}>
+                  <div className="space-y-4 pb-4 pr-2">
                     {subjectForms.map((form, index) => (
                       <Card 
                         key={form.id} 
                         ref={index === subjectForms.length - 1 ? lastSubjectRef : null}
                         className="animate-in fade-in slide-in-from-top-2 duration-200"
                       >
-                        <CardContent className="pt-4 overflow-x-auto">
+                        <CardContent className="pt-4">
                           <div className="flex justify-between items-start mb-3">
                             <h4 className="text-sm font-medium">Subject {index + 1}</h4>
                             {subjectForms.length > 1 && (
@@ -673,7 +664,7 @@ const StudentMarksManager = () => {
                                 </Select>
                               </div>
                               <div className="min-w-0">
-                                <Label className="text-xs">Grade (Auto-calculated)</Label>
+                                <Label className="text-xs">Grade (Auto)</Label>
                                 <Input
                                   value={form.final_grade}
                                   placeholder="Auto"
@@ -682,7 +673,7 @@ const StudentMarksManager = () => {
                                 />
                               </div>
                               <div className="min-w-0">
-                                <Label className="text-xs">Achievement Level (Auto-cal...)</Label>
+                                <Label className="text-xs">Achievement Level (Auto)</Label>
                                 <Input
                                   value={form.achievement_level}
                                   placeholder="Auto"
