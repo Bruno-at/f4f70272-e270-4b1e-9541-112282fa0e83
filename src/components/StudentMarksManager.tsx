@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Student, Subject, Term, StudentMark, Class } from '@/types/database';
 import { Plus, Edit, Trash2, X, Search, ArrowUpDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 
 interface SubjectFormData {
   id: string;
@@ -68,10 +68,6 @@ const StudentMarksManager = () => {
 
   const { toast } = useToast();
   
-  // Refs for scrolling
-  const subjectsScrollRef = useRef<HTMLDivElement>(null);
-  const lastSubjectRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     fetchData();
   }, []);
@@ -416,12 +412,12 @@ const StudentMarksManager = () => {
               Add Student Mark
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col overflow-y-auto themed-scrollbar">
             <DialogHeader className="flex-shrink-0">
               <DialogTitle className="text-2xl font-bold tracking-wide">Add Student Marks</DialogTitle>
             </DialogHeader>
             
-            <form onSubmit={handleBatchSubmit} className="flex flex-col gap-6 flex-1 overflow-y-auto overflow-x-auto min-h-0 touch-pan-y touch-pan-x">
+            <form onSubmit={handleBatchSubmit} className="flex flex-col gap-6 flex-1 min-h-0 touch-pan-y touch-pan-x">
               {/* Class and Term Selection */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-shrink-0">
                 <div className="space-y-2">
@@ -519,14 +515,10 @@ const StudentMarksManager = () => {
               <div className="flex flex-col gap-3 flex-1 min-h-0">
                 <h3 className="text-base font-semibold flex-shrink-0">Subject Marks</h3>
                 
-                <ScrollArea className="flex-1 pr-2 h-[400px]" ref={subjectsScrollRef}>
+                <div className="flex-1 pr-2">
                   <div className="space-y-4 pb-4 pr-2">
                     {subjectForms.map((form, index) => (
-                      <Card 
-                        key={form.id} 
-                        ref={index === subjectForms.length - 1 ? lastSubjectRef : null}
-                        className="animate-in fade-in slide-in-from-top-2 duration-200"
-                      >
+                      <Card key={form.id} className="animate-in fade-in slide-in-from-top-2 duration-200">
                         <CardContent className="pt-4">
                           <div className="flex justify-between items-start mb-3">
                             <h4 className="text-sm font-medium">Subject {index + 1}</h4>
@@ -713,7 +705,7 @@ const StudentMarksManager = () => {
                       </Card>
                     ))}
                   </div>
-                </ScrollArea>
+                </div>
               </div>
 
               <div className="flex justify-center gap-3 pt-6 border-t flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
