@@ -418,56 +418,30 @@ const StudentMarksManager = () => {
           </DialogTrigger>
           <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
             <DialogHeader className="flex-shrink-0">
-              <DialogTitle>Add New Student Mark</DialogTitle>
-              <DialogDescription>
-                Enter the O-level assessment scores for the student
-              </DialogDescription>
+              <DialogTitle className="text-2xl font-bold tracking-wide">MARK SUBMISSION FORM</DialogTitle>
             </DialogHeader>
             
-            <form onSubmit={handleBatchSubmit} className="flex flex-col gap-4 flex-1 overflow-y-auto overflow-x-auto min-h-0 touch-pan-y touch-pan-x">
-              {/* Student Selection with Search & Sort */}
+            <form onSubmit={handleBatchSubmit} className="flex flex-col gap-6 flex-1 overflow-y-auto overflow-x-auto min-h-0 touch-pan-y touch-pan-x">
+              {/* Class and Term Selection */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-shrink-0">
                 <div className="space-y-2">
-                  <Label>Student</Label>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search students..."
-                        value={studentSearch}
-                        onChange={(e) => setStudentSearch(e.target.value)}
-                        className="pl-9"
-                      />
-                    </div>
-                    <Select value={studentSort} onValueChange={(value: any) => setStudentSort(value)}>
-                      <SelectTrigger className="w-[140px]">
-                        <ArrowUpDown className="w-4 h-4 mr-2" />
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="a-z">A → Z</SelectItem>
-                        <SelectItem value="z-a">Z → A</SelectItem>
-                        <SelectItem value="new-old">New → Old</SelectItem>
-                        <SelectItem value="old-new">Old → New</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Select value={batchStudentId} onValueChange={setBatchStudentId}>
+                  <Label className="text-sm font-medium">Class</Label>
+                  <Select value={selectedClass} onValueChange={setSelectedClass}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select student" />
+                      <SelectValue placeholder="Select class" />
                     </SelectTrigger>
                     <SelectContent>
-                      {getFilteredAndSortedStudents().map((student) => (
-                        <SelectItem key={student.id} value={student.id}>
-                          {student.name} - {student.classes?.class_name} {student.classes?.section}
+                      {classes.map((classItem) => (
+                        <SelectItem key={classItem.id} value={classItem.id}>
+                          {classItem.class_name} {classItem.section}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div>
-                  <Label>Term</Label>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Term</Label>
                   <Select value={batchTermId} onValueChange={setBatchTermId}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select term" />
@@ -483,15 +457,67 @@ const StudentMarksManager = () => {
                 </div>
               </div>
 
+              {/* Student Selection */}
+              <div className="space-y-2 flex-shrink-0">
+                <div className="flex justify-between items-center gap-2">
+                  <Label className="text-sm font-medium">Student</Label>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        const sortOrder: Array<'a-z' | 'z-a' | 'new-old' | 'old-new'> = ['a-z', 'z-a', 'new-old', 'old-new'];
+                        const currentIndex = sortOrder.indexOf(studentSort);
+                        const nextIndex = (currentIndex + 1) % sortOrder.length;
+                        setStudentSort(sortOrder[nextIndex]);
+                      }}
+                      className="h-8 px-3"
+                    >
+                      {studentSort === 'a-z' && '↑ → Z'}
+                      {studentSort === 'z-a' && '↓ → A'}
+                      {studentSort === 'new-old' && 'New → Old'}
+                      {studentSort === 'old-new' && 'Old → New'}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={addSubjectForm} 
+                      size="sm"
+                      className="h-8"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      New Subject
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search students..."
+                    value={studentSearch}
+                    onChange={(e) => setStudentSearch(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+
+                <Select value={batchStudentId} onValueChange={setBatchStudentId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a student" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getFilteredAndSortedStudents().map((student) => (
+                      <SelectItem key={student.id} value={student.id}>
+                        {student.name} - {student.classes?.class_name} {student.classes?.section}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Subject Forms Container */}
               <div className="flex flex-col gap-3 flex-1 min-h-0">
-                <div className="flex justify-between items-center flex-shrink-0">
-                  <h3 className="text-sm font-medium">Subject Marks</h3>
-                  <Button type="button" onClick={addSubjectForm} size="sm">
-                    <Plus className="w-4 h-4 mr-1" />
-                    New Subject
-                  </Button>
-                </div>
+                <h3 className="text-base font-semibold flex-shrink-0">Subject Marks</h3>
                 
                 <ScrollArea className="flex-1 pr-2 h-[400px]" ref={subjectsScrollRef}>
                   <div className="space-y-4 pb-4 pr-2">
@@ -664,7 +690,7 @@ const StudentMarksManager = () => {
                                 </Select>
                               </div>
                               <div className="min-w-0">
-                                <Label className="text-xs">Grade (Auto)</Label>
+                                <Label className="text-xs">Grade (Auto-calculated)</Label>
                                 <Input
                                   value={form.final_grade}
                                   placeholder="Auto"
@@ -673,7 +699,7 @@ const StudentMarksManager = () => {
                                 />
                               </div>
                               <div className="min-w-0">
-                                <Label className="text-xs">Achievement Level (Auto)</Label>
+                                <Label className="text-xs">Achievement Level (Auto-calculated)</Label>
                                 <Input
                                   value={form.achievement_level}
                                   placeholder="Auto"
@@ -690,21 +716,13 @@ const StudentMarksManager = () => {
                 </ScrollArea>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4 border-t flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setIsDialogOpen(false)}
-                  className="bg-transparent border-border/50 hover:bg-accent/50"
-                >
-                  Cancel
-                </Button>
+              <div className="flex justify-center gap-3 pt-6 border-t flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <Button 
                   type="submit"
-                  variant="outline"
-                  className="bg-transparent border-primary/50 text-primary hover:bg-primary/10"
+                  size="lg"
+                  className="min-w-[200px]"
                 >
-                  Add Marks
+                  Submit All Marks
                 </Button>
               </div>
             </form>
