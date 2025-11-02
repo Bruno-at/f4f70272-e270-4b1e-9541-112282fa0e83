@@ -418,7 +418,7 @@ const StudentMarksManager = () => {
           </DialogTrigger>
           <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col overflow-hidden">
             <DialogHeader className="flex-shrink-0">
-              <DialogTitle className="text-2xl font-bold tracking-wide">MARK SUBMISSION FORM</DialogTitle>
+              <DialogTitle className="text-2xl font-bold tracking-wide">Add Student Marks</DialogTitle>
             </DialogHeader>
             
             <form onSubmit={handleBatchSubmit} className="flex flex-col gap-6 flex-1 overflow-y-auto overflow-x-auto min-h-0 touch-pan-y touch-pan-x">
