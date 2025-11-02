@@ -8,7 +8,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from '@/components/ui/sidebar';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const menuItems = [
   { id: 'school', title: 'School', icon: School },
@@ -28,6 +30,16 @@ interface AppSidebarProps {
 }
 
 export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) {
+  const { setOpenMobile } = useSidebar();
+  const isMobile = useIsMobile();
+
+  const handleItemClick = (sectionId: string) => {
+    onSectionChange(sectionId);
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -38,7 +50,7 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
-                    onClick={() => onSectionChange(item.id)}
+                    onClick={() => handleItemClick(item.id)}
                     isActive={activeSection === item.id}
                     tooltip={item.title}
                   >
