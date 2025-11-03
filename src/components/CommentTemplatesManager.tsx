@@ -183,7 +183,8 @@ const CommentTemplatesManager = () => {
       <CardHeader>
         <CardTitle>
       </CardTitle>
-        <CardDescription>Configure automa</CardDescription>
+        <CardDescription>
+      </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex justify-between items-center mb-4">
