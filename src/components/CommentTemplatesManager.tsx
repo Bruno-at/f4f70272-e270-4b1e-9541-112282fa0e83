@@ -11,7 +11,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Edit, Plus } from "lucide-react";
-
 interface CommentTemplate {
   id: string;
   comment_type: 'class_teacher' | 'headteacher';
@@ -20,37 +19,34 @@ interface CommentTemplate {
   comment_text: string;
   is_active: boolean;
 }
-
 const CommentTemplatesManager = () => {
   const [classTeacherComments, setClassTeacherComments] = useState<CommentTemplate[]>([]);
   const [headteacherComments, setHeadteacherComments] = useState<CommentTemplate[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CommentTemplate | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
+  const {
+    toast
+  } = useToast();
   const [formData, setFormData] = useState({
     comment_type: 'class_teacher' as 'class_teacher' | 'headteacher',
     min_average: '',
     max_average: '',
     comment_text: ''
   });
-
   useEffect(() => {
     fetchCommentTemplates();
   }, []);
-
   const fetchCommentTemplates = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('comment_templates')
-        .select('*')
-        .eq('is_active', true)
-        .order('min_average', { ascending: false });
-
+      const {
+        data,
+        error
+      } = await supabase.from('comment_templates').select('*').eq('is_active', true).order('min_average', {
+        ascending: false
+      });
       if (error) throw error;
-      
       const comments = data || [];
       setClassTeacherComments(comments.filter(c => c.comment_type === 'class_teacher') as CommentTemplate[]);
       setHeadteacherComments(comments.filter(c => c.comment_type === 'headteacher') as CommentTemplate[]);
@@ -59,16 +55,14 @@ const CommentTemplatesManager = () => {
       toast({
         title: "Error",
         description: "Failed to fetch comment templates",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     try {
       const commentData = {
         comment_type: formData.comment_type,
@@ -76,30 +70,25 @@ const CommentTemplatesManager = () => {
         max_average: parseFloat(formData.max_average),
         comment_text: formData.comment_text
       };
-
       if (editingItem) {
-        const { error } = await supabase
-          .from('comment_templates')
-          .update(commentData)
-          .eq('id', editingItem.id);
-        
+        const {
+          error
+        } = await supabase.from('comment_templates').update(commentData).eq('id', editingItem.id);
         if (error) throw error;
         toast({
           title: "Success",
-          description: "Comment template updated successfully",
+          description: "Comment template updated successfully"
         });
       } else {
-        const { error } = await supabase
-          .from('comment_templates')
-          .insert([commentData]);
-        
+        const {
+          error
+        } = await supabase.from('comment_templates').insert([commentData]);
         if (error) throw error;
         toast({
           title: "Success",
-          description: "Comment template created successfully",
+          description: "Comment template created successfully"
         });
       }
-
       setIsDialogOpen(false);
       resetForm();
       fetchCommentTemplates();
@@ -108,11 +97,10 @@ const CommentTemplatesManager = () => {
       toast({
         title: "Error",
         description: "Failed to save comment template",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const handleEdit = (item: CommentTemplate) => {
     setEditingItem(item);
     setFormData({
@@ -123,21 +111,18 @@ const CommentTemplatesManager = () => {
     });
     setIsDialogOpen(true);
   };
-
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this comment template?')) return;
-
     try {
-      const { error } = await supabase
-        .from('comment_templates')
-        .update({ is_active: false })
-        .eq('id', id);
-
+      const {
+        error
+      } = await supabase.from('comment_templates').update({
+        is_active: false
+      }).eq('id', id);
       if (error) throw error;
-      
       toast({
         title: "Success",
-        description: "Comment template deleted successfully",
+        description: "Comment template deleted successfully"
       });
       fetchCommentTemplates();
     } catch (error) {
@@ -145,11 +130,10 @@ const CommentTemplatesManager = () => {
       toast({
         title: "Error",
         description: "Failed to delete comment template",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const resetForm = () => {
     setFormData({
       comment_type: 'class_teacher',
@@ -159,14 +143,11 @@ const CommentTemplatesManager = () => {
     });
     setEditingItem(null);
   };
-
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     resetForm();
   };
-
-  const renderCommentsTable = (comments: CommentTemplate[], type: string) => (
-    <Table>
+  const renderCommentsTable = (comments: CommentTemplate[], type: string) => <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Score Range (%)</TableHead>
@@ -175,8 +156,7 @@ const CommentTemplatesManager = () => {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {comments.map((comment) => (
-          <TableRow key={comment.id}>
+        {comments.map(comment => <TableRow key={comment.id}>
             <TableCell>{comment.min_average}% - {comment.max_average}%</TableCell>
             <TableCell className="max-w-md">
               <div className="truncate" title={comment.comment_text}>
@@ -185,39 +165,25 @@ const CommentTemplatesManager = () => {
             </TableCell>
             <TableCell>
               <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleEdit(comment)}
-                >
+                <Button variant="outline" size="sm" onClick={() => handleEdit(comment)}>
                   <Edit className="w-4 h-4" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDelete(comment.id)}
-                >
+                <Button variant="outline" size="sm" onClick={() => handleDelete(comment.id)}>
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
             </TableCell>
-          </TableRow>
-        ))}
+          </TableRow>)}
       </TableBody>
-    </Table>
-  );
-
+    </Table>;
   if (loading) {
     return <div>Loading comment templates...</div>;
   }
-
-  return (
-    <Card>
+  return <Card>
       <CardHeader>
-        <CardTitle>Comment Templates Management</CardTitle>
-        <CardDescription>
-          Configure automatic comments based on student performance
-        </CardDescription>
+        <CardTitle>
+      </CardTitle>
+        <CardDescription>Configure automa</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex justify-between items-center mb-4">
@@ -239,12 +205,10 @@ const CommentTemplatesManager = () => {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="comment_type">Comment Type</Label>
-                  <Select
-                    value={formData.comment_type}
-                    onValueChange={(value: 'class_teacher' | 'headteacher') => 
-                      setFormData(prev => ({...prev, comment_type: value}))
-                    }
-                  >
+                  <Select value={formData.comment_type} onValueChange={(value: 'class_teacher' | 'headteacher') => setFormData(prev => ({
+                  ...prev,
+                  comment_type: value
+                }))}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -257,39 +221,25 @@ const CommentTemplatesManager = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="min_average">Min Average (%)</Label>
-                    <Input
-                      id="min_average"
-                      type="number"
-                      step="0.1"
-                      value={formData.min_average}
-                      onChange={(e) => setFormData(prev => ({...prev, min_average: e.target.value}))}
-                      placeholder="0"
-                      required
-                    />
+                    <Input id="min_average" type="number" step="0.1" value={formData.min_average} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    min_average: e.target.value
+                  }))} placeholder="0" required />
                   </div>
                   <div>
                     <Label htmlFor="max_average">Max Average (%)</Label>
-                    <Input
-                      id="max_average"
-                      type="number"
-                      step="0.1"
-                      value={formData.max_average}
-                      onChange={(e) => setFormData(prev => ({...prev, max_average: e.target.value}))}
-                      placeholder="100"
-                      required
-                    />
+                    <Input id="max_average" type="number" step="0.1" value={formData.max_average} onChange={e => setFormData(prev => ({
+                    ...prev,
+                    max_average: e.target.value
+                  }))} placeholder="100" required />
                   </div>
                 </div>
                 <div>
                   <Label htmlFor="comment_text">Comment Text</Label>
-                  <Textarea
-                    id="comment_text"
-                    value={formData.comment_text}
-                    onChange={(e) => setFormData(prev => ({...prev, comment_text: e.target.value}))}
-                    placeholder="Enter the comment template..."
-                    rows={4}
-                    required
-                  />
+                  <Textarea id="comment_text" value={formData.comment_text} onChange={e => setFormData(prev => ({
+                  ...prev,
+                  comment_text: e.target.value
+                }))} placeholder="Enter the comment template..." rows={4} required />
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button type="button" variant="outline" onClick={handleDialogClose}>
@@ -317,8 +267,6 @@ const CommentTemplatesManager = () => {
           </TabsContent>
         </Tabs>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default CommentTemplatesManager;
