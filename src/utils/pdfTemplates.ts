@@ -32,348 +32,1364 @@ const drawFaintLine = (pdf: jsPDF, x1: number, y1: number, x2: number, y2: numbe
 
 export const generateClassicTemplate = (data: TemplateData) => {
   const { student, term, schoolInfo, marks, reportData } = data;
-  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pdf = new jsPDF();
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
-  const margin = 10;
+  
+  const primaryColor = '#1e40af';
+  const redLine = '#dc2626';
   
   // Add border around entire document
   pdf.setDrawColor(0, 0, 0);
-  pdf.setLineWidth(0.8);
-  pdf.rect(margin, margin, pageWidth - 2 * margin, pageHeight - 2 * margin);
+  pdf.setLineWidth(0.5);
+  pdf.rect(5, 5, pageWidth - 10, pageHeight - 10);
   
-  let yPos = margin + 5;
+  let yPosition = 15;
   
-  // ========== HEADER SECTION ==========
+  // Header Section
   // Left: School logo
   if (schoolInfo.logo_url && schoolInfo.logo_url.startsWith('data:image')) {
     try {
-      pdf.addImage(schoolInfo.logo_url, 'PNG', margin + 3, yPos, 20, 20);
+      pdf.addImage(schoolInfo.logo_url, 'PNG', 10, 8, 25, 25);
     } catch (error) {
       console.log('Could not add logo');
     }
   }
   
-  // Right: Student photo box
-  const photoBoxX = pageWidth - margin - 28;
-  const photoBoxY = yPos;
-  const photoBoxSize = 25;
+  // Right: Student photo demarcation box
+  const photoBoxX = pageWidth - 45;
+  const photoBoxY = 8;
+  const photoBoxSize = 35;
   
+  // Draw demarcated box for student photo
   pdf.setDrawColor(0, 0, 0);
-  pdf.setLineWidth(0.5);
+  pdf.setLineWidth(0.8);
   pdf.rect(photoBoxX, photoBoxY, photoBoxSize, photoBoxSize);
   
+  // Add photo if available
   if (student.photo_url && student.photo_url.startsWith('data:image')) {
     try {
-      pdf.addImage(student.photo_url, 'PNG', photoBoxX + 0.5, photoBoxY + 0.5, photoBoxSize - 1, photoBoxSize - 1);
+      pdf.addImage(student.photo_url, 'PNG', photoBoxX + 1, photoBoxY + 1, photoBoxSize - 2, photoBoxSize - 2);
     } catch (error) {
       console.log('Could not add photo');
     }
   } else {
-    pdf.setFontSize(7);
+    // Add placeholder text if no photo
+    pdf.setFontSize(8);
     pdf.setTextColor(150, 150, 150);
     pdf.text('Image', photoBoxX + photoBoxSize / 2, photoBoxY + photoBoxSize / 2, { align: 'center' });
   }
   
-  // Center: School name and details
-  pdf.setTextColor(0, 0, 200);
+  // Center: School details
+  pdf.setTextColor(30, 64, 175);
   pdf.setFontSize(16);
   pdf.setFont('helvetica', 'bold');
-  pdf.text(schoolInfo.school_name.toUpperCase(), pageWidth / 2, yPos + 5, { align: 'center' });
+  pdf.text(schoolInfo.school_name.toUpperCase(), pageWidth / 2, 15, { align: 'center' });
   
-  pdf.setFontSize(8);
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(0, 0, 0);
   
-  if (schoolInfo.motto) {
-    pdf.text(schoolInfo.motto, pageWidth / 2, yPos + 10, { align: 'center' });
-  }
-  
-  const addressLine = `${schoolInfo.location || ''} | P.O BOX: ${schoolInfo.po_box || ''} | TEL: ${schoolInfo.telephone || ''}`;
-  pdf.setFontSize(7);
-  pdf.text(addressLine, pageWidth / 2, yPos + 14, { align: 'center' });
-  
-  if (schoolInfo.email || schoolInfo.website) {
-    const contactLine = `Email: ${schoolInfo.email || ''} Website: ${schoolInfo.website || ''}`;
-    pdf.text(contactLine, pageWidth / 2, yPos + 17, { align: 'center' });
-  }
-  
-  yPos += 28;
-  
-  // Title: END OF TERM REPORT CARD
-  pdf.setFontSize(10);
-  pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(0, 0, 0);
-  pdf.text(`END OF ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`, pageWidth / 2, yPos, { align: 'center' });
-  
-  yPos += 6;
-  
-  // ========== STUDENT INFORMATION TABLE ==========
-  const studentInfoStartY = yPos;
-  const colWidths = [25, 50, 25, 40];
-  const rowHeight = 6;
-  
-  // Draw table for student info
-  pdf.setDrawColor(0, 0, 0);
-  pdf.setLineWidth(0.3);
-  
-  const studentInfo = [
-    ['NAME:', student.name.toUpperCase(), 'GENDER:', student.gender.toUpperCase()],
-    ['CLASS:', student.classes?.class_name || '', 'TERM:', term.term_name],
-    ['HOUSE:', student.house || '', 'YEAR:', term.year.toString()]
+  const contactLines = [
+    `Location: ${schoolInfo.location || ''}`,
+    `P.O BOX: ${schoolInfo.po_box || ''}`,
+    `TEL: ${schoolInfo.telephone || ''}`,
   ];
   
-  let currentY = studentInfoStartY;
-  
-  studentInfo.forEach((row) => {
-    let currentX = margin + 5;
-    
-    row.forEach((cell, colIndex) => {
-      // Draw cell border
-      pdf.rect(currentX, currentY, colWidths[colIndex], rowHeight);
-      
-      // Set font style
-      if (colIndex % 2 === 0) {
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(8);
-      } else {
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(8);
-      }
-      
-      // Add text
-      pdf.text(cell, currentX + 2, currentY + 4);
-      currentX += colWidths[colIndex];
-    });
-    
-    currentY += rowHeight;
+  contactLines.forEach((line, index) => {
+    if (line.split(': ')[1]) {
+      pdf.text(line, pageWidth / 2, 21 + (index * 4), { align: 'center' });
+    }
   });
   
-  yPos = currentY + 4;
+  pdf.setTextColor(0, 100, 255);
+  pdf.text(`Email: ${schoolInfo.email || ''} Website: ${schoolInfo.website || ''}`, pageWidth / 2, 33, { align: 'center' });
   
-  // ========== PERFORMANCE RECORDS TABLE ==========
-  pdf.setFontSize(9);
+  yPosition = 45;
+  
+  // Title Section with red line
+  pdf.setDrawColor(220, 38, 38);
+  pdf.setLineWidth(1.5);
+  pdf.line(10, yPosition - 2, pageWidth - 10, yPosition - 2);
+  
+  pdf.setTextColor(30, 64, 175);
+  pdf.setFontSize(16);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('PERFORMANCE RECORDS', pageWidth / 2, yPos, { align: 'center' });
+  const reportTitle = `TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`;
+  pdf.text(reportTitle, pageWidth / 2, yPosition + 5, { align: 'center' });
   
-  yPos += 5;
+  pdf.setDrawColor(220, 38, 38);
+  pdf.line(10, yPosition + 8, pageWidth - 10, yPosition + 8);
   
-  const tableStartX = margin + 5;
-  const tableWidth = pageWidth - 2 * margin - 10;
-  const tableColWidths = [10, 35, 12, 12, 12, 12, 12, 12, 12, 12, 30];
-  const tableRowHeight = 6;
+  yPosition += 18;
   
-  // Table header
-  const headers = ['Code', 'Subject', 'A1', 'A2', 'A3', 'AVG', '20%', '80%', '100%', 'GRADE', 'Remarks/Descriptors'];
+  // Student Information Section (table format with thin borders)
+  const studentInfoY = yPosition;
+  const studentInfoHeight = 18;
   
-  pdf.setFillColor(220, 220, 220);
-  pdf.rect(tableStartX, yPos, tableWidth, tableRowHeight, 'F');
+  // Draw table borders
+  drawTableBorder(pdf, 10, studentInfoY, pageWidth - 20, studentInfoHeight);
+  drawFaintLine(pdf, 10, studentInfoY + 6, pageWidth - 10, studentInfoY + 6);
+  drawFaintLine(pdf, 10, studentInfoY + 12, pageWidth - 10, studentInfoY + 12);
+  drawFaintLine(pdf, pageWidth / 2, studentInfoY, pageWidth / 2, studentInfoY + 12);
   
-  let headerX = tableStartX;
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  
+  // Row 1
+  pdf.text(`NAME:`, 12, studentInfoY + 4);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(student.name.toUpperCase(), 30, studentInfoY + 4);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`GENDER:`, pageWidth / 2 + 2, studentInfoY + 4);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(student.gender.toUpperCase(), pageWidth / 2 + 22, studentInfoY + 4);
+  
+  // Row 2
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`SECTION: ${student.classes?.section || 'N/A'}`, 12, studentInfoY + 10);
+  pdf.text(`CLASS: ${student.classes?.class_name || 'N/A'}`, 70, studentInfoY + 10);
+  pdf.text(`TERM:`, pageWidth / 2 + 2, studentInfoY + 10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(term.term_name.toUpperCase(), pageWidth / 2 + 18, studentInfoY + 10);
+  
+  // Row 3
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`House`, 12, studentInfoY + 16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(student.house || 'N/A', 30, studentInfoY + 16);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`Age`, 70, studentInfoY + 16);
+  pdf.text(`Printed on ${new Date().toLocaleDateString('en-GB')}`, pageWidth / 2 + 2, studentInfoY + 16);
+  
+  yPosition = studentInfoY + studentInfoHeight + 10;
+  
+  // Performance Records Section Title
+  pdf.setTextColor(30, 64, 175);
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('PERFORMANCE RECORDS', pageWidth / 2, yPosition, { align: 'center' });
+  
+  yPosition += 8;
+  
+  // Performance Records Table
+  const tableStartY = yPosition;
+  const headers = ['Code', 'Subject', 'A1', 'A2', 'A3', 'AVG', '20%', '80%', '100%', 'Ident', 'GRADE', 'Remarks/Descriptors', 'TR'];
+  const colWidths = [12, 32, 10, 10, 10, 11, 11, 11, 11, 11, 13, 35, 12];
+  const colX = [10, 22, 54, 64, 74, 84, 95, 106, 117, 128, 139, 152, 187];
+  
+  // Draw header background
+  pdf.setFillColor(30, 64, 175);
+  pdf.rect(10, yPosition - 4, pageWidth - 20, 7, 'F');
+  
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'bold');
+  
   headers.forEach((header, index) => {
-    pdf.setDrawColor(0, 0, 0);
-    pdf.setLineWidth(0.3);
-    pdf.rect(headerX, yPos, tableColWidths[index], tableRowHeight);
-    
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(0, 0, 0);
-    pdf.text(header, headerX + tableColWidths[index] / 2, yPos + 4, { align: 'center' });
-    
-    headerX += tableColWidths[index];
+    pdf.text(header, colX[index] + 1, yPosition + 1);
   });
   
-  yPos += tableRowHeight;
+  yPosition += 5;
   
-  // Table rows - Subjects
+  // Draw table rows
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'normal');
+  
   marks.forEach((mark, index) => {
+    // Draw faint horizontal line
+    drawFaintLine(pdf, 10, yPosition, pageWidth - 10, yPosition);
+    
     const rowData = [
       mark.subject_code || '',
-      mark.subjects?.subject_name || '',
-      mark.a1_score?.toString() || '',
-      mark.a2_score?.toString() || '',
-      mark.a3_score?.toString() || '',
+      mark.subjects?.subject_name || 'Unknown',
+      mark.a1_score?.toFixed(1) || '',
+      mark.a2_score?.toFixed(1) || '',
+      mark.a3_score?.toFixed(1) || '',
       mark.average_score?.toFixed(1) || '',
       mark.twenty_percent?.toFixed(1) || '',
       mark.eighty_percent?.toFixed(1) || '',
       mark.hundred_percent?.toFixed(1) || '',
+      mark.identifier?.toString() || '',
       mark.final_grade || '',
-      mark.achievement_level || ''
+      mark.achievement_level || '',
+      mark.teacher_initials || ''
     ];
     
-    let cellX = tableStartX;
-    rowData.forEach((cell, colIndex) => {
-      pdf.setDrawColor(0, 0, 0);
-      pdf.setLineWidth(0.3);
-      pdf.rect(cellX, yPos, tableColWidths[colIndex], tableRowHeight);
-      
-      pdf.setFontSize(7);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(0, 0, 0);
-      
-      if (colIndex === 1) {
-        pdf.text(cell, cellX + 2, yPos + 4);
-      } else {
-        pdf.text(cell, cellX + tableColWidths[colIndex] / 2, yPos + 4, { align: 'center' });
-      }
-      
-      cellX += tableColWidths[colIndex];
+    rowData.forEach((data, colIndex) => {
+      pdf.text(data, colX[colIndex] + 1, yPosition + 4);
     });
     
-    yPos += tableRowHeight;
+    yPosition += 5.5;
   });
   
-  yPos += 3;
+  // Draw bottom line and outer borders
+  drawFaintLine(pdf, 10, yPosition, pageWidth - 10, yPosition);
+  drawTableBorder(pdf, 10, tableStartY - 4, pageWidth - 20, yPosition - tableStartY + 4);
   
-  // ========== SUMMARY SECTION ==========
-  const summaryStartY = yPos;
-  const summaryColWidths = [35, 35, 35, 35, 35];
-  const summaryHeight = 12;
-  
-  const summaryLabels = ['Overall identifier', 'Overall average', 'Overall grade', 'Overall rank', 'Achievement level'];
-  const summaryValues = [
-    reportData.overall_identifier?.toString() || '',
-    reportData.overall_average?.toFixed(2) || '',
-    reportData.overall_grade || '',
-    '', // Rank not in current data
-    reportData.achievement_level || ''
-  ];
-  
-  // Summary labels row
-  let summaryX = tableStartX;
-  summaryLabels.forEach((label, index) => {
-    pdf.setDrawColor(0, 0, 0);
-    pdf.setLineWidth(0.3);
-    pdf.rect(summaryX, summaryStartY, summaryColWidths[index], summaryHeight / 2);
-    
-    pdf.setFontSize(7);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(label, summaryX + summaryColWidths[index] / 2, summaryStartY + 3.5, { align: 'center' });
-    
-    summaryX += summaryColWidths[index];
+  // Draw vertical lines
+  colX.forEach((x, index) => {
+    if (index > 0) {
+      drawFaintLine(pdf, x, tableStartY - 4, x, yPosition);
+    }
   });
+  drawFaintLine(pdf, pageWidth - 10, tableStartY - 4, pageWidth - 10, yPosition);
   
-  // Summary values row
-  summaryX = tableStartX;
-  summaryValues.forEach((value, index) => {
-    pdf.setDrawColor(0, 0, 0);
-    pdf.setLineWidth(0.3);
-    pdf.rect(summaryX, summaryStartY + summaryHeight / 2, summaryColWidths[index], summaryHeight / 2);
-    
-    pdf.setFontSize(8);
-    pdf.setFont('helvetica', 'normal');
-    pdf.text(value, summaryX + summaryColWidths[index] / 2, summaryStartY + summaryHeight / 2 + 4, { align: 'center' });
-    
-    summaryX += summaryColWidths[index];
-  });
+  yPosition += 8;
   
-  yPos = summaryStartY + summaryHeight + 5;
+  // Summary Row
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.text('AVERAGE:', 10, yPosition);
+  pdf.text(reportData.overall_average?.toFixed(1) || '0.0', 95, yPosition);
   
-  // ========== KEY TO TERMS SECTION ==========
+  pdf.text('Overall Identifier', 12, yPosition + 5);
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(reportData.overall_identifier?.toString() || '2', 50, yPosition + 5);
+  
+  pdf.setTextColor(0, 0, 0);
+  pdf.text('Overall Achievement', 75, yPosition + 5);
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(reportData.achievement_level || 'Moderate', 115, yPosition + 5);
+  
+  pdf.setTextColor(0, 0, 0);
+  pdf.text('Overall grade', 155, yPosition + 5);
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(reportData.overall_grade || 'B', 185, yPosition + 5);
+  
+  yPosition += 15;
+  
+  // Grades Table Section
+  const gradeTableY = yPosition;
+  pdf.setTextColor(0, 0, 0);
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('Key to Terms used:', tableStartX, yPos);
   
-  yPos += 4;
+  // Draw grades table
+  drawTableBorder(pdf, 40, gradeTableY, 130, 12);
+  drawFaintLine(pdf, 40, gradeTableY + 6, 170, gradeTableY + 6);
+  
+  const gradeHeaders = ['GRADE', 'A', 'B', 'C', 'D', 'E'];
+  const gradeX = [42, 68, 94, 120, 146, 160];
+  
+  gradeHeaders.forEach((grade, index) => {
+    pdf.text(grade, gradeX[index], gradeTableY + 4);
+  });
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('SCORES', 42, gradeTableY + 10);
+  const gradeRanges = ['100 - 80', '80 - 70', '69 - 60', '60 - 40', '40 - 0'];
+  gradeRanges.forEach((range, index) => {
+    pdf.text(range, gradeX[index + 1], gradeTableY + 10);
+  });
+  
+  // Draw vertical lines for grade table
+  [68, 94, 120, 146, 160, 170].forEach(x => {
+    drawFaintLine(pdf, x, gradeTableY, x, gradeTableY + 12);
+  });
+  
+  yPosition = gradeTableY + 20;
+  
+  // Comments Section
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(9);
+  pdf.text("Class teacher's Comment:", 10, yPosition);
+  
+  yPosition += 5;
+  pdf.setFont('helvetica', 'italic');
+  pdf.setFontSize(8);
+  
+  const teacherCommentLines = pdf.splitTextToSize(reportData.class_teacher_comment || 'No comment provided.', pageWidth - 20);
+  teacherCommentLines.forEach((line: string) => {
+    pdf.text(line, 10, yPosition);
+    yPosition += 4;
+  });
+  
+  yPosition += 3;
+  
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(9);
+  pdf.text("Headteacher's Comment:", 10, yPosition);
+  
+  yPosition += 5;
+  pdf.setFont('helvetica', 'italic');
+  pdf.setFontSize(8);
+  
+  const headCommentLines = pdf.splitTextToSize(reportData.headteacher_comment || 'No comment provided.', pageWidth - 20);
+  headCommentLines.forEach((line: string) => {
+    pdf.text(line, 10, yPosition);
+    yPosition += 4;
+  });
+  
+  yPosition += 5;
+  
+  // Key to Terms Used Section
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.text('Key to Terms Used:', 10, yPosition);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('A1 Average Chapter Assessment  80% End of term assessment', 40, yPosition);
+  
+  yPosition += 5;
   
   const keyTerms = [
-    'A1, A2, A3: 3 Assessment Scores out of 100% | AVG: Average of 3 Assessments',
-    '20%: 20% of AVG Assessment Score | 80%: End of term Exam Score out of 80%',
-    '100%: Total Final Score = 20% + 80% | GRADE: Final Letter Grade'
+    '1 - Basic         0.9-1.49 Few LOs achieved, but not sufficient for overall achievement',
+    '2 - Moderate      1.5-2.49 Many LOs achieved, enough for overall achievement',
+    '3 - Outstanding   2.5-3.0 Most or all LOs achieved for overall achievement'
   ];
   
-  pdf.setFontSize(6.5);
-  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7);
   keyTerms.forEach((term) => {
-    pdf.text(term, tableStartX, yPos);
-    yPos += 3.5;
+    pdf.text(term, 10, yPosition);
+    yPosition += 4;
   });
   
-  yPos += 2;
+  yPosition += 5;
   
-  // ========== COMMENTS SECTION ==========
-  const commentBoxHeight = 20;
-  const commentBoxWidth = (tableWidth - 2) / 2;
+  // Term Dates & Fees Section
+  const termEndDate = new Date(term.end_date).toLocaleDateString('en-GB');
+  const nextTermDate = new Date(new Date(term.end_date).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB');
   
-  // Class Teacher Comment
-  pdf.setDrawColor(0, 0, 0);
-  pdf.setLineWidth(0.3);
-  pdf.rect(tableStartX, yPos, commentBoxWidth, commentBoxHeight);
-  
-  pdf.setFontSize(7);
+  pdf.setFontSize(8);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('CLASS TEACHER COMMENT:', tableStartX + 2, yPos + 4);
+  
+  pdf.text(termEndDate, 25, yPosition);
+  pdf.text(nextTermDate, 70, yPosition);
+  pdf.text('FEES BALANCE  FEES NEXT TERM', 115, yPosition);
+  pdf.text('Other Requirement', 170, yPosition);
   
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(7);
-  const ctComment = pdf.splitTextToSize(reportData.class_teacher_comment || '', commentBoxWidth - 4);
-  pdf.text(ctComment, tableStartX + 2, yPos + 8);
+  pdf.text('TERM ENDED ON', 10, yPosition + 4);
+  pdf.text('NEXT TERM BEGINS', 60, yPosition + 4);
   
-  // Head Teacher Comment
-  pdf.rect(tableStartX + commentBoxWidth + 2, yPos, commentBoxWidth, commentBoxHeight);
+  yPosition += 12;
   
+  // Footer Section
   pdf.setFont('helvetica', 'bold');
-  pdf.text('HEAD TEACHER COMMENT:', tableStartX + commentBoxWidth + 4, yPos + 4);
-  
-  pdf.setFont('helvetica', 'normal');
-  const htComment = pdf.splitTextToSize(reportData.headteacher_comment || '', commentBoxWidth - 4);
-  pdf.text(htComment, tableStartX + commentBoxWidth + 4, yPos + 8);
-  
-  yPos += commentBoxHeight + 5;
-  
-  // ========== SIGNATURES SECTION ==========
-  const sigBoxWidth = tableWidth / 4;
-  const sigBoxHeight = 15;
-  
-  const signatures = [
-    'CLASS TEACHER',
-    'PARENT/GUARDIAN',
-    'HEAD TEACHER',
-    'HEADTEACHER'
-  ];
-  
-  let sigX = tableStartX;
-  signatures.forEach((sig) => {
-    pdf.setDrawColor(0, 0, 0);
-    pdf.setLineWidth(0.3);
-    pdf.rect(sigX, yPos, sigBoxWidth, sigBoxHeight);
-    
-    pdf.setFontSize(6);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text(sig, sigX + sigBoxWidth / 2, yPos + 4, { align: 'center' });
-    
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(6);
-    pdf.text('Sign:', sigX + 2, yPos + 9);
-    pdf.text('Date:', sigX + 2, yPos + 13);
-    
-    // Draw line for signature
-    pdf.setDrawColor(200, 200, 200);
-    pdf.setLineWidth(0.2);
-    pdf.line(sigX + 10, yPos + 9, sigX + sigBoxWidth - 2, yPos + 9);
-    pdf.line(sigX + 10, yPos + 13, sigX + sigBoxWidth - 2, yPos + 13);
-    
-    sigX += sigBoxWidth;
-  });
-  
-  // Footer note
-  yPos += sigBoxHeight + 3;
-  pdf.setFontSize(6);
-  pdf.setFont('helvetica', 'italic');
-  pdf.setTextColor(100, 100, 100);
-  pdf.text('NB: All PARENT / GUARDIAN to sign in the specified column.', pageWidth / 2, yPos, { align: 'center' });
+  pdf.setFontSize(10);
+  const motto = schoolInfo.motto || 'Work hard to excel';
+  pdf.text(motto, pageWidth / 2, yPosition, { align: 'center' });
   
   return pdf;
 };
 
 export const generateModernTemplate = (data: TemplateData) => {
-  return generateClassicTemplate(data);
+  const { student, term, schoolInfo, marks, reportData } = data;
+  const pdf = new jsPDF();
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  
+  // Add border around entire document
+  pdf.setDrawColor(0, 0, 0);
+  pdf.setLineWidth(0.5);
+  pdf.rect(5, 5, pageWidth - 10, pageHeight - 10);
+  
+  let yPosition = 15;
+  
+  // Header Section
+  if (schoolInfo.logo_url && schoolInfo.logo_url.startsWith('data:image')) {
+    try {
+      pdf.addImage(schoolInfo.logo_url, 'PNG', 10, 8, 25, 25);
+    } catch (error) {
+      console.log('Could not add logo');
+    }
+  }
+  
+  // Right: Student photo demarcation box
+  const photoBoxX = pageWidth - 45;
+  const photoBoxY = 8;
+  const photoBoxSize = 35;
+  
+  // Draw demarcated box for student photo
+  pdf.setDrawColor(0, 0, 0);
+  pdf.setLineWidth(0.8);
+  pdf.rect(photoBoxX, photoBoxY, photoBoxSize, photoBoxSize);
+  
+  // Add photo if available
+  if (student.photo_url && student.photo_url.startsWith('data:image')) {
+    try {
+      pdf.addImage(student.photo_url, 'PNG', photoBoxX + 1, photoBoxY + 1, photoBoxSize - 2, photoBoxSize - 2);
+    } catch (error) {
+      console.log('Could not add photo');
+    }
+  } else {
+    // Add placeholder text if no photo
+    pdf.setFontSize(8);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text('Image', photoBoxX + photoBoxSize / 2, photoBoxY + photoBoxSize / 2, { align: 'center' });
+  }
+  
+  pdf.setTextColor(30, 64, 175);
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(schoolInfo.school_name.toUpperCase(), pageWidth / 2, 15, { align: 'center' });
+  
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  
+  const contactLines = [
+    `Location: ${schoolInfo.location || ''}`,
+    `P.O BOX: ${schoolInfo.po_box || ''}`,
+    `TEL: ${schoolInfo.telephone || ''}`,
+  ];
+  
+  contactLines.forEach((line, index) => {
+    if (line.split(': ')[1]) {
+      pdf.text(line, pageWidth / 2, 21 + (index * 4), { align: 'center' });
+    }
+  });
+  
+  pdf.setTextColor(0, 100, 255);
+  pdf.text(`Email: ${schoolInfo.email || ''} Website: ${schoolInfo.website || ''}`, pageWidth / 2, 33, { align: 'center' });
+  
+  yPosition = 45;
+  
+  pdf.setDrawColor(220, 38, 38);
+  pdf.setLineWidth(1.5);
+  pdf.line(10, yPosition - 2, pageWidth - 10, yPosition - 2);
+  
+  pdf.setTextColor(30, 64, 175);
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  const reportTitle = `TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`;
+  pdf.text(reportTitle, pageWidth / 2, yPosition + 5, { align: 'center' });
+  
+  pdf.setDrawColor(220, 38, 38);
+  pdf.line(10, yPosition + 8, pageWidth - 10, yPosition + 8);
+  
+  yPosition += 18;
+  
+  // Student Information Section
+  const studentInfoY = yPosition;
+  const studentInfoHeight = 18;
+  
+  drawTableBorder(pdf, 10, studentInfoY, pageWidth - 20, studentInfoHeight);
+  drawFaintLine(pdf, 10, studentInfoY + 6, pageWidth - 10, studentInfoY + 6);
+  drawFaintLine(pdf, 10, studentInfoY + 12, pageWidth - 10, studentInfoY + 12);
+  drawFaintLine(pdf, pageWidth / 2, studentInfoY, pageWidth / 2, studentInfoY + 12);
+  
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  
+  pdf.text(`NAME:`, 12, studentInfoY + 4);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(student.name.toUpperCase(), 30, studentInfoY + 4);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`GENDER:`, pageWidth / 2 + 2, studentInfoY + 4);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(student.gender.toUpperCase(), pageWidth / 2 + 22, studentInfoY + 4);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`SECTION: ${student.classes?.section || 'N/A'}`, 12, studentInfoY + 10);
+  pdf.text(`CLASS: ${student.classes?.class_name || 'N/A'}`, 70, studentInfoY + 10);
+  pdf.text(`TERM:`, pageWidth / 2 + 2, studentInfoY + 10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(term.term_name.toUpperCase(), pageWidth / 2 + 18, studentInfoY + 10);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`House`, 12, studentInfoY + 16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(student.house || 'N/A', 30, studentInfoY + 16);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`Age`, 70, studentInfoY + 16);
+  pdf.text(`Printed on ${new Date().toLocaleDateString('en-GB')}`, pageWidth / 2 + 2, studentInfoY + 16);
+  
+  yPosition = studentInfoY + studentInfoHeight + 10;
+  
+  // Performance Records
+  pdf.setTextColor(30, 64, 175);
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('PERFORMANCE RECORDS', pageWidth / 2, yPosition, { align: 'center' });
+  
+  yPosition += 8;
+  
+  const tableStartY = yPosition;
+  const headers = ['Code', 'Subject', 'A1', 'A2', 'A3', 'AVG', '20%', '80%', '100%', 'Ident', 'GRADE', 'Remarks/Descriptors', 'TR'];
+  const colX = [10, 22, 54, 64, 74, 84, 95, 106, 117, 128, 139, 152, 187];
+  
+  pdf.setFillColor(30, 64, 175);
+  pdf.rect(10, yPosition - 4, pageWidth - 20, 7, 'F');
+  
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'bold');
+  
+  headers.forEach((header, index) => {
+    pdf.text(header, colX[index] + 1, yPosition + 1);
+  });
+  
+  yPosition += 5;
+  
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'normal');
+  
+  marks.forEach((mark) => {
+    drawFaintLine(pdf, 10, yPosition, pageWidth - 10, yPosition);
+    
+    const rowData = [
+      mark.subject_code || '',
+      mark.subjects?.subject_name || 'Unknown',
+      mark.a1_score?.toFixed(1) || '',
+      mark.a2_score?.toFixed(1) || '',
+      mark.a3_score?.toFixed(1) || '',
+      mark.average_score?.toFixed(1) || '',
+      mark.twenty_percent?.toFixed(1) || '',
+      mark.eighty_percent?.toFixed(1) || '',
+      mark.hundred_percent?.toFixed(1) || '',
+      mark.identifier?.toString() || '',
+      mark.final_grade || '',
+      mark.achievement_level || '',
+      mark.teacher_initials || ''
+    ];
+    
+    rowData.forEach((data, colIndex) => {
+      pdf.text(data, colX[colIndex] + 1, yPosition + 4);
+    });
+    
+    yPosition += 5.5;
+  });
+  
+  drawFaintLine(pdf, 10, yPosition, pageWidth - 10, yPosition);
+  drawTableBorder(pdf, 10, tableStartY - 4, pageWidth - 20, yPosition - tableStartY + 4);
+  
+  colX.forEach((x, index) => {
+    if (index > 0) {
+      drawFaintLine(pdf, x, tableStartY - 4, x, yPosition);
+    }
+  });
+  drawFaintLine(pdf, pageWidth - 10, tableStartY - 4, pageWidth - 10, yPosition);
+  
+  yPosition += 8;
+  
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.text('AVERAGE:', 10, yPosition);
+  pdf.text(reportData.overall_average?.toFixed(1) || '0.0', 95, yPosition);
+  
+  pdf.text('Overall Identifier', 12, yPosition + 5);
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(reportData.overall_identifier?.toString() || '2', 50, yPosition + 5);
+  
+  pdf.setTextColor(0, 0, 0);
+  pdf.text('Overall Achievement', 75, yPosition + 5);
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(reportData.achievement_level || 'Moderate', 115, yPosition + 5);
+  
+  pdf.setTextColor(0, 0, 0);
+  pdf.text('Overall grade', 155, yPosition + 5);
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(reportData.overall_grade || 'B', 185, yPosition + 5);
+  
+  yPosition += 15;
+  
+  // Grades Table
+  const gradeTableY = yPosition;
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'bold');
+  
+  drawTableBorder(pdf, 40, gradeTableY, 130, 12);
+  drawFaintLine(pdf, 40, gradeTableY + 6, 170, gradeTableY + 6);
+  
+  const gradeHeaders = ['GRADE', 'A', 'B', 'C', 'D', 'E'];
+  const gradeX = [42, 68, 94, 120, 146, 160];
+  
+  gradeHeaders.forEach((grade, index) => {
+    pdf.text(grade, gradeX[index], gradeTableY + 4);
+  });
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('SCORES', 42, gradeTableY + 10);
+  const gradeRanges = ['100 - 80', '80 - 70', '69 - 60', '60 - 40', '40 - 0'];
+  gradeRanges.forEach((range, index) => {
+    pdf.text(range, gradeX[index + 1], gradeTableY + 10);
+  });
+  
+  [68, 94, 120, 146, 160, 170].forEach(x => {
+    drawFaintLine(pdf, x, gradeTableY, x, gradeTableY + 12);
+  });
+  
+  yPosition = gradeTableY + 20;
+  
+  // Comments
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(9);
+  pdf.text("Class teacher's Comment:", 10, yPosition);
+  
+  yPosition += 5;
+  pdf.setFont('helvetica', 'italic');
+  pdf.setFontSize(8);
+  
+  const teacherCommentLines = pdf.splitTextToSize(reportData.class_teacher_comment || 'No comment provided.', pageWidth - 20);
+  teacherCommentLines.forEach((line: string) => {
+    pdf.text(line, 10, yPosition);
+    yPosition += 4;
+  });
+  
+  yPosition += 3;
+  
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(9);
+  pdf.text("Headteacher's Comment:", 10, yPosition);
+  
+  yPosition += 5;
+  pdf.setFont('helvetica', 'italic');
+  pdf.setFontSize(8);
+  
+  const headCommentLines = pdf.splitTextToSize(reportData.headteacher_comment || 'No comment provided.', pageWidth - 20);
+  headCommentLines.forEach((line: string) => {
+    pdf.text(line, 10, yPosition);
+    yPosition += 4;
+  });
+  
+  yPosition += 5;
+  
+  // Key to Terms
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.text('Key to Terms Used:', 10, yPosition);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('A1 Average Chapter Assessment  80% End of term assessment', 40, yPosition);
+  
+  yPosition += 5;
+  
+  const keyTerms = [
+    '1 - Basic         0.9-1.49 Few LOs achieved, but not sufficient for overall achievement',
+    '2 - Moderate      1.5-2.49 Many LOs achieved, enough for overall achievement',
+    '3 - Outstanding   2.5-3.0 Most or all LOs achieved for overall achievement'
+  ];
+  
+  pdf.setFontSize(7);
+  keyTerms.forEach((term) => {
+    pdf.text(term, 10, yPosition);
+    yPosition += 4;
+  });
+  
+  yPosition += 5;
+  
+  // Term Dates & Fees
+  const termEndDate = new Date(term.end_date).toLocaleDateString('en-GB');
+  const nextTermDate = new Date(new Date(term.end_date).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB');
+  
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'bold');
+  
+  pdf.text(termEndDate, 25, yPosition);
+  pdf.text(nextTermDate, 70, yPosition);
+  pdf.text('FEES BALANCE  FEES NEXT TERM', 115, yPosition);
+  pdf.text('Other Requirement', 170, yPosition);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7);
+  pdf.text('TERM ENDED ON', 10, yPosition + 4);
+  pdf.text('NEXT TERM BEGINS', 60, yPosition + 4);
+  
+  yPosition += 12;
+  
+  // Footer
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(10);
+  const motto = schoolInfo.motto || 'Work hard to excel';
+  pdf.text(motto, pageWidth / 2, yPosition, { align: 'center' });
+  
+  return pdf;
 };
 
 export const generateProfessionalTemplate = (data: TemplateData) => {
-  return generateClassicTemplate(data);
+  const { student, term, schoolInfo, marks, reportData } = data;
+  const pdf = new jsPDF();
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  
+  // Add border around entire document
+  pdf.setDrawColor(0, 0, 0);
+  pdf.setLineWidth(0.5);
+  pdf.rect(5, 5, pageWidth - 10, pageHeight - 10);
+  
+  let yPosition = 15;
+  
+  // Header Section
+  if (schoolInfo.logo_url && schoolInfo.logo_url.startsWith('data:image')) {
+    try {
+      pdf.addImage(schoolInfo.logo_url, 'PNG', 10, 8, 25, 25);
+    } catch (error) {
+      console.log('Could not add logo');
+    }
+  }
+  
+  // Right: Student photo demarcation box
+  const photoBoxX = pageWidth - 45;
+  const photoBoxY = 8;
+  const photoBoxSize = 35;
+  
+  // Draw demarcated box for student photo
+  pdf.setDrawColor(0, 0, 0);
+  pdf.setLineWidth(0.8);
+  pdf.rect(photoBoxX, photoBoxY, photoBoxSize, photoBoxSize);
+  
+  // Add photo if available
+  if (student.photo_url && student.photo_url.startsWith('data:image')) {
+    try {
+      pdf.addImage(student.photo_url, 'PNG', photoBoxX + 1, photoBoxY + 1, photoBoxSize - 2, photoBoxSize - 2);
+    } catch (error) {
+      console.log('Could not add photo');
+    }
+  } else {
+    // Add placeholder text if no photo
+    pdf.setFontSize(8);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text('Image', photoBoxX + photoBoxSize / 2, photoBoxY + photoBoxSize / 2, { align: 'center' });
+  }
+  
+  pdf.setTextColor(30, 64, 175);
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(schoolInfo.school_name.toUpperCase(), pageWidth / 2, 15, { align: 'center' });
+  
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  
+  const contactLines = [
+    `Location: ${schoolInfo.location || ''}`,
+    `P.O BOX: ${schoolInfo.po_box || ''}`,
+    `TEL: ${schoolInfo.telephone || ''}`,
+  ];
+  
+  contactLines.forEach((line, index) => {
+    if (line.split(': ')[1]) {
+      pdf.text(line, pageWidth / 2, 21 + (index * 4), { align: 'center' });
+    }
+  });
+  
+  pdf.setTextColor(0, 100, 255);
+  pdf.text(`Email: ${schoolInfo.email || ''} Website: ${schoolInfo.website || ''}`, pageWidth / 2, 33, { align: 'center' });
+  
+  yPosition = 45;
+  
+  pdf.setDrawColor(220, 38, 38);
+  pdf.setLineWidth(1.5);
+  pdf.line(10, yPosition - 2, pageWidth - 10, yPosition - 2);
+  
+  pdf.setTextColor(30, 64, 175);
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  const reportTitle = `TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`;
+  pdf.text(reportTitle, pageWidth / 2, yPosition + 5, { align: 'center' });
+  
+  pdf.setDrawColor(220, 38, 38);
+  pdf.line(10, yPosition + 8, pageWidth - 10, yPosition + 8);
+  
+  yPosition += 18;
+  
+  // Student Information Section
+  const studentInfoY = yPosition;
+  const studentInfoHeight = 18;
+  
+  drawTableBorder(pdf, 10, studentInfoY, pageWidth - 20, studentInfoHeight);
+  drawFaintLine(pdf, 10, studentInfoY + 6, pageWidth - 10, studentInfoY + 6);
+  drawFaintLine(pdf, 10, studentInfoY + 12, pageWidth - 10, studentInfoY + 12);
+  drawFaintLine(pdf, pageWidth / 2, studentInfoY, pageWidth / 2, studentInfoY + 12);
+  
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  
+  pdf.text(`NAME:`, 12, studentInfoY + 4);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(student.name.toUpperCase(), 30, studentInfoY + 4);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`GENDER:`, pageWidth / 2 + 2, studentInfoY + 4);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(student.gender.toUpperCase(), pageWidth / 2 + 22, studentInfoY + 4);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`SECTION: ${student.classes?.section || 'N/A'}`, 12, studentInfoY + 10);
+  pdf.text(`CLASS: ${student.classes?.class_name || 'N/A'}`, 70, studentInfoY + 10);
+  pdf.text(`TERM:`, pageWidth / 2 + 2, studentInfoY + 10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(term.term_name.toUpperCase(), pageWidth / 2 + 18, studentInfoY + 10);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`House`, 12, studentInfoY + 16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(student.house || 'N/A', 30, studentInfoY + 16);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`Age`, 70, studentInfoY + 16);
+  pdf.text(`Printed on ${new Date().toLocaleDateString('en-GB')}`, pageWidth / 2 + 2, studentInfoY + 16);
+  
+  yPosition = studentInfoY + studentInfoHeight + 10;
+  
+  // Performance Records
+  pdf.setTextColor(30, 64, 175);
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('PERFORMANCE RECORDS', pageWidth / 2, yPosition, { align: 'center' });
+  
+  yPosition += 8;
+  
+  const tableStartY = yPosition;
+  const headers = ['Code', 'Subject', 'A1', 'A2', 'A3', 'AVG', '20%', '80%', '100%', 'Ident', 'GRADE', 'Remarks/Descriptors', 'TR'];
+  const colX = [10, 22, 54, 64, 74, 84, 95, 106, 117, 128, 139, 152, 187];
+  
+  pdf.setFillColor(30, 64, 175);
+  pdf.rect(10, yPosition - 4, pageWidth - 20, 7, 'F');
+  
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'bold');
+  
+  headers.forEach((header, index) => {
+    pdf.text(header, colX[index] + 1, yPosition + 1);
+  });
+  
+  yPosition += 5;
+  
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'normal');
+  
+  marks.forEach((mark) => {
+    drawFaintLine(pdf, 10, yPosition, pageWidth - 10, yPosition);
+    
+    const rowData = [
+      mark.subject_code || '',
+      mark.subjects?.subject_name || 'Unknown',
+      mark.a1_score?.toFixed(1) || '',
+      mark.a2_score?.toFixed(1) || '',
+      mark.a3_score?.toFixed(1) || '',
+      mark.average_score?.toFixed(1) || '',
+      mark.twenty_percent?.toFixed(1) || '',
+      mark.eighty_percent?.toFixed(1) || '',
+      mark.hundred_percent?.toFixed(1) || '',
+      mark.identifier?.toString() || '',
+      mark.final_grade || '',
+      mark.achievement_level || '',
+      mark.teacher_initials || ''
+    ];
+    
+    rowData.forEach((data, colIndex) => {
+      pdf.text(data, colX[colIndex] + 1, yPosition + 4);
+    });
+    
+    yPosition += 5.5;
+  });
+  
+  drawFaintLine(pdf, 10, yPosition, pageWidth - 10, yPosition);
+  drawTableBorder(pdf, 10, tableStartY - 4, pageWidth - 20, yPosition - tableStartY + 4);
+  
+  colX.forEach((x, index) => {
+    if (index > 0) {
+      drawFaintLine(pdf, x, tableStartY - 4, x, yPosition);
+    }
+  });
+  drawFaintLine(pdf, pageWidth - 10, tableStartY - 4, pageWidth - 10, yPosition);
+  
+  yPosition += 8;
+  
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.text('AVERAGE:', 10, yPosition);
+  pdf.text(reportData.overall_average?.toFixed(1) || '0.0', 95, yPosition);
+  
+  pdf.text('Overall Identifier', 12, yPosition + 5);
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(reportData.overall_identifier?.toString() || '2', 50, yPosition + 5);
+  
+  pdf.setTextColor(0, 0, 0);
+  pdf.text('Overall Achievement', 75, yPosition + 5);
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(reportData.achievement_level || 'Moderate', 115, yPosition + 5);
+  
+  pdf.setTextColor(0, 0, 0);
+  pdf.text('Overall grade', 155, yPosition + 5);
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(reportData.overall_grade || 'B', 185, yPosition + 5);
+  
+  yPosition += 15;
+  
+  // Grades Table
+  const gradeTableY = yPosition;
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'bold');
+  
+  drawTableBorder(pdf, 40, gradeTableY, 130, 12);
+  drawFaintLine(pdf, 40, gradeTableY + 6, 170, gradeTableY + 6);
+  
+  const gradeHeaders = ['GRADE', 'A', 'B', 'C', 'D', 'E'];
+  const gradeX = [42, 68, 94, 120, 146, 160];
+  
+  gradeHeaders.forEach((grade, index) => {
+    pdf.text(grade, gradeX[index], gradeTableY + 4);
+  });
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('SCORES', 42, gradeTableY + 10);
+  const gradeRanges = ['100 - 80', '80 - 70', '69 - 60', '60 - 40', '40 - 0'];
+  gradeRanges.forEach((range, index) => {
+    pdf.text(range, gradeX[index + 1], gradeTableY + 10);
+  });
+  
+  [68, 94, 120, 146, 160, 170].forEach(x => {
+    drawFaintLine(pdf, x, gradeTableY, x, gradeTableY + 12);
+  });
+  
+  yPosition = gradeTableY + 20;
+  
+  // Comments
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(9);
+  pdf.text("Class teacher's Comment:", 10, yPosition);
+  
+  yPosition += 5;
+  pdf.setFont('helvetica', 'italic');
+  pdf.setFontSize(8);
+  
+  const teacherCommentLines = pdf.splitTextToSize(reportData.class_teacher_comment || 'No comment provided.', pageWidth - 20);
+  teacherCommentLines.forEach((line: string) => {
+    pdf.text(line, 10, yPosition);
+    yPosition += 4;
+  });
+  
+  yPosition += 3;
+  
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(9);
+  pdf.text("Headteacher's Comment:", 10, yPosition);
+  
+  yPosition += 5;
+  pdf.setFont('helvetica', 'italic');
+  pdf.setFontSize(8);
+  
+  const headCommentLines = pdf.splitTextToSize(reportData.headteacher_comment || 'No comment provided.', pageWidth - 20);
+  headCommentLines.forEach((line: string) => {
+    pdf.text(line, 10, yPosition);
+    yPosition += 4;
+  });
+  
+  yPosition += 5;
+  
+  // Key to Terms
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.text('Key to Terms Used:', 10, yPosition);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('A1 Average Chapter Assessment  80% End of term assessment', 40, yPosition);
+  
+  yPosition += 5;
+  
+  const keyTerms = [
+    '1 - Basic         0.9-1.49 Few LOs achieved, but not sufficient for overall achievement',
+    '2 - Moderate      1.5-2.49 Many LOs achieved, enough for overall achievement',
+    '3 - Outstanding   2.5-3.0 Most or all LOs achieved for overall achievement'
+  ];
+  
+  pdf.setFontSize(7);
+  keyTerms.forEach((term) => {
+    pdf.text(term, 10, yPosition);
+    yPosition += 4;
+  });
+  
+  yPosition += 5;
+  
+  // Term Dates & Fees
+  const termEndDate = new Date(term.end_date).toLocaleDateString('en-GB');
+  const nextTermDate = new Date(new Date(term.end_date).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB');
+  
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'bold');
+  
+  pdf.text(termEndDate, 25, yPosition);
+  pdf.text(nextTermDate, 70, yPosition);
+  pdf.text('FEES BALANCE  FEES NEXT TERM', 115, yPosition);
+  pdf.text('Other Requirement', 170, yPosition);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7);
+  pdf.text('TERM ENDED ON', 10, yPosition + 4);
+  pdf.text('NEXT TERM BEGINS', 60, yPosition + 4);
+  
+  yPosition += 12;
+  
+  // Footer
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(10);
+  const motto = schoolInfo.motto || 'Work hard to excel';
+  pdf.text(motto, pageWidth / 2, yPosition, { align: 'center' });
+  
+  return pdf;
 };
 
 export const generateMinimalTemplate = (data: TemplateData) => {
-  return generateClassicTemplate(data);
+  const { student, term, schoolInfo, marks, reportData } = data;
+  const pdf = new jsPDF();
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  
+  // Add border around entire document
+  pdf.setDrawColor(0, 0, 0);
+  pdf.setLineWidth(0.5);
+  pdf.rect(5, 5, pageWidth - 10, pageHeight - 10);
+  
+  let yPosition = 15;
+  
+  // Header Section
+  if (schoolInfo.logo_url && schoolInfo.logo_url.startsWith('data:image')) {
+    try {
+      pdf.addImage(schoolInfo.logo_url, 'PNG', 10, 8, 25, 25);
+    } catch (error) {
+      console.log('Could not add logo');
+    }
+  }
+  
+  // Right: Student photo demarcation box
+  const photoBoxX = pageWidth - 45;
+  const photoBoxY = 8;
+  const photoBoxSize = 35;
+  
+  // Draw demarcated box for student photo
+  pdf.setDrawColor(0, 0, 0);
+  pdf.setLineWidth(0.8);
+  pdf.rect(photoBoxX, photoBoxY, photoBoxSize, photoBoxSize);
+  
+  // Add photo if available
+  if (student.photo_url && student.photo_url.startsWith('data:image')) {
+    try {
+      pdf.addImage(student.photo_url, 'PNG', photoBoxX + 1, photoBoxY + 1, photoBoxSize - 2, photoBoxSize - 2);
+    } catch (error) {
+      console.log('Could not add photo');
+    }
+  } else {
+    // Add placeholder text if no photo
+    pdf.setFontSize(8);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text('Image', photoBoxX + photoBoxSize / 2, photoBoxY + photoBoxSize / 2, { align: 'center' });
+  }
+  
+  pdf.setTextColor(30, 64, 175);
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text(schoolInfo.school_name.toUpperCase(), pageWidth / 2, 15, { align: 'center' });
+  
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  
+  const contactLines = [
+    `Location: ${schoolInfo.location || ''}`,
+    `P.O BOX: ${schoolInfo.po_box || ''}`,
+    `TEL: ${schoolInfo.telephone || ''}`,
+  ];
+  
+  contactLines.forEach((line, index) => {
+    if (line.split(': ')[1]) {
+      pdf.text(line, pageWidth / 2, 21 + (index * 4), { align: 'center' });
+    }
+  });
+  
+  pdf.setTextColor(0, 100, 255);
+  pdf.text(`Email: ${schoolInfo.email || ''} Website: ${schoolInfo.website || ''}`, pageWidth / 2, 33, { align: 'center' });
+  
+  yPosition = 45;
+  
+  pdf.setDrawColor(220, 38, 38);
+  pdf.setLineWidth(1.5);
+  pdf.line(10, yPosition - 2, pageWidth - 10, yPosition - 2);
+  
+  pdf.setTextColor(30, 64, 175);
+  pdf.setFontSize(16);
+  pdf.setFont('helvetica', 'bold');
+  const reportTitle = `TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`;
+  pdf.text(reportTitle, pageWidth / 2, yPosition + 5, { align: 'center' });
+  
+  pdf.setDrawColor(220, 38, 38);
+  pdf.line(10, yPosition + 8, pageWidth - 10, yPosition + 8);
+  
+  yPosition += 18;
+  
+  // Student Information Section
+  const studentInfoY = yPosition;
+  const studentInfoHeight = 18;
+  
+  drawTableBorder(pdf, 10, studentInfoY, pageWidth - 20, studentInfoHeight);
+  drawFaintLine(pdf, 10, studentInfoY + 6, pageWidth - 10, studentInfoY + 6);
+  drawFaintLine(pdf, 10, studentInfoY + 12, pageWidth - 10, studentInfoY + 12);
+  drawFaintLine(pdf, pageWidth / 2, studentInfoY, pageWidth / 2, studentInfoY + 12);
+  
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  
+  pdf.text(`NAME:`, 12, studentInfoY + 4);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(student.name.toUpperCase(), 30, studentInfoY + 4);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`GENDER:`, pageWidth / 2 + 2, studentInfoY + 4);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(student.gender.toUpperCase(), pageWidth / 2 + 22, studentInfoY + 4);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`SECTION: ${student.classes?.section || 'N/A'}`, 12, studentInfoY + 10);
+  pdf.text(`CLASS: ${student.classes?.class_name || 'N/A'}`, 70, studentInfoY + 10);
+  pdf.text(`TERM:`, pageWidth / 2 + 2, studentInfoY + 10);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(term.term_name.toUpperCase(), pageWidth / 2 + 18, studentInfoY + 10);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`House`, 12, studentInfoY + 16);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(student.house || 'N/A', 30, studentInfoY + 16);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
+  pdf.text(`Age`, 70, studentInfoY + 16);
+  pdf.text(`Printed on ${new Date().toLocaleDateString('en-GB')}`, pageWidth / 2 + 2, studentInfoY + 16);
+  
+  yPosition = studentInfoY + studentInfoHeight + 10;
+  
+  // Performance Records
+  pdf.setTextColor(30, 64, 175);
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.text('PERFORMANCE RECORDS', pageWidth / 2, yPosition, { align: 'center' });
+  
+  yPosition += 8;
+  
+  const tableStartY = yPosition;
+  const headers = ['Code', 'Subject', 'A1', 'A2', 'A3', 'AVG', '20%', '80%', '100%', 'Ident', 'GRADE', 'Remarks/Descriptors', 'TR'];
+  const colX = [10, 22, 54, 64, 74, 84, 95, 106, 117, 128, 139, 152, 187];
+  
+  pdf.setFillColor(30, 64, 175);
+  pdf.rect(10, yPosition - 4, pageWidth - 20, 7, 'F');
+  
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'bold');
+  
+  headers.forEach((header, index) => {
+    pdf.text(header, colX[index] + 1, yPosition + 1);
+  });
+  
+  yPosition += 5;
+  
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(7);
+  pdf.setFont('helvetica', 'normal');
+  
+  marks.forEach((mark) => {
+    drawFaintLine(pdf, 10, yPosition, pageWidth - 10, yPosition);
+    
+    const rowData = [
+      mark.subject_code || '',
+      mark.subjects?.subject_name || 'Unknown',
+      mark.a1_score?.toFixed(1) || '',
+      mark.a2_score?.toFixed(1) || '',
+      mark.a3_score?.toFixed(1) || '',
+      mark.average_score?.toFixed(1) || '',
+      mark.twenty_percent?.toFixed(1) || '',
+      mark.eighty_percent?.toFixed(1) || '',
+      mark.hundred_percent?.toFixed(1) || '',
+      mark.identifier?.toString() || '',
+      mark.final_grade || '',
+      mark.achievement_level || '',
+      mark.teacher_initials || ''
+    ];
+    
+    rowData.forEach((data, colIndex) => {
+      pdf.text(data, colX[colIndex] + 1, yPosition + 4);
+    });
+    
+    yPosition += 5.5;
+  });
+  
+  drawFaintLine(pdf, 10, yPosition, pageWidth - 10, yPosition);
+  drawTableBorder(pdf, 10, tableStartY - 4, pageWidth - 20, yPosition - tableStartY + 4);
+  
+  colX.forEach((x, index) => {
+    if (index > 0) {
+      drawFaintLine(pdf, x, tableStartY - 4, x, yPosition);
+    }
+  });
+  drawFaintLine(pdf, pageWidth - 10, tableStartY - 4, pageWidth - 10, yPosition);
+  
+  yPosition += 8;
+  
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.text('AVERAGE:', 10, yPosition);
+  pdf.text(reportData.overall_average?.toFixed(1) || '0.0', 95, yPosition);
+  
+  pdf.text('Overall Identifier', 12, yPosition + 5);
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(reportData.overall_identifier?.toString() || '2', 50, yPosition + 5);
+  
+  pdf.setTextColor(0, 0, 0);
+  pdf.text('Overall Achievement', 75, yPosition + 5);
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(reportData.achievement_level || 'Moderate', 115, yPosition + 5);
+  
+  pdf.setTextColor(0, 0, 0);
+  pdf.text('Overall grade', 155, yPosition + 5);
+  pdf.setTextColor(30, 64, 175);
+  pdf.text(reportData.overall_grade || 'B', 185, yPosition + 5);
+  
+  yPosition += 15;
+  
+  // Grades Table
+  const gradeTableY = yPosition;
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'bold');
+  
+  drawTableBorder(pdf, 40, gradeTableY, 130, 12);
+  drawFaintLine(pdf, 40, gradeTableY + 6, 170, gradeTableY + 6);
+  
+  const gradeHeaders = ['GRADE', 'A', 'B', 'C', 'D', 'E'];
+  const gradeX = [42, 68, 94, 120, 146, 160];
+  
+  gradeHeaders.forEach((grade, index) => {
+    pdf.text(grade, gradeX[index], gradeTableY + 4);
+  });
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('SCORES', 42, gradeTableY + 10);
+  const gradeRanges = ['100 - 80', '80 - 70', '69 - 60', '60 - 40', '40 - 0'];
+  gradeRanges.forEach((range, index) => {
+    pdf.text(range, gradeX[index + 1], gradeTableY + 10);
+  });
+  
+  [68, 94, 120, 146, 160, 170].forEach(x => {
+    drawFaintLine(pdf, x, gradeTableY, x, gradeTableY + 12);
+  });
+  
+  yPosition = gradeTableY + 20;
+  
+  // Comments
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(9);
+  pdf.text("Class teacher's Comment:", 10, yPosition);
+  
+  yPosition += 5;
+  pdf.setFont('helvetica', 'italic');
+  pdf.setFontSize(8);
+  
+  const teacherCommentLines = pdf.splitTextToSize(reportData.class_teacher_comment || 'No comment provided.', pageWidth - 20);
+  teacherCommentLines.forEach((line: string) => {
+    pdf.text(line, 10, yPosition);
+    yPosition += 4;
+  });
+  
+  yPosition += 3;
+  
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(9);
+  pdf.text("Headteacher's Comment:", 10, yPosition);
+  
+  yPosition += 5;
+  pdf.setFont('helvetica', 'italic');
+  pdf.setFontSize(8);
+  
+  const headCommentLines = pdf.splitTextToSize(reportData.headteacher_comment || 'No comment provided.', pageWidth - 20);
+  headCommentLines.forEach((line: string) => {
+    pdf.text(line, 10, yPosition);
+    yPosition += 4;
+  });
+  
+  yPosition += 5;
+  
+  // Key to Terms
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(8);
+  pdf.text('Key to Terms Used:', 10, yPosition);
+  pdf.setFont('helvetica', 'normal');
+  pdf.text('A1 Average Chapter Assessment  80% End of term assessment', 40, yPosition);
+  
+  yPosition += 5;
+  
+  const keyTerms = [
+    '1 - Basic         0.9-1.49 Few LOs achieved, but not sufficient for overall achievement',
+    '2 - Moderate      1.5-2.49 Many LOs achieved, enough for overall achievement',
+    '3 - Outstanding   2.5-3.0 Most or all LOs achieved for overall achievement'
+  ];
+  
+  pdf.setFontSize(7);
+  keyTerms.forEach((term) => {
+    pdf.text(term, 10, yPosition);
+    yPosition += 4;
+  });
+  
+  yPosition += 5;
+  
+  // Term Dates & Fees
+  const termEndDate = new Date(term.end_date).toLocaleDateString('en-GB');
+  const nextTermDate = new Date(new Date(term.end_date).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB');
+  
+  pdf.setFontSize(8);
+  pdf.setFont('helvetica', 'bold');
+  
+  pdf.text(termEndDate, 25, yPosition);
+  pdf.text(nextTermDate, 70, yPosition);
+  pdf.text('FEES BALANCE  FEES NEXT TERM', 115, yPosition);
+  pdf.text('Other Requirement', 170, yPosition);
+  
+  pdf.setFont('helvetica', 'normal');
+  pdf.setFontSize(7);
+  pdf.text('TERM ENDED ON', 10, yPosition + 4);
+  pdf.text('NEXT TERM BEGINS', 60, yPosition + 4);
+  
+  yPosition += 12;
+  
+  // Footer
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(10);
+  const motto = schoolInfo.motto || 'Work hard to excel';
+  pdf.text(motto, pageWidth / 2, yPosition, { align: 'center' });
+  
+  return pdf;
 };
