@@ -708,7 +708,7 @@ const StudentMarksManager = () => {
                 </div>
               </div>
 
-              <div className="flex justify-center gap-3 pt-6 border-t flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="flex justify-start gap-3 pt-6 border-t flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
                 <Button 
                   type="submit"
                   size="lg"
