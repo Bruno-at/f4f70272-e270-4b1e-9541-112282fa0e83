@@ -41,6 +41,11 @@ const StudentList = ({ students, onRefresh, onEdit }: StudentListProps) => {
     setDeleting(studentId);
     
     try {
+      // Delete related records first to avoid foreign key constraint violations
+      await supabase.from('student_marks').delete().eq('student_id', studentId);
+      await supabase.from('report_cards').delete().eq('student_id', studentId);
+      
+      // Now delete the student
       const { error } = await supabase
         .from('students')
         .delete()

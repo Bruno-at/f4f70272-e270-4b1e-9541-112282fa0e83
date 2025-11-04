@@ -131,9 +131,14 @@ const TermsManager = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this term?')) return;
+    if (!confirm('Are you sure you want to delete this term? This will also delete all related marks and report cards.')) return;
 
     try {
+      // Delete related records first to avoid foreign key constraint violations
+      await supabase.from('student_marks').delete().eq('term_id', id);
+      await supabase.from('report_cards').delete().eq('term_id', id);
+      
+      // Now delete the term
       const { error } = await supabase
         .from('terms')
         .delete()
