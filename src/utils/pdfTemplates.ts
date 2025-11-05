@@ -110,7 +110,7 @@ export const generateClassicTemplate = (data: TemplateData) => {
   // Student Information Table
   const studentInfoY = yPosition;
   pdf.setDrawColor(0, 0, 0);
-  pdf.setLineWidth(0.5);
+  pdf.setLineWidth(0.2);
   pdf.rect(10, studentInfoY, pageWidth - 20, 18);
   
   // Horizontal lines
@@ -206,7 +206,7 @@ export const generateClassicTemplate = (data: TemplateData) => {
   
   // Table rows
   pdf.setDrawColor(0, 0, 0);
-  pdf.setLineWidth(0.3);
+  pdf.setLineWidth(0.2);
   
   marks.forEach((mark, index) => {
     const rowHeight = 5;
@@ -242,7 +242,7 @@ export const generateClassicTemplate = (data: TemplateData) => {
   });
   
   // Draw table border
-  pdf.setLineWidth(0.5);
+  pdf.setLineWidth(0.2);
   pdf.rect(10, tableStartY, pageWidth - 20, yPosition - tableStartY);
   
   // Draw vertical lines
@@ -263,7 +263,7 @@ export const generateClassicTemplate = (data: TemplateData) => {
   
   // Overall stats row
   pdf.setDrawColor(0, 0, 0);
-  pdf.setLineWidth(0.3);
+  pdf.setLineWidth(0.2);
   pdf.rect(10, yPosition, pageWidth - 20, 6);
   pdf.line(50, yPosition, 50, yPosition + 6);
   pdf.line(105, yPosition, 105, yPosition + 6);
