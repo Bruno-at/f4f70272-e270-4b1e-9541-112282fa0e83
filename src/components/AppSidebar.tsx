@@ -1,4 +1,5 @@
-import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare } from 'lucide-react';
+import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare, FolderOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -22,6 +23,7 @@ const menuItems = [
   { id: 'grading', title: 'Grading', icon: Settings },
   { id: 'comments', title: 'Comments', icon: MessageSquare },
   { id: 'reports', title: 'Reports', icon: Download },
+  { id: 'manage-reports', title: 'Manage Report Cards', icon: FolderOpen, isRoute: true },
 ];
 
 interface AppSidebarProps {
@@ -32,9 +34,14 @@ interface AppSidebarProps {
 export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) {
   const { setOpenMobile } = useSidebar();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
-  const handleItemClick = (sectionId: string) => {
-    onSectionChange(sectionId);
+  const handleItemClick = (sectionId: string, isRoute?: boolean) => {
+    if (isRoute && sectionId === 'manage-reports') {
+      navigate('/report-cards');
+    } else {
+      onSectionChange(sectionId);
+    }
     if (isMobile) {
       setOpenMobile(false);
     }
@@ -47,10 +54,10 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
           <SidebarGroupLabel>Management</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {menuItems.map((item: any) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
-                    onClick={() => handleItemClick(item.id)}
+                    onClick={() => handleItemClick(item.id, item.isRoute)}
                     isActive={activeSection === item.id}
                     tooltip={item.title}
                   >
