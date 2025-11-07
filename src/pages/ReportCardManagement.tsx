@@ -7,6 +7,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { ReportCard } from '@/types/database';
 import { Eye, Pencil, Printer, Download, Share2, Trash2, ArrowLeft, FileText } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { generateReportCardPDF } from '@/utils/pdfGenerator';
 
 interface ReportCardWithDetails {
   id: string;
@@ -44,6 +48,13 @@ const ReportCardManagement = () => {
   const [loading, setLoading] = useState(true);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<ReportCardWithDetails | null>(null);
+  const [editedComments, setEditedComments] = useState({
+    class_teacher_comment: '',
+    headteacher_comment: ''
+  });
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -87,43 +98,222 @@ const ReportCardManagement = () => {
   };
 
   const handleView = (reportId: string) => {
-    // Implement view functionality
-    toast({
-      title: "View Report",
-      description: "View functionality coming soon"
-    });
+    const report = reportCards.find(r => r.id === reportId);
+    if (report) {
+      setSelectedReport(report);
+      setViewDialogOpen(true);
+    }
   };
 
   const handleEdit = (reportId: string) => {
-    // Implement edit functionality
-    toast({
-      title: "Edit Report",
-      description: "Edit functionality coming soon"
-    });
+    const report = reportCards.find(r => r.id === reportId);
+    if (report) {
+      setSelectedReport(report);
+      setEditedComments({
+        class_teacher_comment: report.class_teacher_comment || '',
+        headteacher_comment: report.headteacher_comment || ''
+      });
+      setEditDialogOpen(true);
+    }
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedReport) return;
+
+    try {
+      const { error } = await supabase
+        .from('report_cards')
+        .update({
+          class_teacher_comment: editedComments.class_teacher_comment,
+          headteacher_comment: editedComments.headteacher_comment
+        })
+        .eq('id', selectedReport.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Report card updated successfully"
+      });
+
+      setEditDialogOpen(false);
+      fetchReportCards();
+    } catch (error) {
+      console.error('Error updating report card:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update report card",
+        variant: "destructive"
+      });
+    }
   };
 
   const handlePrint = async (reportId: string) => {
-    // Implement print functionality
-    toast({
-      title: "Print Report",
-      description: "Print functionality coming soon"
-    });
+    try {
+      const reportData = await fetchFullReportData(reportId);
+      if (!reportData) return;
+
+      // Generate PDF and open in new window for printing
+      const { generateClassicTemplate } = await import('@/utils/pdfTemplates');
+      const pdf = generateClassicTemplate(reportData);
+      window.open(pdf.output('bloburl'), '_blank');
+
+      toast({
+        title: "Success",
+        description: "Opening print preview..."
+      });
+    } catch (error) {
+      console.error('Error printing report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate report for printing",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDownload = async (reportId: string) => {
-    // Implement download functionality
-    toast({
-      title: "Download Report",
-      description: "Download functionality coming soon"
-    });
+    try {
+      const reportData = await fetchFullReportData(reportId);
+      if (!reportData) return;
+
+      await generateReportCardPDF(reportData);
+
+      toast({
+        title: "Success",
+        description: "Report card downloaded successfully"
+      });
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      toast({
+        title: "Error",
+        description: "Failed to download report card",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleShare = (reportId: string) => {
-    // Implement share functionality
-    toast({
-      title: "Share Report",
-      description: "Share functionality coming soon"
-    });
+  const handleShare = async (reportId: string) => {
+    const report = reportCards.find(r => r.id === reportId);
+    if (!report) return;
+
+    const shareText = `Report Card - ${report.students?.name}\nTerm: ${report.terms?.term_name} ${report.terms?.year}\nAverage: ${report.overall_average?.toFixed(1)}%\nGrade: ${report.overall_grade}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Report Card',
+          text: shareText
+        });
+        toast({
+          title: "Success",
+          description: "Report card shared successfully"
+        });
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Error sharing:', error);
+        }
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(shareText);
+        toast({
+          title: "Copied to Clipboard",
+          description: "Report card details copied successfully"
+        });
+      } catch (error) {
+        console.error('Error copying to clipboard:', error);
+        toast({
+          title: "Error",
+          description: "Failed to share report card",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const fetchFullReportData = async (reportId: string) => {
+    try {
+      const report = reportCards.find(r => r.id === reportId);
+      if (!report) {
+        toast({
+          title: "Error",
+          description: "Report card not found",
+          variant: "destructive"
+        });
+        return null;
+      }
+
+      // Fetch student with class info
+      const { data: studentData, error: studentError } = await supabase
+        .from('students')
+        .select('*, classes!students_class_id_fkey(*)')
+        .eq('id', report.student_id)
+        .single();
+
+      if (studentError) throw studentError;
+
+      // Fetch term
+      const { data: termData, error: termError } = await supabase
+        .from('terms')
+        .select('*')
+        .eq('id', report.term_id)
+        .single();
+
+      if (termError) throw termError;
+
+      // Fetch school info
+      const { data: schoolData, error: schoolError } = await supabase
+        .from('school_info')
+        .select('*')
+        .limit(1)
+        .single();
+
+      if (schoolError) throw schoolError;
+
+      // Fetch marks with subjects
+      const { data: marksData, error: marksError } = await supabase
+        .from('student_marks')
+        .select('*, subjects!student_marks_subject_id_fkey(*)')
+        .eq('student_id', report.student_id)
+        .eq('term_id', report.term_id);
+
+      if (marksError) throw marksError;
+
+      // Fetch all subjects for the class
+      const { data: subjectsData, error: subjectsError } = await supabase
+        .from('subjects')
+        .select('*')
+        .eq('class_id', studentData.class_id);
+
+      if (subjectsError) throw subjectsError;
+
+      return {
+        student: studentData,
+        term: termData,
+        schoolInfo: schoolData,
+        marks: marksData,
+        subjects: subjectsData,
+        reportData: {
+          overall_average: report.overall_average || 0,
+          overall_grade: report.overall_grade || '',
+          overall_identifier: report.overall_identifier || 0,
+          achievement_level: report.achievement_level || '',
+          class_teacher_comment: report.class_teacher_comment || '',
+          headteacher_comment: report.headteacher_comment || ''
+        },
+        template: report.template as 'classic' | 'modern' | 'professional' | 'minimal'
+      };
+    } catch (error) {
+      console.error('Error fetching report data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch report data",
+        variant: "destructive"
+      });
+      return null;
+    }
   };
 
   const handleDeleteClick = (reportId: string) => {
@@ -344,6 +534,123 @@ const ReportCardManagement = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Report Card Details</DialogTitle>
+          </DialogHeader>
+          {selectedReport && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-muted-foreground">Student Name</Label>
+                  <p className="font-medium">{selectedReport.students?.name}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Student ID</Label>
+                  <p className="font-medium">{selectedReport.students?.student_id}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Class</Label>
+                  <p className="font-medium">
+                    {selectedReport.students?.classes?.class_name}
+                    {selectedReport.students?.classes?.section && ` ${selectedReport.students.classes.section}`}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Term</Label>
+                  <p className="font-medium">
+                    {selectedReport.terms?.term_name} {selectedReport.terms?.year}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Overall Average</Label>
+                  <p className="font-medium">{selectedReport.overall_average?.toFixed(1)}%</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Grade</Label>
+                  <p className="font-medium">{selectedReport.overall_grade}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Achievement Level</Label>
+                  <p className="font-medium">{selectedReport.achievement_level}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Status</Label>
+                  <Badge variant="secondary">{selectedReport.status || 'generated'}</Badge>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Class Teacher Comment</Label>
+                <p className="p-3 bg-muted rounded-md">{selectedReport.class_teacher_comment || 'N/A'}</p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-muted-foreground">Headteacher Comment</Label>
+                <p className="p-3 bg-muted rounded-md">{selectedReport.headteacher_comment || 'N/A'}</p>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Report Card</DialogTitle>
+          </DialogHeader>
+          {selectedReport && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-muted rounded-md">
+                <div>
+                  <Label className="text-muted-foreground">Student</Label>
+                  <p className="font-medium">{selectedReport.students?.name}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">Term</Label>
+                  <p className="font-medium">
+                    {selectedReport.terms?.term_name} {selectedReport.terms?.year}
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="class_teacher_comment">Class Teacher Comment</Label>
+                <Textarea
+                  id="class_teacher_comment"
+                  value={editedComments.class_teacher_comment}
+                  onChange={(e) => setEditedComments(prev => ({
+                    ...prev,
+                    class_teacher_comment: e.target.value
+                  }))}
+                  rows={4}
+                  placeholder="Enter class teacher comment..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="headteacher_comment">Headteacher Comment</Label>
+                <Textarea
+                  id="headteacher_comment"
+                  value={editedComments.headteacher_comment}
+                  onChange={(e) => setEditedComments(prev => ({
+                    ...prev,
+                    headteacher_comment: e.target.value
+                  }))}
+                  rows={4}
+                  placeholder="Enter headteacher comment..."
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveEdit}>
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
