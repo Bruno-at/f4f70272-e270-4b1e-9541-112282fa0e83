@@ -10,6 +10,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { generateReportCardPDF } from '@/utils/pdfGenerator';
 
 interface ReportCardWithDetails {
@@ -40,6 +47,8 @@ interface ReportCardWithDetails {
   terms?: {
     term_name: string;
     year: number;
+    end_date?: string;
+    start_date?: string;
   };
 }
 
@@ -51,9 +60,16 @@ const ReportCardManagement = () => {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportCardWithDetails | null>(null);
-  const [editedComments, setEditedComments] = useState({
+  const [editedData, setEditedData] = useState({
+    status: '',
+    term_ended_on: undefined as Date | undefined,
+    next_term_begins: undefined as Date | undefined,
+    fees_balance: 0,
+    fees_next_term: 0,
     class_teacher_comment: '',
-    headteacher_comment: ''
+    headteacher_comment: '',
+    achievement_level: '',
+    other_requirements: ''
   });
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -78,7 +94,9 @@ const ReportCardManagement = () => {
           ),
           terms!report_cards_term_id_fkey (
             term_name,
-            year
+            year,
+            start_date,
+            end_date
           )
         `)
         .order('generated_at', { ascending: false });
@@ -109,9 +127,16 @@ const ReportCardManagement = () => {
     const report = reportCards.find(r => r.id === reportId);
     if (report) {
       setSelectedReport(report);
-      setEditedComments({
+      setEditedData({
+        status: report.status || 'draft',
+        term_ended_on: report.terms?.end_date ? new Date(report.terms.end_date) : undefined,
+        next_term_begins: undefined, // Will be added to DB
+        fees_balance: report.fees_balance || 0,
+        fees_next_term: 0, // Will be added to DB
         class_teacher_comment: report.class_teacher_comment || '',
-        headteacher_comment: report.headteacher_comment || ''
+        headteacher_comment: report.headteacher_comment || '',
+        achievement_level: report.achievement_level || '',
+        other_requirements: '' // Will be added to DB
       });
       setEditDialogOpen(true);
     }
@@ -124,8 +149,11 @@ const ReportCardManagement = () => {
       const { error } = await supabase
         .from('report_cards')
         .update({
-          class_teacher_comment: editedComments.class_teacher_comment,
-          headteacher_comment: editedComments.headteacher_comment
+          status: editedData.status,
+          fees_balance: editedData.fees_balance,
+          class_teacher_comment: editedData.class_teacher_comment,
+          headteacher_comment: editedData.headteacher_comment,
+          achievement_level: editedData.achievement_level
         })
         .eq('id', selectedReport.id);
 
@@ -595,51 +623,186 @@ const ReportCardManagement = () => {
       </Dialog>
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Report Card</DialogTitle>
+            <p className="text-sm text-muted-foreground">Update report card details, comments, and status</p>
           </DialogHeader>
           {selectedReport && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-muted rounded-md">
+              {/* Student Info - Read Only */}
+              <div>
+                <Label className="text-sm text-muted-foreground">Student</Label>
+                <Input 
+                  value={`${selectedReport.students?.name} (${selectedReport.students?.student_id || 'N/A'})`}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
+
+              {/* Class - Read Only */}
+              <div>
+                <Label className="text-sm text-muted-foreground">Class</Label>
+                <Input 
+                  value={`${selectedReport.students?.classes?.class_name}${selectedReport.students?.classes?.section ? ' ' + selectedReport.students.classes.section : ''}`}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
+
+              {/* Status */}
+              <div>
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={editedData.status}
+                  onValueChange={(value) => setEditedData(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Draft</SelectItem>
+                    <SelectItem value="final">Final</SelectItem>
+                    <SelectItem value="printed">Printed</SelectItem>
+                    <SelectItem value="distributed">Distributed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Date Fields */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-muted-foreground">Student</Label>
-                  <p className="font-medium">{selectedReport.students?.name}</p>
+                  <Label>Term Ended On</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !editedData.term_ended_on && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {editedData.term_ended_on ? format(editedData.term_ended_on, "PPP") : <span>mm/dd/yyyy</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={editedData.term_ended_on}
+                        onSelect={(date) => setEditedData(prev => ({ ...prev, term_ended_on: date }))}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
+
                 <div>
-                  <Label className="text-muted-foreground">Term</Label>
-                  <p className="font-medium">
-                    {selectedReport.terms?.term_name} {selectedReport.terms?.year}
-                  </p>
+                  <Label>Next Term Begins</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          !editedData.next_term_begins && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {editedData.next_term_begins ? format(editedData.next_term_begins, "PPP") : <span>mm/dd/yyyy</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={editedData.next_term_begins}
+                        onSelect={(date) => setEditedData(prev => ({ ...prev, next_term_begins: date }))}
+                        initialFocus
+                        className="pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="class_teacher_comment">Class Teacher Comment</Label>
+
+              {/* Fees Fields */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="fees_balance">Fees Balance</Label>
+                  <Input
+                    id="fees_balance"
+                    type="number"
+                    step="0.01"
+                    value={editedData.fees_balance}
+                    onChange={(e) => setEditedData(prev => ({ ...prev, fees_balance: parseFloat(e.target.value) || 0 }))}
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="fees_next_term">Fees Next Term</Label>
+                  <Input
+                    id="fees_next_term"
+                    type="number"
+                    step="0.01"
+                    value={editedData.fees_next_term}
+                    onChange={(e) => setEditedData(prev => ({ ...prev, fees_next_term: parseFloat(e.target.value) || 0 }))}
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              {/* Class Teacher's Comment */}
+              <div>
+                <Label htmlFor="class_teacher_comment">Class Teacher's Comment</Label>
                 <Textarea
                   id="class_teacher_comment"
-                  value={editedComments.class_teacher_comment}
-                  onChange={(e) => setEditedComments(prev => ({
-                    ...prev,
-                    class_teacher_comment: e.target.value
-                  }))}
-                  rows={4}
+                  value={editedData.class_teacher_comment}
+                  onChange={(e) => setEditedData(prev => ({ ...prev, class_teacher_comment: e.target.value }))}
+                  rows={3}
                   placeholder="Enter class teacher comment..."
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="headteacher_comment">Headteacher Comment</Label>
+
+              {/* Head Teacher's Comment */}
+              <div>
+                <Label htmlFor="headteacher_comment">Head Teacher's Comment</Label>
                 <Textarea
                   id="headteacher_comment"
-                  value={editedComments.headteacher_comment}
-                  onChange={(e) => setEditedComments(prev => ({
-                    ...prev,
-                    headteacher_comment: e.target.value
-                  }))}
-                  rows={4}
-                  placeholder="Enter headteacher comment..."
+                  value={editedData.headteacher_comment}
+                  onChange={(e) => setEditedData(prev => ({ ...prev, headteacher_comment: e.target.value }))}
+                  rows={3}
+                  placeholder="Enter head teacher comment..."
                 />
               </div>
-              <div className="flex justify-end gap-2">
+
+              {/* Overall Achievement */}
+              <div>
+                <Label htmlFor="achievement_level">Overall Achievement</Label>
+                <Textarea
+                  id="achievement_level"
+                  value={editedData.achievement_level}
+                  onChange={(e) => setEditedData(prev => ({ ...prev, achievement_level: e.target.value }))}
+                  rows={3}
+                  placeholder="Enter overall achievement..."
+                />
+              </div>
+
+              {/* Other Requirements */}
+              <div>
+                <Label htmlFor="other_requirements">Other Requirements</Label>
+                <Textarea
+                  id="other_requirements"
+                  value={editedData.other_requirements}
+                  onChange={(e) => setEditedData(prev => ({ ...prev, other_requirements: e.target.value }))}
+                  rows={3}
+                  placeholder="Enter other requirements..."
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-2 pt-4">
                 <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
                   Cancel
                 </Button>
