@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ReportCard } from '@/types/database';
-import { Eye, Pencil, Printer, Download, Share2, Trash2, ArrowLeft, FileText } from 'lucide-react';
+import { ReportCard, Student, Term, SchoolInfo, StudentMark, Subject } from '@/types/database';
+import { Eye, Pencil, Printer, Download, Share2, Trash2, ArrowLeft, FileText, Loader2 } from 'lucide-react';
+import ReportCardPreview from '@/components/ReportCardPreview';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -71,6 +72,22 @@ const ReportCardManagement = () => {
     achievement_level: '',
     other_requirements: ''
   });
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewData, setPreviewData] = useState<{
+    student: Student;
+    term: Term;
+    schoolInfo: SchoolInfo;
+    marks: StudentMark[];
+    subjects: Subject[];
+    reportData: {
+      overall_average: number;
+      overall_grade: string;
+      overall_identifier: number;
+      achievement_level: string;
+      class_teacher_comment: string;
+      headteacher_comment: string;
+    };
+  } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -115,11 +132,24 @@ const ReportCardManagement = () => {
     }
   };
 
-  const handleView = (reportId: string) => {
+  const handleView = async (reportId: string) => {
     const report = reportCards.find(r => r.id === reportId);
     if (report) {
       setSelectedReport(report);
       setViewDialogOpen(true);
+      setPreviewLoading(true);
+      setPreviewData(null);
+      
+      try {
+        const data = await fetchFullReportData(reportId);
+        if (data) {
+          setPreviewData(data);
+        }
+      } catch (error) {
+        console.error('Error loading preview data:', error);
+      } finally {
+        setPreviewLoading(false);
+      }
     }
   };
 
@@ -564,61 +594,48 @@ const ReportCardManagement = () => {
       </AlertDialog>
 
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Report Card Details</DialogTitle>
+            <DialogTitle>Report Card Preview</DialogTitle>
           </DialogHeader>
-          {selectedReport && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Student Name</Label>
-                  <p className="font-medium">{selectedReport.students?.name}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Student ID</Label>
-                  <p className="font-medium">{selectedReport.students?.student_id}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Class</Label>
-                  <p className="font-medium">
-                    {selectedReport.students?.classes?.class_name}
-                    {selectedReport.students?.classes?.section && ` ${selectedReport.students.classes.section}`}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Term</Label>
-                  <p className="font-medium">
-                    {selectedReport.terms?.term_name} {selectedReport.terms?.year}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Overall Average</Label>
-                  <p className="font-medium">{selectedReport.overall_average?.toFixed(1)}%</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Grade</Label>
-                  <p className="font-medium">{selectedReport.overall_grade}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Achievement Level</Label>
-                  <p className="font-medium">{selectedReport.achievement_level}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">Status</Label>
-                  <Badge variant="secondary">{selectedReport.status || 'generated'}</Badge>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Class Teacher Comment</Label>
-                <p className="p-3 bg-muted rounded-md">{selectedReport.class_teacher_comment || 'N/A'}</p>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-muted-foreground">Headteacher Comment</Label>
-                <p className="p-3 bg-muted rounded-md">{selectedReport.headteacher_comment || 'N/A'}</p>
-              </div>
+          {previewLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">Loading report card...</span>
+            </div>
+          ) : previewData ? (
+            <div className="border rounded-lg overflow-hidden">
+              <ReportCardPreview
+                student={previewData.student}
+                term={previewData.term}
+                schoolInfo={previewData.schoolInfo}
+                marks={previewData.marks}
+                subjects={previewData.subjects}
+                reportData={previewData.reportData}
+              />
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              Failed to load report card data
             </div>
           )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
+              Close
+            </Button>
+            {selectedReport && (
+              <>
+                <Button variant="outline" onClick={() => handlePrint(selectedReport.id)}>
+                  <Printer className="w-4 h-4 mr-2" />
+                  Print
+                </Button>
+                <Button onClick={() => handleDownload(selectedReport.id)}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download PDF
+                </Button>
+              </>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
