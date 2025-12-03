@@ -541,7 +541,14 @@ const StudentMarksManager = () => {
                                 <Label className="text-xs">Subject</Label>
                                 <Select 
                                   value={form.subject_id} 
-                                  onValueChange={(value) => updateSubjectForm(form.id, 'subject_id', value)}
+                                  onValueChange={(value) => {
+                                    updateSubjectForm(form.id, 'subject_id', value);
+                                    // Auto-fill subject code
+                                    const selectedSubject = subjects.find(s => s.id === value);
+                                    if (selectedSubject) {
+                                      updateSubjectForm(form.id, 'subject_code', selectedSubject.subject_code || '');
+                                    }
+                                  }}
                                 >
                                   <SelectTrigger className="h-9">
                                     <SelectValue placeholder="Select subject" />
@@ -559,9 +566,9 @@ const StudentMarksManager = () => {
                                 <Label className="text-xs">Subject Code</Label>
                                 <Input
                                   value={form.subject_code}
-                                  onChange={(e) => updateSubjectForm(form.id, 'subject_code', e.target.value)}
-                                  placeholder="e.g. 535"
-                                  className="h-9"
+                                  placeholder="Auto-filled"
+                                  readOnly
+                                  className="h-9 bg-muted"
                                 />
                               </div>
                             </div>
@@ -621,8 +628,15 @@ const StudentMarksManager = () => {
                                   type="number"
                                   step="0.1"
                                   value={form.twenty_percent}
-                                  onChange={(e) => updateSubjectForm(form.id, 'twenty_percent', e.target.value)}
-                                  placeholder="0.0"
+                                  onChange={(e) => {
+                                    const newTwenty = e.target.value;
+                                    updateSubjectForm(form.id, 'twenty_percent', newTwenty);
+                                    // Auto-calculate 100%
+                                    const hundredPercent = (parseFloat(newTwenty) || 0) + (parseFloat(form.eighty_percent) || 0);
+                                    updateSubjectForm(form.id, 'hundred_percent', hundredPercent.toFixed(1));
+                                    setTimeout(() => calculateGradeAndLevelForForm(form.id, hundredPercent.toFixed(1), form.identifier), 0);
+                                  }}
+                                  placeholder="0-100"
                                   className="h-9"
                                 />
                               </div>
@@ -632,21 +646,25 @@ const StudentMarksManager = () => {
                                   type="number"
                                   step="0.1"
                                   value={form.eighty_percent}
-                                  onChange={(e) => updateSubjectForm(form.id, 'eighty_percent', e.target.value)}
-                                  placeholder="0.0"
+                                  onChange={(e) => {
+                                    const newEighty = e.target.value;
+                                    updateSubjectForm(form.id, 'eighty_percent', newEighty);
+                                    // Auto-calculate 100%
+                                    const hundredPercent = (parseFloat(form.twenty_percent) || 0) + (parseFloat(newEighty) || 0);
+                                    updateSubjectForm(form.id, 'hundred_percent', hundredPercent.toFixed(1));
+                                    setTimeout(() => calculateGradeAndLevelForForm(form.id, hundredPercent.toFixed(1), form.identifier), 0);
+                                  }}
+                                  placeholder="0-100"
                                   className="h-9"
                                 />
                               </div>
                               <div className="min-w-0">
                                 <Label className="text-xs">100% Score</Label>
                                 <Input
-                                  type="number"
-                                  step="0.1"
                                   value={form.hundred_percent}
-                                  onChange={(e) => updateSubjectForm(form.id, 'hundred_percent', e.target.value)}
-                                  onBlur={() => calculateGradeAndLevelForForm(form.id, form.hundred_percent, form.identifier)}
-                                  placeholder="0.0"
-                                  className="h-9"
+                                  placeholder="Auto"
+                                  readOnly
+                                  className="h-9 bg-muted"
                                 />
                               </div>
                               <div className="min-w-0">

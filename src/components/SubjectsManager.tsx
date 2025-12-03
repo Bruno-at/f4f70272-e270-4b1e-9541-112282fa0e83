@@ -20,6 +20,7 @@ const SubjectsManager = () => {
 
   const [formData, setFormData] = useState({
     subject_name: '',
+    subject_code: '',
     class_id: '',
     max_marks: 100
   });
@@ -102,6 +103,7 @@ const SubjectsManager = () => {
 
       setFormData({
         subject_name: '',
+        subject_code: '',
         class_id: '',
         max_marks: 100
       });
@@ -122,6 +124,7 @@ const SubjectsManager = () => {
   const handleEdit = (subject: Subject) => {
     setFormData({
       subject_name: subject.subject_name,
+      subject_code: subject.subject_code || '',
       class_id: subject.class_id,
       max_marks: subject.max_marks || 100
     });
@@ -177,7 +180,7 @@ const SubjectsManager = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
                 <Label htmlFor="subject_name">Subject Name *</Label>
                 <Input
@@ -186,6 +189,16 @@ const SubjectsManager = () => {
                   onChange={(e) => setFormData(prev => ({ ...prev, subject_name: e.target.value }))}
                   placeholder="e.g., Mathematics, English"
                   required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="subject_code">Subject Code</Label>
+                <Input
+                  id="subject_code"
+                  value={formData.subject_code}
+                  onChange={(e) => setFormData(prev => ({ ...prev, subject_code: e.target.value }))}
+                  placeholder="e.g., 535"
                 />
               </div>
 
@@ -236,6 +249,7 @@ const SubjectsManager = () => {
                     setEditingId(null);
                     setFormData({
                       subject_name: '',
+                      subject_code: '',
                       class_id: '',
                       max_marks: 100
                     });
@@ -288,6 +302,7 @@ const SubjectsManager = () => {
                     <div className="flex-1">
                       <h3 className="font-medium">{subject.subject_name}</h3>
                       <p className="text-sm text-muted-foreground">
+                        {subject.subject_code && <span className="mr-2">Code: {subject.subject_code} |</span>}
                         Class: {(subject as any).classes?.class_name} {(subject as any).classes?.section ? `- ${(subject as any).classes?.section}` : ''} | 
                         Max Marks: {subject.max_marks || 100}
                       </p>
