@@ -457,23 +457,34 @@ const StudentMarksManager = () => {
               <div className="space-y-2 flex-shrink-0">
                 <div className="flex justify-between items-center gap-2">
                   <Label className="text-sm font-medium">Student</Label>
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      const sortOrder: Array<'a-z' | 'z-a' | 'new-old' | 'old-new'> = ['a-z', 'z-a', 'new-old', 'old-new'];
-                      const currentIndex = sortOrder.indexOf(studentSort);
-                      const nextIndex = (currentIndex + 1) % sortOrder.length;
-                      setStudentSort(sortOrder[nextIndex]);
-                    }}
-                    className="h-8 px-3"
-                  >
-                    {studentSort === 'a-z' && '↑ → Z'}
-                    {studentSort === 'z-a' && '↓ → A'}
-                    {studentSort === 'new-old' && 'New → Old'}
-                    {studentSort === 'old-new' && 'Old → New'}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        const sortOrder: Array<'a-z' | 'z-a' | 'new-old' | 'old-new'> = ['a-z', 'z-a', 'new-old', 'old-new'];
+                        const currentIndex = sortOrder.indexOf(studentSort);
+                        const nextIndex = (currentIndex + 1) % sortOrder.length;
+                        setStudentSort(sortOrder[nextIndex]);
+                      }}
+                      className="h-8 px-3"
+                    >
+                      {studentSort === 'a-z' && '↑ → Z'}
+                      {studentSort === 'z-a' && '↓ → A'}
+                      {studentSort === 'new-old' && 'New → Old'}
+                      {studentSort === 'old-new' && 'Old → New'}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      onClick={addSubjectForm} 
+                      size="sm"
+                      className="h-8"
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      New Subject
+                    </Button>
+                  </div>
                 </div>
                 
                 <div className="relative">
@@ -502,18 +513,7 @@ const StudentMarksManager = () => {
 
               {/* Subject Forms Container */}
               <div className="flex flex-col gap-3 flex-1 min-h-0">
-                <div className="flex justify-between items-center flex-shrink-0">
-                  <h3 className="text-base font-semibold">Subject Marks</h3>
-                  <Button 
-                    type="button" 
-                    onClick={addSubjectForm} 
-                    size="sm"
-                    variant="outline"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    New Subject
-                  </Button>
-                </div>
+                <h3 className="text-base font-semibold flex-shrink-0">Subject Marks</h3>
                 
                 <div className="flex-1 pr-2">
                   <div className="space-y-4 pb-4 pr-2">
@@ -727,8 +727,8 @@ const StudentMarksManager = () => {
                 </div>
               </div>
 
-              {/* Submit Button - Always at the very bottom */}
-              <div className="flex justify-end pt-4 mt-4 border-t border-border sticky bottom-0 bg-background">
+              {/* Submit Button at bottom right */}
+              <div className="flex justify-end pt-4 border-t border-border/50">
                 <Button 
                   type="submit"
                   size="lg"
