@@ -22,9 +22,9 @@ export const generateClassicTemplate = (data: TemplateData) => {
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   
-  // Add blue border around entire document
-  pdf.setDrawColor(0, 102, 204);
-  pdf.setLineWidth(1.5);
+  // Thin outer border
+  pdf.setDrawColor(120, 120, 120);
+  pdf.setLineWidth(0.3);
   pdf.rect(5, 5, pageWidth - 10, pageHeight - 10);
   
   let yPosition = 12;
@@ -32,8 +32,8 @@ export const generateClassicTemplate = (data: TemplateData) => {
   // Header Section
   // Left: School logo placeholder
   const logoBoxSize = 22;
-  pdf.setDrawColor(0, 102, 204);
-  pdf.setLineWidth(0.5);
+  pdf.setDrawColor(120, 120, 120);
+  pdf.setLineWidth(0.2);
   pdf.rect(10, yPosition, logoBoxSize, logoBoxSize);
   
   if (schoolInfo.logo_url && schoolInfo.logo_url.startsWith('data:image')) {
@@ -50,8 +50,8 @@ export const generateClassicTemplate = (data: TemplateData) => {
   const photoBoxW = 28;
   const photoBoxH = 30;
   
-  pdf.setDrawColor(0, 102, 204);
-  pdf.setLineWidth(0.5);
+  pdf.setDrawColor(120, 120, 120);
+  pdf.setLineWidth(0.2);
   pdf.rect(photoBoxX, photoBoxY, photoBoxW, photoBoxH);
   
   if (student.photo_url && student.photo_url.startsWith('data:image')) {
@@ -63,30 +63,31 @@ export const generateClassicTemplate = (data: TemplateData) => {
   }
   
   // Center: School details
-  pdf.setTextColor(0, 102, 204);
+  pdf.setTextColor(50, 50, 50);
   pdf.setFontSize(18);
   pdf.setFont('helvetica', 'bold');
   pdf.text(schoolInfo.school_name.toUpperCase(), pageWidth / 2, yPosition + 7, { align: 'center' });
   
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'italic');
-  pdf.setTextColor(0, 0, 0);
+  pdf.setTextColor(80, 80, 80);
   pdf.text(`"${schoolInfo.motto || 'Mbizi we are'}"`, pageWidth / 2, yPosition + 12, { align: 'center' });
   
   pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(0, 0, 0);
   pdf.setFontSize(8);
   pdf.text(`Location: ${schoolInfo.location || 'Kibizi'}`, pageWidth / 2, yPosition + 17, { align: 'center' });
   pdf.text(`P.O BOX: ${schoolInfo.po_box || '104 Kampala'}`, pageWidth / 2, yPosition + 21, { align: 'center' });
   pdf.text(`TEL: ${schoolInfo.telephone || '+256705746484'}`, pageWidth / 2, yPosition + 25, { align: 'center' });
   
-  pdf.setTextColor(0, 102, 204);
+  pdf.setTextColor(80, 80, 80);
   pdf.setFontSize(7);
   pdf.text(`Email: ${schoolInfo.email || 'mugabifood@gmail.com'} | Website: ${schoolInfo.website || 'mugabifood@gmail.com'}`, pageWidth / 2, yPosition + 29, { align: 'center' });
   
   yPosition = 47;
   
   // Title Section
-  pdf.setTextColor(0, 102, 204);
+  pdf.setTextColor(50, 50, 50);
   pdf.setFontSize(14);
   pdf.setFont('helvetica', 'bold');
   const reportTitle = `TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`;
@@ -94,9 +95,9 @@ export const generateClassicTemplate = (data: TemplateData) => {
   
   yPosition += 8;
   
-  // Student Information - Horizontal Layout with blue lines
-  pdf.setDrawColor(0, 102, 204);
-  pdf.setLineWidth(0.8);
+  // Student Information - Horizontal Layout with thin lines
+  pdf.setDrawColor(120, 120, 120);
+  pdf.setLineWidth(0.2);
   pdf.line(10, yPosition, pageWidth - 10, yPosition);
   
   yPosition += 1;
@@ -107,10 +108,8 @@ export const generateClassicTemplate = (data: TemplateData) => {
   
   // Row 1
   pdf.text('NAME:', 12, yPosition + 4);
-  pdf.setTextColor(0, 102, 204);
   pdf.text(student.name.toUpperCase(), 28, yPosition + 4);
   
-  pdf.setTextColor(0, 0, 0);
   pdf.text('GENDER:', 85, yPosition + 4);
   pdf.text(student.gender.toUpperCase(), 105, yPosition + 4);
   
@@ -129,25 +128,25 @@ export const generateClassicTemplate = (data: TemplateData) => {
   
   // Row 3
   pdf.setFont('helvetica', 'bold');
-  pdf.text('House', 12, yPosition + 14);
-  pdf.setTextColor(0, 102, 204);
+  pdf.text('House:', 12, yPosition + 14);
   pdf.text(student.house || 'Blue', 26, yPosition + 14);
   
-  pdf.setTextColor(0, 0, 0);
-  pdf.text('Age', 50, yPosition + 14);
+  pdf.text('Age:', 50, yPosition + 14);
   pdf.text(student.age?.toString() || 'N/A', 60, yPosition + 14);
   
   yPosition += 16;
-  pdf.setDrawColor(0, 102, 204);
-  pdf.setLineWidth(0.8);
+  pdf.setDrawColor(120, 120, 120);
+  pdf.setLineWidth(0.2);
   pdf.line(10, yPosition, pageWidth - 10, yPosition);
   
   yPosition += 3;
   
   // Performance Records Section
-  pdf.setFillColor(0, 102, 204);
-  pdf.rect(10, yPosition, pageWidth - 20, 6, 'F');
-  pdf.setTextColor(255, 255, 255);
+  pdf.setFillColor(240, 240, 240);
+  pdf.setDrawColor(120, 120, 120);
+  pdf.setLineWidth(0.2);
+  pdf.rect(10, yPosition, pageWidth - 20, 6, 'FD');
+  pdf.setTextColor(50, 50, 50);
   pdf.setFontSize(10);
   pdf.setFont('helvetica', 'bold');
   pdf.text('PERFORMANCE RECORDS', pageWidth / 2, yPosition + 4.5, { align: 'center' });
@@ -156,10 +155,10 @@ export const generateClassicTemplate = (data: TemplateData) => {
   
   // Performance Table Header
   const tableStartY = yPosition;
-  pdf.setFillColor(220, 235, 250);
-  pdf.setDrawColor(0, 102, 204);
-  pdf.setLineWidth(0.3);
-  pdf.rect(10, yPosition, pageWidth - 20, 6, 'F');
+  pdf.setFillColor(248, 248, 248);
+  pdf.setDrawColor(120, 120, 120);
+  pdf.setLineWidth(0.2);
+  pdf.rect(10, yPosition, pageWidth - 20, 6, 'FD');
   
   pdf.setTextColor(0, 0, 0);
   pdf.setFontSize(7);
@@ -180,8 +179,8 @@ export const generateClassicTemplate = (data: TemplateData) => {
     const rowHeight = 5.5;
     
     pdf.setFillColor(255, 255, 255);
-    pdf.setDrawColor(0, 102, 204);
-    pdf.setLineWidth(0.2);
+    pdf.setDrawColor(120, 120, 120);
+    pdf.setLineWidth(0.1);
     
     pdf.setTextColor(0, 0, 0);
     pdf.setFontSize(7);
@@ -216,8 +215,8 @@ export const generateClassicTemplate = (data: TemplateData) => {
   });
   
   // Draw table border and vertical lines
-  pdf.setDrawColor(0, 102, 204);
-  pdf.setLineWidth(0.3);
+  pdf.setDrawColor(120, 120, 120);
+  pdf.setLineWidth(0.2);
   pdf.rect(10, tableStartY, pageWidth - 20, yPosition - tableStartY);
   
   const verticalX = [10, 23, 51, 59, 67, 75, 84, 93, 102, 112, 123, 137, 189, pageWidth - 10];
@@ -226,9 +225,9 @@ export const generateClassicTemplate = (data: TemplateData) => {
   });
   
   // AVERAGE row
-  pdf.setFillColor(220, 235, 250);
+  pdf.setFillColor(248, 248, 248);
   pdf.rect(10, yPosition, pageWidth - 20, 5, 'F');
-  pdf.setDrawColor(0, 102, 204);
+  pdf.setDrawColor(120, 120, 120);
   pdf.rect(10, yPosition, pageWidth - 20, 5);
   
   pdf.setFontSize(8);
@@ -240,10 +239,9 @@ export const generateClassicTemplate = (data: TemplateData) => {
   yPosition += 7;
   
   // Overall stats row
-  pdf.setFillColor(245, 245, 245);
-  pdf.setDrawColor(0, 102, 204);
-  pdf.setLineWidth(0.3);
-  pdf.rect(10, yPosition, pageWidth - 20, 6, 'F');
+  pdf.setFillColor(255, 255, 255);
+  pdf.setDrawColor(120, 120, 120);
+  pdf.setLineWidth(0.2);
   pdf.rect(10, yPosition, pageWidth - 20, 6);
   
   pdf.line(55, yPosition, 55, yPosition + 6);
@@ -253,114 +251,97 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(0, 0, 0);
   pdf.setFontSize(7);
-  pdf.text('Overall Identifier', 12, yPosition + 4);
-  pdf.setTextColor(0, 102, 204);
+  pdf.text('Overall Identifier:', 12, yPosition + 4);
   pdf.text(reportData.overall_identifier?.toString() || '0', 45, yPosition + 4);
   
-  pdf.setTextColor(0, 0, 0);
-  pdf.text('Overall Achievement', 57, yPosition + 4);
+  pdf.text('Overall Achievement:', 57, yPosition + 4);
   pdf.text(reportData.achievement_level || 'N/A', 95, yPosition + 4);
   
-  pdf.text('Overall grade', 117, yPosition + 4);
+  pdf.text('Overall Grade:', 117, yPosition + 4);
   
-  // Grade box
-  pdf.setFillColor(0, 102, 204);
+  // Grade box - subtle
+  pdf.setFillColor(230, 230, 230);
   pdf.rect(145, yPosition + 0.5, 12, 5, 'F');
-  pdf.setTextColor(255, 255, 255);
+  pdf.setTextColor(0, 0, 0);
   pdf.setFontSize(10);
   pdf.text(reportData.overall_grade || 'N/A', 151, yPosition + 4.5, { align: 'center' });
   
   yPosition += 9;
   
-  // GRADE SCORES Table - Colored
+  // GRADE SCORES Table - Minimal colors
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'bold');
-  pdf.setLineWidth(0.3);
-  pdf.setDrawColor(0, 102, 204);
+  pdf.setLineWidth(0.2);
+  pdf.setDrawColor(120, 120, 120);
   
   const gradeTableY = yPosition;
   const gradeColW = (pageWidth - 20) / 6;
   
   // Grade row
-  // GRADE label cell
-  pdf.setFillColor(230, 230, 230);
+  pdf.setFillColor(248, 248, 248);
   pdf.rect(10, gradeTableY, gradeColW, 6, 'F');
   pdf.setTextColor(0, 0, 0);
   pdf.text('GRADE', 12, gradeTableY + 4);
   
-  // A - Blue
-  pdf.setFillColor(66, 133, 244);
+  // A-E cells without heavy colors
+  pdf.setFillColor(255, 255, 255);
   pdf.rect(10 + gradeColW, gradeTableY, gradeColW, 6, 'F');
-  pdf.setTextColor(255, 255, 255);
   pdf.text('A', 10 + gradeColW + gradeColW/2, gradeTableY + 4, { align: 'center' });
   
-  // B - Light Blue
-  pdf.setFillColor(100, 160, 255);
   pdf.rect(10 + gradeColW*2, gradeTableY, gradeColW, 6, 'F');
   pdf.text('B', 10 + gradeColW*2 + gradeColW/2, gradeTableY + 4, { align: 'center' });
   
-  // C - Yellow
-  pdf.setFillColor(255, 235, 59);
   pdf.rect(10 + gradeColW*3, gradeTableY, gradeColW, 6, 'F');
-  pdf.setTextColor(0, 0, 0);
   pdf.text('C', 10 + gradeColW*3 + gradeColW/2, gradeTableY + 4, { align: 'center' });
   
-  // D - Orange
-  pdf.setFillColor(255, 167, 38);
   pdf.rect(10 + gradeColW*4, gradeTableY, gradeColW, 6, 'F');
   pdf.text('D', 10 + gradeColW*4 + gradeColW/2, gradeTableY + 4, { align: 'center' });
   
-  // E - Red
-  pdf.setFillColor(244, 67, 54);
   pdf.rect(10 + gradeColW*5, gradeTableY, gradeColW, 6, 'F');
-  pdf.setTextColor(255, 255, 255);
   pdf.text('E', 10 + gradeColW*5 + gradeColW/2, gradeTableY + 4, { align: 'center' });
   
   // SCORES row
-  pdf.setFillColor(230, 230, 230);
+  pdf.setFillColor(248, 248, 248);
   pdf.rect(10, gradeTableY + 6, gradeColW, 6, 'F');
-  pdf.setTextColor(0, 0, 0);
   pdf.text('SCORES', 12, gradeTableY + 10);
   
-  pdf.setFillColor(66, 133, 244);
+  pdf.setFillColor(255, 255, 255);
+  pdf.setFont('helvetica', 'normal');
   pdf.rect(10 + gradeColW, gradeTableY + 6, gradeColW, 6, 'F');
-  pdf.setTextColor(255, 255, 255);
   pdf.text('100 - 80', 10 + gradeColW + gradeColW/2, gradeTableY + 10, { align: 'center' });
   
-  pdf.setFillColor(100, 160, 255);
   pdf.rect(10 + gradeColW*2, gradeTableY + 6, gradeColW, 6, 'F');
   pdf.text('80 - 70', 10 + gradeColW*2 + gradeColW/2, gradeTableY + 10, { align: 'center' });
   
-  pdf.setFillColor(255, 235, 59);
   pdf.rect(10 + gradeColW*3, gradeTableY + 6, gradeColW, 6, 'F');
-  pdf.setTextColor(0, 0, 0);
   pdf.text('69 - 60', 10 + gradeColW*3 + gradeColW/2, gradeTableY + 10, { align: 'center' });
   
-  pdf.setFillColor(255, 167, 38);
   pdf.rect(10 + gradeColW*4, gradeTableY + 6, gradeColW, 6, 'F');
   pdf.text('60 - 40', 10 + gradeColW*4 + gradeColW/2, gradeTableY + 10, { align: 'center' });
   
-  pdf.setFillColor(244, 67, 54);
   pdf.rect(10 + gradeColW*5, gradeTableY + 6, gradeColW, 6, 'F');
-  pdf.setTextColor(255, 255, 255);
   pdf.text('40 - 0', 10 + gradeColW*5 + gradeColW/2, gradeTableY + 10, { align: 'center' });
   
   // Border
-  pdf.setDrawColor(0, 102, 204);
+  pdf.setDrawColor(120, 120, 120);
   pdf.rect(10, gradeTableY, pageWidth - 20, 12);
+  // Vertical lines
+  for (let i = 1; i <= 5; i++) {
+    pdf.line(10 + gradeColW * i, gradeTableY, 10 + gradeColW * i, gradeTableY + 12);
+  }
+  pdf.line(10, gradeTableY + 6, pageWidth - 10, gradeTableY + 6);
   
   yPosition = gradeTableY + 15;
   
   // Comments Section
-  pdf.setFillColor(220, 235, 250);
-  pdf.setDrawColor(0, 102, 204);
-  pdf.rect(10, yPosition, pageWidth - 20, 20, 'F');
+  pdf.setFillColor(255, 255, 255);
+  pdf.setDrawColor(120, 120, 120);
   pdf.rect(10, yPosition, pageWidth - 20, 20);
   
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(8);
   pdf.setTextColor(0, 0, 0);
-  pdf.text("Class teacher's Comment:", 12, yPosition + 4);
+  pdf.text("Class Teacher's Comment:", 12, yPosition + 4);
   
   pdf.setFont('helvetica', 'italic');
   pdf.setFontSize(7);
@@ -380,15 +361,15 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(7);
   pdf.text("Headteacher's Signature:", 145, yPosition + 13);
-  pdf.setLineWidth(0.3);
-  pdf.setDrawColor(0, 0, 0);
+  pdf.setLineWidth(0.2);
+  pdf.setDrawColor(80, 80, 80);
   pdf.line(145, yPosition + 18, 195, yPosition + 18);
   
   yPosition += 23;
   
   // Key to Terms Used
-  pdf.setDrawColor(0, 102, 204);
-  pdf.setLineWidth(0.3);
+  pdf.setDrawColor(120, 120, 120);
+  pdf.setLineWidth(0.2);
   pdf.rect(10, yPosition, pageWidth - 20, 18);
   
   pdf.setFont('helvetica', 'bold');
@@ -429,9 +410,8 @@ export const generateClassicTemplate = (data: TemplateData) => {
   const termEndDate = new Date(term.end_date).toLocaleDateString('en-GB');
   const nextTermDate = new Date(new Date(term.end_date).getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB');
   
-  pdf.setFillColor(220, 235, 250);
-  pdf.setDrawColor(0, 102, 204);
-  pdf.rect(10, yPosition, pageWidth - 20, 10, 'F');
+  pdf.setFillColor(255, 255, 255);
+  pdf.setDrawColor(120, 120, 120);
   pdf.rect(10, yPosition, pageWidth - 20, 10);
   
   const footerColW = (pageWidth - 20) / 5;
@@ -457,10 +437,12 @@ export const generateClassicTemplate = (data: TemplateData) => {
   
   yPosition += 13;
   
-  // Motto
-  pdf.setFillColor(0, 102, 204);
+  // Motto - subtle
+  pdf.setFillColor(240, 240, 240);
   pdf.rect(10, yPosition, pageWidth - 20, 6, 'F');
-  pdf.setTextColor(255, 255, 255);
+  pdf.setDrawColor(120, 120, 120);
+  pdf.rect(10, yPosition, pageWidth - 20, 6);
+  pdf.setTextColor(50, 50, 50);
   pdf.setFont('helvetica', 'bolditalic');
   pdf.setFontSize(9);
   const motto = schoolInfo.motto || 'Work hard to excel';
