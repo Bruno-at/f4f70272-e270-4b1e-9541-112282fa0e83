@@ -2,6 +2,17 @@ import jsPDF from 'jspdf';
 import { Student, Term, SchoolInfo, StudentMark, Subject } from '@/types/database';
 import { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } from './pdfTemplates';
 
+export type ReportColor = 'white' | 'green' | 'blue' | 'pink' | 'yellow' | 'gray';
+
+export const reportColorHex: Record<ReportColor, string> = {
+  white: '#FFFFFF',
+  green: '#DCFCE7',
+  blue: '#DBEAFE',
+  pink: '#FCE7F3',
+  yellow: '#FEF9C3',
+  gray: '#F3F4F6',
+};
+
 export interface ReportCardData {
   student: Student;
   term: Term;
@@ -17,6 +28,7 @@ export interface ReportCardData {
   };
   subjects: Subject[];
   template?: 'classic' | 'modern' | 'professional' | 'minimal';
+  reportColor?: ReportColor;
 }
 
 export const generateReportCardPDF = async (data: ReportCardData) => {

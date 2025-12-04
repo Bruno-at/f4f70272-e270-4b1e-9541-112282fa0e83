@@ -4,15 +4,27 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Eye } from 'lucide-react';
+import { Eye, Check } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export type TemplateType = 'classic' | 'modern' | 'professional' | 'minimal';
+export type ReportColor = 'white' | 'green' | 'blue' | 'pink' | 'yellow' | 'gray';
 
 interface TemplateSelectorProps {
   value: TemplateType;
   onChange: (template: TemplateType) => void;
+  colorValue: ReportColor;
+  onColorChange: (color: ReportColor) => void;
 }
+
+const reportColors: { id: ReportColor; name: string; bgClass: string; hex: string }[] = [
+  { id: 'white', name: 'White', bgClass: 'bg-white', hex: '#FFFFFF' },
+  { id: 'green', name: 'Green', bgClass: 'bg-green-100', hex: '#DCFCE7' },
+  { id: 'blue', name: 'Blue', bgClass: 'bg-blue-100', hex: '#DBEAFE' },
+  { id: 'pink', name: 'Pink', bgClass: 'bg-pink-100', hex: '#FCE7F3' },
+  { id: 'yellow', name: 'Yellow', bgClass: 'bg-yellow-100', hex: '#FEF9C3' },
+  { id: 'gray', name: 'Gray', bgClass: 'bg-gray-100', hex: '#F3F4F6' },
+];
 
 const templates = [
   {
@@ -214,68 +226,98 @@ const TemplatePreview = ({ template }: { template: typeof templates[0] }) => {
   );
 };
 
-export const TemplateSelector = ({ value, onChange }: TemplateSelectorProps) => {
+export const TemplateSelector = ({ value, onChange, colorValue, onColorChange }: TemplateSelectorProps) => {
   const [previewTemplate, setPreviewTemplate] = useState<typeof templates[0] | null>(null);
 
   return (
-    <div className="space-y-4">
-      <Label className="text-base">Select Report Card Template</Label>
-      <RadioGroup value={value} onValueChange={(val) => onChange(val as TemplateType)}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {templates.map((template) => (
-            <Card
-              key={template.id}
-              className={`cursor-pointer transition-all ${
-                value === template.id ? 'ring-2 ring-primary' : 'hover:border-primary'
-              }`}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <RadioGroupItem value={template.id} id={template.id} className="mt-1" />
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor={template.id} className="text-base font-semibold cursor-pointer">
-                        {template.name}
-                      </Label>
-                      <Dialog open={previewTemplate?.id === template.id} onOpenChange={(open) => !open && setPreviewTemplate(null)}>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPreviewTemplate(template);
-                            }}
-                          >
-                            <Eye className="w-4 h-4 mr-1" />
-                            Preview
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-3xl max-h-[90vh]">
-                          <DialogHeader>
-                            <DialogTitle>{template.name} Template Preview</DialogTitle>
-                          </DialogHeader>
-                          <ScrollArea className="max-h-[calc(90vh-100px)]">
-                            <TemplatePreview template={template} />
-                          </ScrollArea>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{template.description}</p>
-                    <div className="flex flex-wrap gap-1">
-                      {template.features.slice(0, 2).map((feature, idx) => (
-                        <span key={idx} className="text-xs bg-muted px-2 py-1 rounded">
-                          {feature}
-                        </span>
-                      ))}
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <Label className="text-base">Select Report Card Template</Label>
+        <RadioGroup value={value} onValueChange={(val) => onChange(val as TemplateType)}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {templates.map((template) => (
+              <Card
+                key={template.id}
+                className={`cursor-pointer transition-all ${
+                  value === template.id ? 'ring-2 ring-primary' : 'hover:border-primary'
+                }`}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <RadioGroupItem value={template.id} id={template.id} className="mt-1" />
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor={template.id} className="text-base font-semibold cursor-pointer">
+                          {template.name}
+                        </Label>
+                        <Dialog open={previewTemplate?.id === template.id} onOpenChange={(open) => !open && setPreviewTemplate(null)}>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewTemplate(template);
+                              }}
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              Preview
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-3xl max-h-[90vh]">
+                            <DialogHeader>
+                              <DialogTitle>{template.name} Template Preview</DialogTitle>
+                            </DialogHeader>
+                            <ScrollArea className="max-h-[calc(90vh-100px)]">
+                              <TemplatePreview template={template} />
+                            </ScrollArea>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{template.description}</p>
+                      <div className="flex flex-wrap gap-1">
+                        {template.features.slice(0, 2).map((feature, idx) => (
+                          <span key={idx} className="text-xs bg-muted px-2 py-1 rounded">
+                            {feature}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </RadioGroup>
+      </div>
+
+      <div className="space-y-4">
+        <Label className="text-base">Select Report Card Color</Label>
+        <div className="flex flex-wrap gap-3">
+          {reportColors.map((color) => (
+            <button
+              key={color.id}
+              type="button"
+              onClick={() => onColorChange(color.id)}
+              className={`relative w-12 h-12 rounded-lg border-2 transition-all ${color.bgClass} ${
+                colorValue === color.id 
+                  ? 'border-primary ring-2 ring-primary ring-offset-2' 
+                  : 'border-border hover:border-primary/50'
+              }`}
+              title={color.name}
+            >
+              {colorValue === color.id && (
+                <Check className="w-5 h-5 absolute inset-0 m-auto text-primary" />
+              )}
+            </button>
           ))}
         </div>
-      </RadioGroup>
+        <p className="text-sm text-muted-foreground">
+          Selected: <span className="font-medium">{reportColors.find(c => c.id === colorValue)?.name}</span> - This color will be applied to the entire report card background
+        </p>
+      </div>
     </div>
   );
 };
+
+export { reportColors };

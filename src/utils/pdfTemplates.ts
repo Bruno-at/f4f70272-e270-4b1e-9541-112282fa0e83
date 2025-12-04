@@ -1,6 +1,26 @@
 import jsPDF from 'jspdf';
 import { Student, Term, SchoolInfo, StudentMark } from '@/types/database';
 
+export type ReportColor = 'white' | 'green' | 'blue' | 'pink' | 'yellow' | 'gray';
+
+export const reportColorHex: Record<ReportColor, string> = {
+  white: '#FFFFFF',
+  green: '#DCFCE7',
+  blue: '#DBEAFE',
+  pink: '#FCE7F3',
+  yellow: '#FEF9C3',
+  gray: '#F3F4F6',
+};
+
+const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
+  } : { r: 255, g: 255, b: 255 };
+};
+
 interface TemplateData {
   student: Student;
   term: Term;
@@ -14,13 +34,19 @@ interface TemplateData {
     class_teacher_comment: string;
     headteacher_comment: string;
   };
+  reportColor?: ReportColor;
 }
 
 export const generateClassicTemplate = (data: TemplateData) => {
-  const { student, term, schoolInfo, marks, reportData } = data;
+  const { student, term, schoolInfo, marks, reportData, reportColor = 'white' } = data;
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
+  
+  // Apply background color to entire page
+  const bgColor = hexToRgb(reportColorHex[reportColor]);
+  pdf.setFillColor(bgColor.r, bgColor.g, bgColor.b);
+  pdf.rect(0, 0, pageWidth, pageHeight, 'F');
   
   // Thin outer border
   pdf.setDrawColor(120, 120, 120);

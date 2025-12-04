@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Student, Term, Class, Subject, SchoolInfo } from '@/types/database';
 import { Download, FileText, Users } from 'lucide-react';
 import { generateReportCardPDF } from '@/utils/pdfGenerator';
-import { TemplateSelector, TemplateType } from '@/components/TemplateSelector';
+import { TemplateSelector, TemplateType, ReportColor } from '@/components/TemplateSelector';
 
 const ReportGenerator = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -26,6 +26,7 @@ const ReportGenerator = () => {
   const [teacherComment, setTeacherComment] = useState('');
   const [headteacherComment, setHeadteacherComment] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('classic');
+  const [selectedColor, setSelectedColor] = useState<ReportColor>('white');
 
   const { toast } = useToast();
 
@@ -273,7 +274,8 @@ const ReportGenerator = () => {
         headteacher_comment: reportData.headteacher_comment,
       },
       subjects,
-      template: selectedTemplate
+      template: selectedTemplate,
+      reportColor: selectedColor
     });
   };
 
@@ -320,7 +322,12 @@ const ReportGenerator = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <TemplateSelector value={selectedTemplate} onChange={setSelectedTemplate} />
+          <TemplateSelector 
+            value={selectedTemplate} 
+            onChange={setSelectedTemplate}
+            colorValue={selectedColor}
+            onColorChange={setSelectedColor}
+          />
         </CardContent>
       </Card>
 
