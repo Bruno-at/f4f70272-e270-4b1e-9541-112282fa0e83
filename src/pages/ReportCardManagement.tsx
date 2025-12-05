@@ -207,9 +207,27 @@ const ReportCardManagement = () => {
   };
 
   const handlePrint = async (reportId: string) => {
+    // Open window IMMEDIATELY (synchronously) to avoid popup blocker
+    const printWindow = window.open('', '_blank');
+    
+    if (!printWindow) {
+      toast({
+        title: "Popup Blocked",
+        description: "Please allow popups for this site to print report cards",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Show loading message in the new window
+    printWindow.document.write('<html><head><title>Loading Report Card...</title></head><body><p>Generating report card, please wait...</p></body></html>');
+
     try {
       const reportData = await fetchFullReportData(reportId);
-      if (!reportData) return;
+      if (!reportData) {
+        printWindow.close();
+        return;
+      }
 
       // Generate PDF using the appropriate template
       const { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } = await import('@/utils/pdfTemplates');
@@ -229,39 +247,18 @@ const ReportCardManagement = () => {
           pdf = generateClassicTemplate(reportData);
       }
 
-      // Create blob and use iframe for printing (avoids popup blocker)
-      const pdfBlob = pdf.output('blob');
-      const pdfUrl = URL.createObjectURL(pdfBlob);
+      // Get PDF as data URL and display in the opened window
+      const pdfDataUri = pdf.output('datauristring');
       
-      // Create a hidden iframe for printing
-      const printFrame = document.createElement('iframe');
-      printFrame.style.position = 'fixed';
-      printFrame.style.right = '0';
-      printFrame.style.bottom = '0';
-      printFrame.style.width = '0';
-      printFrame.style.height = '0';
-      printFrame.style.border = 'none';
-      printFrame.src = pdfUrl;
-      
-      document.body.appendChild(printFrame);
-      
-      printFrame.onload = () => {
-        setTimeout(() => {
-          printFrame.contentWindow?.print();
-          // Clean up after printing
-          setTimeout(() => {
-            document.body.removeChild(printFrame);
-            URL.revokeObjectURL(pdfUrl);
-          }, 1000);
-        }, 500);
-      };
+      printWindow.location.href = pdfDataUri;
 
       toast({
         title: "Success",
-        description: "Print dialog opening..."
+        description: "Report card opened for printing"
       });
     } catch (error) {
       console.error('Error printing report:', error);
+      printWindow.close();
       toast({
         title: "Error",
         description: "Failed to generate report for printing",
