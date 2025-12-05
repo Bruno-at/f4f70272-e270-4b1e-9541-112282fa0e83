@@ -211,14 +211,54 @@ const ReportCardManagement = () => {
       const reportData = await fetchFullReportData(reportId);
       if (!reportData) return;
 
-      // Generate PDF and open in new window for printing
-      const { generateClassicTemplate } = await import('@/utils/pdfTemplates');
-      const pdf = generateClassicTemplate(reportData);
-      window.open(pdf.output('bloburl'), '_blank');
+      // Generate PDF using the appropriate template
+      const { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } = await import('@/utils/pdfTemplates');
+      
+      let pdf;
+      switch (reportData.template) {
+        case 'modern':
+          pdf = generateModernTemplate(reportData);
+          break;
+        case 'professional':
+          pdf = generateProfessionalTemplate(reportData);
+          break;
+        case 'minimal':
+          pdf = generateMinimalTemplate(reportData);
+          break;
+        default:
+          pdf = generateClassicTemplate(reportData);
+      }
+
+      // Create blob and use iframe for printing (avoids popup blocker)
+      const pdfBlob = pdf.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      
+      // Create a hidden iframe for printing
+      const printFrame = document.createElement('iframe');
+      printFrame.style.position = 'fixed';
+      printFrame.style.right = '0';
+      printFrame.style.bottom = '0';
+      printFrame.style.width = '0';
+      printFrame.style.height = '0';
+      printFrame.style.border = 'none';
+      printFrame.src = pdfUrl;
+      
+      document.body.appendChild(printFrame);
+      
+      printFrame.onload = () => {
+        setTimeout(() => {
+          printFrame.contentWindow?.print();
+          // Clean up after printing
+          setTimeout(() => {
+            document.body.removeChild(printFrame);
+            URL.revokeObjectURL(pdfUrl);
+          }, 1000);
+        }, 500);
+      };
 
       toast({
         title: "Success",
-        description: "Opening print preview..."
+        description: "Print dialog opening..."
       });
     } catch (error) {
       console.error('Error printing report:', error);
