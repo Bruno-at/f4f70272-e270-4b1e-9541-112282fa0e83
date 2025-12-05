@@ -256,25 +256,9 @@ const ReportCardManagement = () => {
   const executePrint = async () => {
     if (!selectedReport) return;
 
-    // Open window IMMEDIATELY (synchronously) to avoid popup blocker
-    const printWindow = window.open('', '_blank');
-    
-    if (!printWindow) {
-      toast({
-        title: "Popup Blocked",
-        description: "Please allow popups for this site to print report cards",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Show loading message in the new window
-    printWindow.document.write('<html><head><title>Loading Report Card...</title></head><body><p>Generating report card, please wait...</p></body></html>');
-
     try {
       const reportData = printPreviewData || await fetchFullReportData(selectedReport.id);
       if (!reportData) {
-        printWindow.close();
         return;
       }
 
@@ -296,19 +280,38 @@ const ReportCardManagement = () => {
           pdf = generateClassicTemplate(reportData);
       }
 
-      // Get PDF as data URL and display in the opened window
-      const pdfDataUri = pdf.output('datauristring');
-      printWindow.location.href = pdfDataUri;
+      // Create blob URL (less likely to be blocked than data URI)
+      const pdfBlob = pdf.output('blob');
+      const blobUrl = URL.createObjectURL(pdfBlob);
 
-      toast({
-        title: "Success",
-        description: "Report card opened for printing"
-      });
+      // Try to open in new window
+      const printWindow = window.open(blobUrl, '_blank');
       
-      setPrintPreviewDialogOpen(false);
+      if (printWindow) {
+        // Clean up blob URL after window loads
+        printWindow.onload = () => {
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        };
+        
+        toast({
+          title: "Success",
+          description: "Report card opened - use Ctrl+P or Cmd+P to print"
+        });
+        setPrintPreviewDialogOpen(false);
+      } else {
+        // Fallback: Download the PDF if popup blocked
+        URL.revokeObjectURL(blobUrl);
+        const fileName = `${reportData.student.name.replace(/\s+/g, '_')}_Report_${reportData.term.term_name}_${reportData.term.year}.pdf`;
+        pdf.save(fileName);
+        
+        toast({
+          title: "PDF Downloaded",
+          description: "Open the downloaded file and print from there"
+        });
+        setPrintPreviewDialogOpen(false);
+      }
     } catch (error) {
       console.error('Error printing report:', error);
-      printWindow.close();
       toast({
         title: "Error",
         description: "Failed to generate report for printing",
