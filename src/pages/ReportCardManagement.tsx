@@ -60,6 +60,7 @@ const ReportCardManagement = () => {
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [printPreviewDialogOpen, setPrintPreviewDialogOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<ReportCardWithDetails | null>(null);
   const [editedData, setEditedData] = useState({
     status: '',
@@ -73,6 +74,7 @@ const ReportCardManagement = () => {
     other_requirements: ''
   });
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [printPreviewLoading, setPrintPreviewLoading] = useState(false);
   const [previewData, setPreviewData] = useState<{
     student: Student;
     term: Term;
@@ -87,6 +89,23 @@ const ReportCardManagement = () => {
       class_teacher_comment: string;
       headteacher_comment: string;
     };
+    template?: 'classic' | 'modern' | 'professional' | 'minimal';
+  } | null>(null);
+  const [printPreviewData, setPrintPreviewData] = useState<{
+    student: Student;
+    term: Term;
+    schoolInfo: SchoolInfo;
+    marks: StudentMark[];
+    subjects: Subject[];
+    reportData: {
+      overall_average: number;
+      overall_grade: string;
+      overall_identifier: number;
+      achievement_level: string;
+      class_teacher_comment: string;
+      headteacher_comment: string;
+    };
+    template?: 'classic' | 'modern' | 'professional' | 'minimal';
   } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -207,6 +226,36 @@ const ReportCardManagement = () => {
   };
 
   const handlePrint = async (reportId: string) => {
+    // Open print preview dialog first
+    setPrintPreviewLoading(true);
+    setPrintPreviewDialogOpen(true);
+    
+    const report = reportCards.find(r => r.id === reportId);
+    setSelectedReport(report || null);
+
+    try {
+      const reportData = await fetchFullReportData(reportId);
+      if (!reportData) {
+        setPrintPreviewDialogOpen(false);
+        return;
+      }
+      setPrintPreviewData(reportData);
+    } catch (error) {
+      console.error('Error loading print preview:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load report card preview",
+        variant: "destructive"
+      });
+      setPrintPreviewDialogOpen(false);
+    } finally {
+      setPrintPreviewLoading(false);
+    }
+  };
+
+  const executePrint = async () => {
+    if (!selectedReport) return;
+
     // Open window IMMEDIATELY (synchronously) to avoid popup blocker
     const printWindow = window.open('', '_blank');
     
@@ -223,7 +272,7 @@ const ReportCardManagement = () => {
     printWindow.document.write('<html><head><title>Loading Report Card...</title></head><body><p>Generating report card, please wait...</p></body></html>');
 
     try {
-      const reportData = await fetchFullReportData(reportId);
+      const reportData = printPreviewData || await fetchFullReportData(selectedReport.id);
       if (!reportData) {
         printWindow.close();
         return;
@@ -249,13 +298,14 @@ const ReportCardManagement = () => {
 
       // Get PDF as data URL and display in the opened window
       const pdfDataUri = pdf.output('datauristring');
-      
       printWindow.location.href = pdfDataUri;
 
       toast({
         title: "Success",
         description: "Report card opened for printing"
       });
+      
+      setPrintPreviewDialogOpen(false);
     } catch (error) {
       console.error('Error printing report:', error);
       printWindow.close();
@@ -672,6 +722,51 @@ const ReportCardManagement = () => {
                 </Button>
               </>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Print Preview Dialog */}
+      <Dialog open={printPreviewDialogOpen} onOpenChange={setPrintPreviewDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Printer className="w-5 h-5" />
+              Print Preview
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              Review the report card before printing
+            </p>
+          </DialogHeader>
+          {printPreviewLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-muted-foreground">Loading preview...</span>
+            </div>
+          ) : printPreviewData ? (
+            <div className="border rounded-lg overflow-hidden bg-white">
+              <ReportCardPreview
+                student={printPreviewData.student}
+                term={printPreviewData.term}
+                schoolInfo={printPreviewData.schoolInfo}
+                marks={printPreviewData.marks}
+                subjects={printPreviewData.subjects}
+                reportData={printPreviewData.reportData}
+              />
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              Failed to load report card data
+            </div>
+          )}
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => setPrintPreviewDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={executePrint} disabled={printPreviewLoading || !printPreviewData}>
+              <Printer className="w-4 h-4 mr-2" />
+              Print Now
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
