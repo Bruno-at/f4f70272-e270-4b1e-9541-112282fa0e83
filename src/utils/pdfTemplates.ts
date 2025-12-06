@@ -361,7 +361,7 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.setFont('helvetica', 'italic');
   pdf.setFontSize(7);
   const teacherComment = reportData.class_teacher_comment || 'No comment provided';
-  pdf.text(teacherComment.substring(0, 100), 12, yPosition + 8);
+  pdf.text(teacherComment.substring(0, 80), 12, yPosition + 8);
   
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(8);
@@ -370,9 +370,17 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.setFont('helvetica', 'italic');
   pdf.setFontSize(7);
   const headComment = reportData.headteacher_comment || 'No comment provided';
-  pdf.text(headComment.substring(0, 70), 12, yPosition + 17);
+  pdf.text(headComment.substring(0, 60), 12, yPosition + 17);
   
-  // Headteacher's Signature - on the right
+  // Class Teacher's Signature - on the right, above Headteacher's
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(7);
+  pdf.text("Class Teacher's Signature:", 145, yPosition + 4);
+  pdf.setLineWidth(0.2);
+  pdf.setDrawColor(80, 80, 80);
+  pdf.line(145, yPosition + 9, 195, yPosition + 9);
+  
+  // Headteacher's Signature - on the right, below Class Teacher's
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(7);
   pdf.text("Headteacher's Signature:", 145, yPosition + 13);
