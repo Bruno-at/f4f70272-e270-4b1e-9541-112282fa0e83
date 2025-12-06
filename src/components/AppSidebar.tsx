@@ -1,4 +1,4 @@
-import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare, FolderOpen } from 'lucide-react';
+import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare, FolderOpen, Pencil } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
   Sidebar,
@@ -24,6 +24,7 @@ const menuItems = [
   { id: 'comments', title: 'Comments', icon: MessageSquare },
   { id: 'reports', title: 'Reports', icon: Download },
   { id: 'manage-reports', title: 'Manage Report Cards', icon: FolderOpen, isRoute: true },
+  { id: 'teacher-dashboard', title: 'Teacher Dashboard', icon: Pencil },
 ];
 
 interface AppSidebarProps {

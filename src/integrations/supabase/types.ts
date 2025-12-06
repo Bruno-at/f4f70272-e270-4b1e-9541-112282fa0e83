@@ -41,23 +41,34 @@ export type Database = {
       classes: {
         Row: {
           class_name: string
+          class_teacher_id: string | null
           created_at: string
           id: string
           section: string | null
         }
         Insert: {
           class_name: string
+          class_teacher_id?: string | null
           created_at?: string
           id?: string
           section?: string | null
         }
         Update: {
           class_name?: string
+          class_teacher_id?: string | null
           created_at?: string
           id?: string
           section?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "classes_class_teacher_id_fkey"
+            columns: ["class_teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       comment_templates: {
         Row: {
@@ -218,6 +229,7 @@ export type Database = {
           full_name: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
+          signature_url: string | null
           updated_at: string | null
         }
         Insert: {
@@ -225,6 +237,7 @@ export type Database = {
           full_name: string
           id: string
           role?: Database["public"]["Enums"]["app_role"]
+          signature_url?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -232,6 +245,7 @@ export type Database = {
           full_name?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          signature_url?: string | null
           updated_at?: string | null
         }
         Relationships: []
