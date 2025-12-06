@@ -12,6 +12,72 @@ export const reportColorHex: Record<ReportColor, string> = {
   gray: '#F3F4F6',
 };
 
+// Unique accent colors for sensitive fields based on background color
+export const sensitiveFieldColors: Record<ReportColor, {
+  gradeA: string;
+  gradeB: string;
+  gradeC: string;
+  gradeD: string;
+  gradeE: string;
+  comments: string;
+  overallStats: string;
+}> = {
+  white: {
+    gradeA: '#FFFFFF',
+    gradeB: '#FFFFFF',
+    gradeC: '#FFFFFF',
+    gradeD: '#FFFFFF',
+    gradeE: '#FFFFFF',
+    comments: '#FFFFFF',
+    overallStats: '#FFFFFF',
+  },
+  green: {
+    gradeA: '#FEF3C7', // Amber light
+    gradeB: '#DBEAFE', // Blue light
+    gradeC: '#E0E7FF', // Indigo light
+    gradeD: '#FCE7F3', // Pink light
+    gradeE: '#FEE2E2', // Red light
+    comments: '#FFFBEB', // Warm cream
+    overallStats: '#F0FDF4', // Light green
+  },
+  blue: {
+    gradeA: '#DCFCE7', // Green light
+    gradeB: '#FEF3C7', // Amber light
+    gradeC: '#FCE7F3', // Pink light
+    gradeD: '#FEF9C3', // Yellow light
+    gradeE: '#FEE2E2', // Red light
+    comments: '#F0F9FF', // Light blue
+    overallStats: '#EFF6FF', // Soft blue
+  },
+  pink: {
+    gradeA: '#DCFCE7', // Green light
+    gradeB: '#DBEAFE', // Blue light
+    gradeC: '#FEF3C7', // Amber light
+    gradeD: '#E0E7FF', // Indigo light
+    gradeE: '#FEE2E2', // Red light
+    comments: '#FFF1F2', // Soft pink
+    overallStats: '#FDF2F8', // Light pink
+  },
+  yellow: {
+    gradeA: '#DCFCE7', // Green light
+    gradeB: '#DBEAFE', // Blue light
+    gradeC: '#E0E7FF', // Indigo light
+    gradeD: '#FCE7F3', // Pink light
+    gradeE: '#FEE2E2', // Red light
+    comments: '#FFFBEB', // Warm cream
+    overallStats: '#FEFCE8', // Soft yellow
+  },
+  gray: {
+    gradeA: '#DCFCE7', // Green light
+    gradeB: '#DBEAFE', // Blue light
+    gradeC: '#FEF3C7', // Amber light
+    gradeD: '#FCE7F3', // Pink light
+    gradeE: '#FEE2E2', // Red light
+    comments: '#FFFFFF', // White
+    overallStats: '#F9FAFB', // Soft gray
+  },
+};
+
 const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? {
@@ -264,10 +330,15 @@ export const generateClassicTemplate = (data: TemplateData) => {
   
   yPosition += 7;
   
-  // Overall stats row
-  pdf.setFillColor(255, 255, 255);
+  // Get sensitive field colors
+  const fieldColors = sensitiveFieldColors[reportColor];
+  const overallStatsColor = hexToRgb(fieldColors.overallStats);
+  
+  // Overall stats row - with unique background
+  pdf.setFillColor(overallStatsColor.r, overallStatsColor.g, overallStatsColor.b);
   pdf.setDrawColor(120, 120, 120);
   pdf.setLineWidth(0.2);
+  pdf.rect(10, yPosition, pageWidth - 20, 6, 'F');
   pdf.rect(10, yPosition, pageWidth - 20, 6);
   
   pdf.line(55, yPosition, 55, yPosition + 6);
@@ -309,10 +380,17 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.setTextColor(0, 0, 0);
   pdf.text('GRADE', 12, gradeTableY + 4);
   
-  // A-E grade cells - explicitly set white fill for each
+  // A-E grade cells - use unique colors for each grade
   const grades = ['A', 'B', 'C', 'D', 'E'];
+  const gradeColors = [
+    hexToRgb(fieldColors.gradeA),
+    hexToRgb(fieldColors.gradeB),
+    hexToRgb(fieldColors.gradeC),
+    hexToRgb(fieldColors.gradeD),
+    hexToRgb(fieldColors.gradeE),
+  ];
   grades.forEach((grade, i) => {
-    pdf.setFillColor(255, 255, 255);
+    pdf.setFillColor(gradeColors[i].r, gradeColors[i].g, gradeColors[i].b);
     pdf.rect(10 + gradeColW * (i + 1), gradeTableY, gradeColW, 6, 'F');
     pdf.setTextColor(0, 0, 0);
     pdf.text(grade, 10 + gradeColW * (i + 1) + gradeColW / 2, gradeTableY + 4, { align: 'center' });
@@ -325,11 +403,11 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.setFont('helvetica', 'bold');
   pdf.text('SCORES', 12, gradeTableY + 10);
   
-  // Score range cells - explicitly set white fill for each
+  // Score range cells - use same unique colors as grades
   const scores = ['100 - 80', '79 - 70', '69 - 60', '59 - 40', '39 - 0'];
   pdf.setFont('helvetica', 'normal');
   scores.forEach((score, i) => {
-    pdf.setFillColor(255, 255, 255);
+    pdf.setFillColor(gradeColors[i].r, gradeColors[i].g, gradeColors[i].b);
     pdf.rect(10 + gradeColW * (i + 1), gradeTableY + 6, gradeColW, 6, 'F');
     pdf.setTextColor(0, 0, 0);
     pdf.text(score, 10 + gradeColW * (i + 1) + gradeColW / 2, gradeTableY + 10, { align: 'center' });
@@ -348,9 +426,11 @@ export const generateClassicTemplate = (data: TemplateData) => {
   
   yPosition = gradeTableY + 15;
   
-  // Comments Section
-  pdf.setFillColor(255, 255, 255);
+  // Comments Section - with unique background
+  const commentsColor = hexToRgb(fieldColors.comments);
+  pdf.setFillColor(commentsColor.r, commentsColor.g, commentsColor.b);
   pdf.setDrawColor(120, 120, 120);
+  pdf.rect(10, yPosition, pageWidth - 20, 20, 'F');
   pdf.rect(10, yPosition, pageWidth - 20, 20);
   
   pdf.setFont('helvetica', 'bold');
