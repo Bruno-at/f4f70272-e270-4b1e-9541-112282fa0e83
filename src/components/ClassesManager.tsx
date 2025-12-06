@@ -3,13 +3,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Class } from '@/types/database';
-import { Plus, Edit, Trash2, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, Users, UserCheck } from 'lucide-react';
+
+interface Teacher {
+  id: string;
+  full_name: string;
+}
+
+interface ClassWithTeacher extends Class {
+  class_teacher_id?: string | null;
+  profiles?: { full_name: string } | null;
+}
 
 const ClassesManager = () => {
-  const [classes, setClasses] = useState<Class[]>([]);
+  const [classes, setClasses] = useState<ClassWithTeacher[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -17,11 +29,13 @@ const ClassesManager = () => {
 
   const [formData, setFormData] = useState({
     class_name: '',
-    section: ''
+    section: '',
+    class_teacher_id: ''
   });
 
   useEffect(() => {
     fetchClasses();
+    fetchTeachers();
   }, []);
 
   const fetchClasses = async () => {
@@ -30,7 +44,8 @@ const ClassesManager = () => {
         .from('classes')
         .select(`
           *,
-          students!students_class_id_fkey(count)
+          students!students_class_id_fkey(count),
+          profiles!classes_class_teacher_id_fkey(full_name)
         `)
         .order('class_name');
 
@@ -45,6 +60,21 @@ const ClassesManager = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTeachers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('role', ['teacher', 'headteacher'])
+        .order('full_name');
+
+      if (error) throw error;
+      setTeachers(data || []);
+    } catch (error) {
+      console.error('Error fetching teachers:', error);
     }
   };
 
@@ -64,7 +94,8 @@ const ClassesManager = () => {
     try {
       const dataToSave = {
         class_name: formData.class_name,
-        section: formData.section || null
+        section: formData.section || null,
+        class_teacher_id: formData.class_teacher_id || null
       };
 
       if (editingId) {
@@ -94,7 +125,8 @@ const ClassesManager = () => {
 
       setFormData({
         class_name: '',
-        section: ''
+        section: '',
+        class_teacher_id: ''
       });
       setEditingId(null);
       await fetchClasses();
@@ -110,10 +142,11 @@ const ClassesManager = () => {
     }
   };
 
-  const handleEdit = (classData: Class) => {
+  const handleEdit = (classData: ClassWithTeacher) => {
     setFormData({
       class_name: classData.class_name,
-      section: classData.section || ''
+      section: classData.section || '',
+      class_teacher_id: classData.class_teacher_id || ''
     });
     setEditingId(classData.id);
   };
@@ -163,7 +196,7 @@ const ClassesManager = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="class_name">Class Name *</Label>
                 <Input
@@ -184,6 +217,26 @@ const ClassesManager = () => {
                   placeholder="e.g., A, B, East, West"
                 />
               </div>
+
+              <div>
+                <Label htmlFor="class_teacher">Class Teacher (Optional)</Label>
+                <Select
+                  value={formData.class_teacher_id}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, class_teacher_id: value === 'none' ? '' : value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select class teacher" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No class teacher</SelectItem>
+                    {teachers.map((teacher) => (
+                      <SelectItem key={teacher.id} value={teacher.id}>
+                        {teacher.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="flex gap-2">
@@ -203,7 +256,8 @@ const ClassesManager = () => {
                     setEditingId(null);
                     setFormData({
                       class_name: '',
-                      section: ''
+                      section: '',
+                      class_teacher_id: ''
                     });
                   }}
                 >
@@ -236,9 +290,15 @@ const ClassesManager = () => {
                       {classData.class_name}
                       {classData.section && ` - ${classData.section}`}
                     </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Students enrolled: {(classData as any).students?.[0]?.count || 0}
-                    </p>
+                    <div className="flex flex-wrap gap-x-4 text-sm text-muted-foreground">
+                      <span>Students: {(classData as any).students?.[0]?.count || 0}</span>
+                      {classData.profiles && (
+                        <span className="flex items-center gap-1">
+                          <UserCheck className="w-3 h-3" />
+                          {classData.profiles.full_name}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Button

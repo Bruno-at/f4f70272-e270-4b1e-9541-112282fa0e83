@@ -101,10 +101,11 @@ interface TemplateData {
     headteacher_comment: string;
   };
   reportColor?: ReportColor;
+  classTeacherSignature?: string | null;
 }
 
 export const generateClassicTemplate = (data: TemplateData) => {
-  const { student, term, schoolInfo, marks, reportData, reportColor = 'white' } = data;
+  const { student, term, schoolInfo, marks, reportData, reportColor = 'white', classTeacherSignature } = data;
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -456,9 +457,25 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(7);
   pdf.text("Class Teacher's Signature:", 145, yPosition + 4);
-  pdf.setLineWidth(0.2);
-  pdf.setDrawColor(80, 80, 80);
-  pdf.line(145, yPosition + 9, 195, yPosition + 9);
+  
+  // Add signature image if available, otherwise show line with "No signature provided"
+  if (classTeacherSignature && classTeacherSignature.startsWith('data:image')) {
+    try {
+      // Add signature image - positioned below the label
+      pdf.addImage(classTeacherSignature, 'PNG', 145, yPosition + 4.5, 35, 8);
+    } catch (error) {
+      console.log('Could not add class teacher signature');
+      pdf.setFont('helvetica', 'italic');
+      pdf.setFontSize(6);
+      pdf.setTextColor(120, 120, 120);
+      pdf.text("No signature provided", 145, yPosition + 8);
+      pdf.setTextColor(0, 0, 0);
+    }
+  } else {
+    pdf.setLineWidth(0.2);
+    pdf.setDrawColor(80, 80, 80);
+    pdf.line(145, yPosition + 9, 195, yPosition + 9);
+  }
   
   // Headteacher's Signature - on the right, below Class Teacher's
   pdf.setFont('helvetica', 'bold');

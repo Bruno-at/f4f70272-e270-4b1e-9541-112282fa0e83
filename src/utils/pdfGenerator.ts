@@ -29,6 +29,7 @@ export interface ReportCardData {
   subjects: Subject[];
   template?: 'classic' | 'modern' | 'professional' | 'minimal';
   reportColor?: ReportColor;
+  classTeacherSignature?: string | null;
 }
 
 export const generateReportCardPDF = async (data: ReportCardData) => {

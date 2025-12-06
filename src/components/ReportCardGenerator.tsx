@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare } from 'lucide-react';
+import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare, Pencil } from 'lucide-react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { ThemeToggle } from './ThemeToggle';
@@ -13,6 +13,7 @@ import SubjectsManager from './SubjectsManager';
 import StudentMarksManager from './StudentMarksManager';
 import GradingSystemManager from './GradingSystemManager';
 import CommentTemplatesManager from './CommentTemplatesManager';
+import TeacherDashboard from './TeacherDashboard';
 
 const ReportCardGenerator = () => {
   const [activeSection, setActiveSection] = useState('school');
@@ -172,6 +173,8 @@ const ReportCardGenerator = () => {
             </CardContent>
           </Card>
         );
+      case 'teacher-dashboard':
+        return <TeacherDashboard />;
       default:
         return null;
     }
