@@ -303,58 +303,47 @@ export const generateClassicTemplate = (data: TemplateData) => {
   const gradeTableY = yPosition;
   const gradeColW = (pageWidth - 20) / 6;
   
-  // Grade row
+  // Grade row - header cell
   pdf.setFillColor(248, 248, 248);
   pdf.rect(10, gradeTableY, gradeColW, 6, 'F');
   pdf.setTextColor(0, 0, 0);
   pdf.text('GRADE', 12, gradeTableY + 4);
   
-  // A-E cells without heavy colors
-  pdf.setFillColor(255, 255, 255);
-  pdf.rect(10 + gradeColW, gradeTableY, gradeColW, 6, 'F');
-  pdf.text('A', 10 + gradeColW + gradeColW/2, gradeTableY + 4, { align: 'center' });
+  // A-E grade cells - explicitly set white fill for each
+  const grades = ['A', 'B', 'C', 'D', 'E'];
+  grades.forEach((grade, i) => {
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(10 + gradeColW * (i + 1), gradeTableY, gradeColW, 6, 'F');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(grade, 10 + gradeColW * (i + 1) + gradeColW / 2, gradeTableY + 4, { align: 'center' });
+  });
   
-  pdf.rect(10 + gradeColW*2, gradeTableY, gradeColW, 6, 'F');
-  pdf.text('B', 10 + gradeColW*2 + gradeColW/2, gradeTableY + 4, { align: 'center' });
-  
-  pdf.rect(10 + gradeColW*3, gradeTableY, gradeColW, 6, 'F');
-  pdf.text('C', 10 + gradeColW*3 + gradeColW/2, gradeTableY + 4, { align: 'center' });
-  
-  pdf.rect(10 + gradeColW*4, gradeTableY, gradeColW, 6, 'F');
-  pdf.text('D', 10 + gradeColW*4 + gradeColW/2, gradeTableY + 4, { align: 'center' });
-  
-  pdf.rect(10 + gradeColW*5, gradeTableY, gradeColW, 6, 'F');
-  pdf.text('E', 10 + gradeColW*5 + gradeColW/2, gradeTableY + 4, { align: 'center' });
-  
-  // SCORES row
+  // SCORES row - header cell
   pdf.setFillColor(248, 248, 248);
   pdf.rect(10, gradeTableY + 6, gradeColW, 6, 'F');
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFont('helvetica', 'bold');
   pdf.text('SCORES', 12, gradeTableY + 10);
   
-  pdf.setFillColor(255, 255, 255);
+  // Score range cells - explicitly set white fill for each
+  const scores = ['100 - 80', '79 - 70', '69 - 60', '59 - 40', '39 - 0'];
   pdf.setFont('helvetica', 'normal');
-  pdf.rect(10 + gradeColW, gradeTableY + 6, gradeColW, 6, 'F');
-  pdf.text('100 - 80', 10 + gradeColW + gradeColW/2, gradeTableY + 10, { align: 'center' });
+  scores.forEach((score, i) => {
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(10 + gradeColW * (i + 1), gradeTableY + 6, gradeColW, 6, 'F');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(score, 10 + gradeColW * (i + 1) + gradeColW / 2, gradeTableY + 10, { align: 'center' });
+  });
   
-  pdf.rect(10 + gradeColW*2, gradeTableY + 6, gradeColW, 6, 'F');
-  pdf.text('80 - 70', 10 + gradeColW*2 + gradeColW/2, gradeTableY + 10, { align: 'center' });
-  
-  pdf.rect(10 + gradeColW*3, gradeTableY + 6, gradeColW, 6, 'F');
-  pdf.text('69 - 60', 10 + gradeColW*3 + gradeColW/2, gradeTableY + 10, { align: 'center' });
-  
-  pdf.rect(10 + gradeColW*4, gradeTableY + 6, gradeColW, 6, 'F');
-  pdf.text('60 - 40', 10 + gradeColW*4 + gradeColW/2, gradeTableY + 10, { align: 'center' });
-  
-  pdf.rect(10 + gradeColW*5, gradeTableY + 6, gradeColW, 6, 'F');
-  pdf.text('40 - 0', 10 + gradeColW*5 + gradeColW/2, gradeTableY + 10, { align: 'center' });
-  
-  // Border
+  // Draw table border and lines AFTER filling cells
   pdf.setDrawColor(120, 120, 120);
+  pdf.setLineWidth(0.2);
   pdf.rect(10, gradeTableY, pageWidth - 20, 12);
   // Vertical lines
   for (let i = 1; i <= 5; i++) {
     pdf.line(10 + gradeColW * i, gradeTableY, 10 + gradeColW * i, gradeTableY + 12);
   }
+  // Horizontal line between rows
   pdf.line(10, gradeTableY + 6, pageWidth - 10, gradeTableY + 6);
   
   yPosition = gradeTableY + 15;
