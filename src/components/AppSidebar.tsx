@@ -22,9 +22,9 @@ const menuItems = [
   { id: 'marks', title: 'Marks', icon: FileText },
   { id: 'grading', title: 'Grading', icon: Settings },
   { id: 'comments', title: 'Comments', icon: MessageSquare },
+  { id: 'signatures', title: 'Signatures', icon: Pencil },
   { id: 'reports', title: 'Reports', icon: Download },
   { id: 'manage-reports', title: 'Manage Report Cards', icon: FolderOpen, isRoute: true },
-  { id: 'teacher-dashboard', title: 'Teacher Dashboard', icon: Pencil },
 ];
 
 interface AppSidebarProps {
