@@ -176,15 +176,24 @@ const ReportGenerator = () => {
     const term = terms.find(t => t.id === selectedTerm);
     if (!term) throw new Error('Term not found');
 
-    // Fetch the class info with class teacher
+    // Fetch the class info with class signature
     const { data: classData } = await supabase
       .from('classes')
-      .select('class_teacher_id, profiles!classes_class_teacher_id_fkey(signature_url)')
+      .select('class_signature_url')
       .eq('id', student.class_id)
       .single();
 
     // Get class teacher signature if available
-    const classTeacherSignature = classData?.profiles?.signature_url || null;
+    const classTeacherSignature = classData?.class_signature_url || null;
+
+    // Fetch head teacher signature from school_info
+    const { data: schoolData } = await supabase
+      .from('school_info')
+      .select('headteacher_signature_url')
+      .limit(1)
+      .maybeSingle();
+
+    const headteacherSignature = schoolData?.headteacher_signature_url || null;
 
     // Generate or update report card record
     const { data: existingReport } = await supabase
@@ -286,7 +295,8 @@ const ReportGenerator = () => {
       subjects,
       template: selectedTemplate,
       reportColor: selectedColor,
-      classTeacherSignature
+      classTeacherSignature,
+      headteacherSignature
     });
   };
 

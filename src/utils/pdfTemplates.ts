@@ -102,10 +102,11 @@ interface TemplateData {
   };
   reportColor?: ReportColor;
   classTeacherSignature?: string | null;
+  headteacherSignature?: string | null;
 }
 
 export const generateClassicTemplate = (data: TemplateData) => {
-  const { student, term, schoolInfo, marks, reportData, reportColor = 'white', classTeacherSignature } = data;
+  const { student, term, schoolInfo, marks, reportData, reportColor = 'white', classTeacherSignature, headteacherSignature } = data;
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -481,9 +482,22 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(7);
   pdf.text("Headteacher's Signature:", 145, yPosition + 13);
-  pdf.setLineWidth(0.2);
-  pdf.setDrawColor(80, 80, 80);
-  pdf.line(145, yPosition + 18, 195, yPosition + 18);
+  
+  // Add headteacher signature image if available
+  if (headteacherSignature && headteacherSignature.startsWith('data:image')) {
+    try {
+      pdf.addImage(headteacherSignature, 'PNG', 145, yPosition + 13.5, 35, 8);
+    } catch (error) {
+      console.log('Could not add headteacher signature');
+      pdf.setLineWidth(0.2);
+      pdf.setDrawColor(80, 80, 80);
+      pdf.line(145, yPosition + 18, 195, yPosition + 18);
+    }
+  } else {
+    pdf.setLineWidth(0.2);
+    pdf.setDrawColor(80, 80, 80);
+    pdf.line(145, yPosition + 18, 195, yPosition + 18);
+  }
   
   yPosition += 23;
   

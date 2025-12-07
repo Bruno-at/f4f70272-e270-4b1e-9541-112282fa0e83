@@ -13,7 +13,7 @@ import SubjectsManager from './SubjectsManager';
 import StudentMarksManager from './StudentMarksManager';
 import GradingSystemManager from './GradingSystemManager';
 import CommentTemplatesManager from './CommentTemplatesManager';
-import TeacherDashboard from './TeacherDashboard';
+import SignaturesManager from './SignaturesManager';
 
 const ReportCardGenerator = () => {
   const [activeSection, setActiveSection] = useState('school');
@@ -173,8 +173,23 @@ const ReportCardGenerator = () => {
             </CardContent>
           </Card>
         );
-      case 'teacher-dashboard':
-        return <TeacherDashboard />;
+      case 'signatures':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Pencil className="w-5 h-5" />
+                Digital Signatures Management
+              </CardTitle>
+              <CardDescription>
+                Manage class teacher and head teacher signatures for report cards
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SignaturesManager />
+            </CardContent>
+          </Card>
+        );
       default:
         return null;
     }

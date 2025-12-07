@@ -30,6 +30,7 @@ export interface ReportCardData {
   template?: 'classic' | 'modern' | 'professional' | 'minimal';
   reportColor?: ReportColor;
   classTeacherSignature?: string | null;
+  headteacherSignature?: string | null;
 }
 
 export const generateReportCardPDF = async (data: ReportCardData) => {
