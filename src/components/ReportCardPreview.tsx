@@ -14,6 +14,8 @@ interface ReportCardPreviewProps {
     class_teacher_comment: string;
     headteacher_comment: string;
   };
+  classTeacherSignature?: string | null;
+  headteacherSignature?: string | null;
 }
 
 const ReportCardPreview = ({
@@ -21,7 +23,9 @@ const ReportCardPreview = ({
   term,
   schoolInfo,
   marks,
-  reportData
+  reportData,
+  classTeacherSignature,
+  headteacherSignature
 }: ReportCardPreviewProps) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {
@@ -210,11 +214,25 @@ const ReportCardPreview = ({
         </tbody>
       </table>
 
-      {/* Comments Section */}
+      {/* Comments Section with Signatures */}
       <div className="mt-2 border border-gray-400 p-2 text-[9px]">
-        <div className="mb-2">
-          <p className="font-bold">Class Teacher's Comment:</p>
-          <p className="italic">{reportData.class_teacher_comment || 'No comment provided'}</p>
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex-1">
+            <p className="font-bold">Class Teacher's Comment:</p>
+            <p className="italic">{reportData.class_teacher_comment || 'No comment provided'}</p>
+          </div>
+          <div className="ml-4 text-right">
+            <p className="font-bold text-[8px]">Class Teacher's Signature:</p>
+            {classTeacherSignature ? (
+              <img 
+                src={classTeacherSignature} 
+                alt="Class Teacher Signature" 
+                className="h-8 w-auto object-contain ml-auto mt-1"
+              />
+            ) : (
+              <div className="border-b border-gray-600 w-28 h-6 mt-1 ml-auto"></div>
+            )}
+          </div>
         </div>
         <div className="flex justify-between items-start">
           <div className="flex-1">
@@ -222,8 +240,16 @@ const ReportCardPreview = ({
             <p className="italic">{reportData.headteacher_comment || 'No comment provided'}</p>
           </div>
           <div className="ml-4 text-right">
-            <p className="font-bold">Headteacher's Signature:</p>
-            <div className="border-b border-gray-600 w-32 h-6 mt-1"></div>
+            <p className="font-bold text-[8px]">Headteacher's Signature:</p>
+            {headteacherSignature ? (
+              <img 
+                src={headteacherSignature} 
+                alt="Headteacher Signature" 
+                className="h-8 w-auto object-contain ml-auto mt-1"
+              />
+            ) : (
+              <div className="border-b border-gray-600 w-28 h-6 mt-1 ml-auto"></div>
+            )}
           </div>
         </div>
       </div>
