@@ -428,71 +428,86 @@ export const generateClassicTemplate = (data: TemplateData) => {
   
   yPosition = gradeTableY + 15;
   
-  // Comments + Signatures Section - same row layout
+  // Comments Section - with unique background
   const commentsColor = hexToRgb(fieldColors.comments);
-  const commentRowH = 18;
-  const sigColX = 145; // Where signature column starts
-  
-  // Row 1: Class Teacher Comment + Signature
   pdf.setFillColor(commentsColor.r, commentsColor.g, commentsColor.b);
   pdf.setDrawColor(120, 120, 120);
-  pdf.setLineWidth(0.2);
-  pdf.rect(10, yPosition, sigColX - 10, commentRowH, 'FD');
-  pdf.rect(sigColX, yPosition, pageWidth - 10 - sigColX, commentRowH, 'FD');
+  pdf.rect(10, yPosition, pageWidth - 20, 12, 'F');
+  pdf.rect(10, yPosition, pageWidth - 20, 12);
   
-  pdf.setFont('helvetica', 'bolditalic');
+  pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(8);
   pdf.setTextColor(0, 0, 0);
-  pdf.text("Class teacher's Comment:", 12, yPosition + 4);
+  pdf.text("Class Teacher's Comment:", 12, yPosition + 4);
+  
   pdf.setFont('helvetica', 'italic');
   pdf.setFontSize(7);
   const teacherComment = reportData.class_teacher_comment || 'No comment provided';
-  pdf.text(teacherComment.substring(0, 80), 12, yPosition + 9);
+  pdf.text(teacherComment.substring(0, 100), 12, yPosition + 8);
   
-  pdf.setFont('helvetica', 'bolditalic');
+  pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(8);
-  pdf.text("Class Teacher's Signature:", sigColX + 2, yPosition + 4);
-  if (classTeacherSignature && classTeacherSignature.startsWith('data:image')) {
-    try {
-      pdf.addImage(classTeacherSignature, 'PNG', sigColX + 10, yPosition + 5, 35, 12);
-    } catch (error) { console.log('Could not add class teacher signature'); }
-  } else {
-    pdf.setLineWidth(0.2);
-    pdf.setDrawColor(80, 80, 80);
-    pdf.line(sigColX + 5, yPosition + 15, pageWidth - 15, yPosition + 15);
-  }
+  pdf.text("Headteacher's Comment:", 12, yPosition + 12);
   
-  yPosition += commentRowH;
-  
-  // Row 2: Headteacher Comment + Signature
+  // Extend box for headteacher comment
   pdf.setFillColor(commentsColor.r, commentsColor.g, commentsColor.b);
+  pdf.rect(10, yPosition + 12, pageWidth - 20, 6, 'F');
   pdf.setDrawColor(120, 120, 120);
-  pdf.rect(10, yPosition, sigColX - 10, commentRowH, 'FD');
-  pdf.rect(sigColX, yPosition, pageWidth - 10 - sigColX, commentRowH, 'FD');
+  pdf.rect(10, yPosition + 12, pageWidth - 20, 6);
   
-  pdf.setFont('helvetica', 'bolditalic');
-  pdf.setFontSize(8);
-  pdf.setTextColor(0, 0, 0);
-  pdf.text("Headteacher's Comment:", 12, yPosition + 4);
   pdf.setFont('helvetica', 'italic');
   pdf.setFontSize(7);
   const headComment = reportData.headteacher_comment || 'No comment provided';
-  pdf.text(headComment.substring(0, 80), 12, yPosition + 9);
+  pdf.text(headComment.substring(0, 100), 12, yPosition + 16);
   
+  yPosition += 20;
+  
+  // Signatures Section - side by side, label on top, signature image below
+  pdf.setFillColor(commentsColor.r, commentsColor.g, commentsColor.b);
+  pdf.setDrawColor(120, 120, 120);
+  pdf.rect(10, yPosition, (pageWidth - 20) / 2, 18, 'F');
+  pdf.rect(10, yPosition, (pageWidth - 20) / 2, 18);
+  pdf.rect(10 + (pageWidth - 20) / 2, yPosition, (pageWidth - 20) / 2, 18, 'F');
+  pdf.rect(10 + (pageWidth - 20) / 2, yPosition, (pageWidth - 20) / 2, 18);
+  
+  // Class Teacher's Signature
   pdf.setFont('helvetica', 'bolditalic');
   pdf.setFontSize(8);
-  pdf.text("Headteacher's Signature:", sigColX + 2, yPosition + 4);
-  if (headteacherSignature && headteacherSignature.startsWith('data:image')) {
+  pdf.setTextColor(0, 0, 0);
+  pdf.text("Class Teacher's Signature:", 12, yPosition + 4);
+  
+  if (classTeacherSignature && classTeacherSignature.startsWith('data:image')) {
     try {
-      pdf.addImage(headteacherSignature, 'PNG', sigColX + 10, yPosition + 5, 35, 12);
-    } catch (error) { console.log('Could not add headteacher signature'); }
+      pdf.addImage(classTeacherSignature, 'PNG', 15, yPosition + 5, 40, 12);
+    } catch (error) {
+      console.log('Could not add class teacher signature');
+    }
   } else {
     pdf.setLineWidth(0.2);
     pdf.setDrawColor(80, 80, 80);
-    pdf.line(sigColX + 5, yPosition + 15, pageWidth - 15, yPosition + 15);
+    pdf.line(15, yPosition + 14, 80, yPosition + 14);
   }
   
-  yPosition += commentRowH + 3;
+  // Headteacher's Signature
+  const rightColX = 10 + (pageWidth - 20) / 2;
+  pdf.setFont('helvetica', 'bolditalic');
+  pdf.setFontSize(8);
+  pdf.setTextColor(0, 0, 0);
+  pdf.text("Headteacher's Signature:", rightColX + 2, yPosition + 4);
+  
+  if (headteacherSignature && headteacherSignature.startsWith('data:image')) {
+    try {
+      pdf.addImage(headteacherSignature, 'PNG', rightColX + 5, yPosition + 5, 40, 12);
+    } catch (error) {
+      console.log('Could not add headteacher signature');
+    }
+  } else {
+    pdf.setLineWidth(0.2);
+    pdf.setDrawColor(80, 80, 80);
+    pdf.line(rightColX + 5, yPosition + 14, rightColX + 70, yPosition + 14);
+  }
+  
+  yPosition += 21;
   
   // Key to Terms Used
   pdf.setDrawColor(120, 120, 120);
