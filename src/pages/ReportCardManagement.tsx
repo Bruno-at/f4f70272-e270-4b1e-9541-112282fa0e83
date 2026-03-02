@@ -90,6 +90,8 @@ const ReportCardManagement = () => {
       headteacher_comment: string;
     };
     template?: 'classic' | 'modern' | 'professional' | 'minimal';
+    classTeacherSignature?: string | null;
+    headteacherSignature?: string | null;
   } | null>(null);
   const [printPreviewData, setPrintPreviewData] = useState<{
     student: Student;
@@ -106,6 +108,8 @@ const ReportCardManagement = () => {
       headteacher_comment: string;
     };
     template?: 'classic' | 'modern' | 'professional' | 'minimal';
+    classTeacherSignature?: string | null;
+    headteacherSignature?: string | null;
   } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -451,7 +455,9 @@ const ReportCardManagement = () => {
           class_teacher_comment: report.class_teacher_comment || '',
           headteacher_comment: report.headteacher_comment || ''
         },
-        template: report.template as 'classic' | 'modern' | 'professional' | 'minimal'
+        template: report.template as 'classic' | 'modern' | 'professional' | 'minimal',
+        classTeacherSignature: studentData.classes?.class_signature_url || null,
+        headteacherSignature: schoolData.headteacher_signature_url || null
       };
     } catch (error) {
       console.error('Error fetching report data:', error);
@@ -702,6 +708,8 @@ const ReportCardManagement = () => {
                 marks={previewData.marks}
                 subjects={previewData.subjects}
                 reportData={previewData.reportData}
+                classTeacherSignature={previewData.classTeacherSignature}
+                headteacherSignature={previewData.headteacherSignature}
               />
             </div>
           ) : (
@@ -755,6 +763,8 @@ const ReportCardManagement = () => {
                 marks={printPreviewData.marks}
                 subjects={printPreviewData.subjects}
                 reportData={printPreviewData.reportData}
+                classTeacherSignature={printPreviewData.classTeacherSignature}
+                headteacherSignature={printPreviewData.headteacherSignature}
               />
             </div>
           ) : (
