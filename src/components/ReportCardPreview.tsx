@@ -214,47 +214,47 @@ const ReportCardPreview = ({
         </tbody>
       </table>
 
-      {/* Comments Section with Signatures */}
-      <div className="mt-2 border border-gray-400 p-2 text-[9px]">
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex-1">
-            <p className="font-bold">Class Teacher's Comment:</p>
-            <p className="italic">{reportData.class_teacher_comment || 'No comment provided'}</p>
-          </div>
-        </div>
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex-1">
-            <p className="font-bold">Headteacher's Comment:</p>
-            <p className="italic">{reportData.headteacher_comment || 'No comment provided'}</p>
-          </div>
-        </div>
-        <div className="flex justify-between mt-2">
-          <div>
-            <p className="font-bold italic text-[9px]">Class Teacher's Signature:</p>
-            {classTeacherSignature ? (
-              <img 
-                src={classTeacherSignature} 
-                alt="Class Teacher Signature" 
-                className="h-10 w-auto object-contain mt-1"
-              />
-            ) : (
-              <div className="border-b border-gray-600 w-32 h-8 mt-1"></div>
-            )}
-          </div>
-          <div className="text-right">
-            <p className="font-bold italic text-[9px]">Headteacher's Signature:</p>
-            {headteacherSignature ? (
-              <img 
-                src={headteacherSignature} 
-                alt="Headteacher Signature" 
-                className="h-10 w-auto object-contain ml-auto mt-1"
-              />
-            ) : (
-              <div className="border-b border-gray-600 w-32 h-8 mt-1 ml-auto"></div>
-            )}
-          </div>
-        </div>
-      </div>
+      {/* Comments Section with Signatures - side by side */}
+      <table className="w-full mt-2 border-collapse border border-gray-400 text-[9px]">
+        <tbody>
+          <tr>
+            <td className="border border-gray-400 p-2 align-top" style={{ width: '70%' }}>
+              <p className="font-bold italic">Class teacher's Comment:</p>
+              <p className="italic">{reportData.class_teacher_comment || 'No comment provided'}</p>
+            </td>
+            <td className="border border-gray-400 p-2 align-top text-right" style={{ width: '30%' }}>
+              <p className="font-bold italic">Class Teacher's Signature:</p>
+              {classTeacherSignature ? (
+                <img 
+                  src={classTeacherSignature} 
+                  alt="Class Teacher Signature" 
+                  className="h-10 w-auto object-contain ml-auto mt-1"
+                />
+              ) : (
+                <div className="border-b border-gray-600 w-28 h-8 mt-1 ml-auto"></div>
+              )}
+            </td>
+          </tr>
+          <tr>
+            <td className="border border-gray-400 p-2 align-top" style={{ width: '70%' }}>
+              <p className="font-bold italic">Headteacher's Comment:</p>
+              <p className="italic">{reportData.headteacher_comment || 'No comment provided'}</p>
+            </td>
+            <td className="border border-gray-400 p-2 align-top text-right" style={{ width: '30%' }}>
+              <p className="font-bold italic">Headteacher's Signature:</p>
+              {headteacherSignature ? (
+                <img 
+                  src={headteacherSignature} 
+                  alt="Headteacher Signature" 
+                  className="h-10 w-auto object-contain ml-auto mt-1"
+                />
+              ) : (
+                <div className="border-b border-gray-600 w-28 h-8 mt-1 ml-auto"></div>
+              )}
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
       {/* Key to Terms Used */}
       <div className="mt-2 text-[8px] border border-gray-400 p-2">
