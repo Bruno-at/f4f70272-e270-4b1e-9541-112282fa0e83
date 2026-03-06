@@ -1,204 +1,59 @@
-import { useState } from 'react';
+import { useState, Suspense, lazy } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare, Pencil } from 'lucide-react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { ThemeToggle } from './ThemeToggle';
-import SchoolInfoTable from './SchoolInfoTable';
-import StudentManager from './StudentManager';
-import ReportGenerator from './ReportGenerator';
-import TermsManager from './TermsManager';
-import ClassesManager from './ClassesManager';
-import SubjectsManager from './SubjectsManager';
-import StudentMarksManager from './StudentMarksManager';
-import GradingSystemManager from './GradingSystemManager';
-import CommentTemplatesManager from './CommentTemplatesManager';
-import SignaturesManager from './SignaturesManager';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Lazy load all section components
+const SchoolInfoTable = lazy(() => import('./SchoolInfoTable'));
+const StudentManager = lazy(() => import('./StudentManager'));
+const ReportGenerator = lazy(() => import('./ReportGenerator'));
+const TermsManager = lazy(() => import('./TermsManager'));
+const ClassesManager = lazy(() => import('./ClassesManager'));
+const SubjectsManager = lazy(() => import('./SubjectsManager'));
+const StudentMarksManager = lazy(() => import('./StudentMarksManager'));
+const GradingSystemManager = lazy(() => import('./GradingSystemManager'));
+const CommentTemplatesManager = lazy(() => import('./CommentTemplatesManager'));
+const SignaturesManager = lazy(() => import('./SignaturesManager'));
+
+const SectionLoader = () => (
+  <div className="space-y-4">
+    <Skeleton className="h-8 w-48" />
+    <Skeleton className="h-4 w-full" />
+    <Skeleton className="h-4 w-3/4" />
+    <Skeleton className="h-32 w-full" />
+  </div>
+);
+
+const sectionConfig = [
+  { id: 'school', title: 'School Information Management', desc: 'Configure your school\'s basic information that will appear on all report cards', icon: School, Component: SchoolInfoTable },
+  { id: 'terms', title: 'Academic Terms Management', desc: 'Create and manage academic terms for your school', icon: Calendar, Component: TermsManager },
+  { id: 'classes', title: 'Classes Management', desc: 'Create and manage school classes and sections', icon: Users, Component: ClassesManager },
+  { id: 'subjects', title: 'Subjects Management', desc: 'Manage subjects for each class with maximum marks', icon: BookOpen, Component: SubjectsManager },
+  { id: 'students', title: 'Student Management', desc: 'Add students individually or import from CSV files', icon: User, Component: StudentManager },
+  { id: 'marks', title: 'Student Marks Management', desc: 'Record and manage student marks for all subjects', icon: FileText, Component: StudentMarksManager },
+  { id: 'grading', title: 'Grading System Management', desc: 'Configure the school\'s grading system and grade boundaries', icon: Settings, Component: GradingSystemManager },
+  { id: 'comments', title: 'Comment Templates Management', desc: 'Configure automatic comments based on student performance', icon: MessageSquare, Component: CommentTemplatesManager },
+  { id: 'signatures', title: 'Digital Signatures Management', desc: 'Manage class teacher and head teacher signatures for report cards', icon: Pencil, Component: SignaturesManager },
+  { id: 'reports', title: 'Report Card Generation', desc: 'Generate individual or bulk PDF report cards', icon: Download, Component: ReportGenerator },
+];
 
 const ReportCardGenerator = () => {
   const [activeSection, setActiveSection] = useState('school');
+  // Track which sections have been visited to keep them mounted
+  const [visitedSections, setVisitedSections] = useState<Set<string>>(new Set(['school']));
 
-  const renderContent = () => {
-    switch (activeSection) {
-      case 'school':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <School className="w-5 h-5" />
-                School Information Management
-              </CardTitle>
-              <CardDescription>
-                Configure your school's basic information that will appear on all report cards
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SchoolInfoTable />
-            </CardContent>
-          </Card>
-        );
-      case 'terms':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
-                Academic Terms Management
-              </CardTitle>
-              <CardDescription>
-                Create and manage academic terms for your school
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TermsManager />
-            </CardContent>
-          </Card>
-        );
-      case 'classes':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Classes Management
-              </CardTitle>
-              <CardDescription>
-                Create and manage school classes and sections
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ClassesManager />
-            </CardContent>
-          </Card>
-        );
-      case 'subjects':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="w-5 h-5" />
-                Subjects Management
-              </CardTitle>
-              <CardDescription>
-                Manage subjects for each class with maximum marks
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SubjectsManager />
-            </CardContent>
-          </Card>
-        );
-      case 'students':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5" />
-                Student Management
-              </CardTitle>
-              <CardDescription>
-                Add students individually or import from CSV files
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <StudentManager />
-            </CardContent>
-          </Card>
-        );
-      case 'marks':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Student Marks Management
-              </CardTitle>
-              <CardDescription>
-                Record and manage student marks for all subjects
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <StudentMarksManager />
-            </CardContent>
-          </Card>
-        );
-      case 'grading':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                Grading System Management
-              </CardTitle>
-              <CardDescription>
-                Configure the school's grading system and grade boundaries
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <GradingSystemManager />
-            </CardContent>
-          </Card>
-        );
-      case 'comments':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
-                Comment Templates Management
-              </CardTitle>
-              <CardDescription>
-                Configure automatic comments based on student performance
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CommentTemplatesManager />
-            </CardContent>
-          </Card>
-        );
-      case 'reports':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Download className="w-5 h-5" />
-                Report Card Generation
-              </CardTitle>
-              <CardDescription>
-                Generate individual or bulk PDF report cards
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ReportGenerator />
-            </CardContent>
-          </Card>
-        );
-      case 'signatures':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Pencil className="w-5 h-5" />
-                Digital Signatures Management
-              </CardTitle>
-              <CardDescription>
-                Manage class teacher and head teacher signatures for report cards
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <SignaturesManager />
-            </CardContent>
-          </Card>
-        );
-      default:
-        return null;
-    }
+  const handleSectionChange = (section: string) => {
+    setActiveSection(section);
+    setVisitedSections(prev => new Set(prev).add(section));
   };
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gradient-to-br from-primary/5 via-background to-accent/5">
-        <AppSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+        <AppSidebar activeSection={activeSection} onSectionChange={handleSectionChange} />
         
         <main className="flex-1">
           <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
@@ -213,7 +68,29 @@ const ReportCardGenerator = () => {
           </header>
           
           <div className="p-6">
-            {renderContent()}
+            {sectionConfig.map(({ id, title, desc, icon: Icon, Component }) => {
+              // Only render sections that have been visited (keeps them mounted after first visit)
+              if (!visitedSections.has(id)) return null;
+              
+              return (
+                <div key={id} style={{ display: activeSection === id ? 'block' : 'none' }}>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Icon className="w-5 h-5" />
+                        {title}
+                      </CardTitle>
+                      <CardDescription>{desc}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Suspense fallback={<SectionLoader />}>
+                        <Component />
+                      </Suspense>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })}
           </div>
         </main>
       </div>
