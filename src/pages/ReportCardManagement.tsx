@@ -349,38 +349,48 @@ const ReportCardManagement = () => {
     const report = reportCards.find(r => r.id === reportId);
     if (!report) return;
 
-    const shareText = `Report Card - ${report.students?.name}\nTerm: ${report.terms?.term_name} ${report.terms?.year}\nAverage: ${report.overall_average?.toFixed(1)}%\nGrade: ${report.overall_grade}`;
+    try {
+      toast({ title: "Preparing...", description: "Generating report card for sharing" });
 
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Report Card',
-          text: shareText
-        });
-        toast({
-          title: "Success",
-          description: "Report card shared successfully"
-        });
-      } catch (error) {
-        if ((error as Error).name !== 'AbortError') {
-          console.error('Error sharing:', error);
-        }
+      const reportData = await fetchFullReportData(reportId);
+      if (!reportData) return;
+
+      const { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } = await import('@/utils/pdfTemplates');
+
+      let pdf;
+      switch (reportData.template) {
+        case 'modern': pdf = generateModernTemplate(reportData); break;
+        case 'professional': pdf = generateProfessionalTemplate(reportData); break;
+        case 'minimal': pdf = generateMinimalTemplate(reportData); break;
+        default: pdf = generateClassicTemplate(reportData);
       }
-    } else {
-      // Fallback: copy to clipboard
-      try {
-        await navigator.clipboard.writeText(shareText);
-        toast({
-          title: "Copied to Clipboard",
-          description: "Report card details copied successfully"
+
+      const fileName = `${reportData.student.name.replace(/\s+/g, '_')}_Report_${reportData.term.term_name}_${reportData.term.year}.pdf`;
+      const pdfBlob = pdf.output('blob');
+      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+      // Try Web Share API with file support
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+        await navigator.share({
+          title: `Report Card - ${report.students?.name}`,
+          text: `Report Card for ${report.students?.name} - ${report.terms?.term_name} ${report.terms?.year}`,
+          files: [pdfFile]
         });
-      } catch (error) {
-        console.error('Error copying to clipboard:', error);
-        toast({
-          title: "Error",
-          description: "Failed to share report card",
-          variant: "destructive"
-        });
+        toast({ title: "Success", description: "Report card shared successfully" });
+      } else if (navigator.share) {
+        // Share without file (text only fallback)
+        const shareText = `Report Card - ${report.students?.name}\nTerm: ${report.terms?.term_name} ${report.terms?.year}\nAverage: ${report.overall_average?.toFixed(1)}%\nGrade: ${report.overall_grade}`;
+        await navigator.share({ title: 'Report Card', text: shareText });
+        toast({ title: "Success", description: "Report card shared successfully" });
+      } else {
+        // Final fallback: download the PDF
+        pdf.save(fileName);
+        toast({ title: "Downloaded", description: "Share not supported — PDF downloaded instead" });
+      }
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') {
+        console.error('Error sharing:', error);
+        toast({ title: "Error", description: "Failed to share report card", variant: "destructive" });
       }
     }
   };
