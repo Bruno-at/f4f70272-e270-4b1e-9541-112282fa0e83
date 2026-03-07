@@ -366,13 +366,48 @@ const ReportCardManagement = () => {
       }
 
       const fileName = `${reportData.student.name.replace(/\s+/g, '_')}_Report_${reportData.term.term_name}_${reportData.term.year}.pdf`;
+      const pdfBlob = pdf.output('blob');
+      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-      // Download the PDF directly (share API requires immediate user gesture which async breaks)
+      // Try native share API (works well on mobile)
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+        try {
+          await navigator.share({
+            title: `Report Card - ${reportData.student.name}`,
+            text: `${reportData.term.term_name} ${reportData.term.year} Report Card`,
+            files: [pdfFile]
+          });
+          toast({ title: "Shared", description: "Report card shared successfully" });
+          return;
+        } catch (shareError: any) {
+          // User cancelled or share failed - fall through to download
+          if (shareError.name === 'AbortError') return;
+        }
+      }
+
+      // Fallback: download the PDF
       pdf.save(fileName);
       toast({ title: "Downloaded", description: `${fileName} saved — you can now share it from your device` });
     } catch (error) {
       console.error('Error sharing:', error);
       toast({ title: "Error", description: "Failed to generate report card", variant: "destructive" });
+    }
+  };
+
+  // Helper function to convert image URL to base64
+  const urlToBase64 = async (url: string): Promise<string> => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error converting image to base64:', error);
+      return '';
     }
   };
 
@@ -432,10 +467,37 @@ const ReportCardManagement = () => {
 
       if (subjectsError) throw subjectsError;
 
+      // Convert student photo to base64 for PDF
+      const studentWithBase64 = { ...studentData };
+      if (studentData.photo_url && !studentData.photo_url.startsWith('data:image')) {
+        const base64Photo = await urlToBase64(studentData.photo_url);
+        if (base64Photo) studentWithBase64.photo_url = base64Photo;
+      }
+
+      // Convert school logo to base64 for PDF
+      const schoolWithBase64 = { ...schoolData };
+      if (schoolData.logo_url && !schoolData.logo_url.startsWith('data:image')) {
+        const base64Logo = await urlToBase64(schoolData.logo_url);
+        if (base64Logo) schoolWithBase64.logo_url = base64Logo;
+      }
+
+      // Convert signatures to base64
+      let classTeacherSig = studentData.classes?.class_signature_url || null;
+      if (classTeacherSig && !classTeacherSig.startsWith('data:image')) {
+        const base64Sig = await urlToBase64(classTeacherSig);
+        if (base64Sig) classTeacherSig = base64Sig;
+      }
+
+      let headteacherSig = schoolData.headteacher_signature_url || null;
+      if (headteacherSig && !headteacherSig.startsWith('data:image')) {
+        const base64Sig = await urlToBase64(headteacherSig);
+        if (base64Sig) headteacherSig = base64Sig;
+      }
+
       return {
-        student: studentData,
+        student: studentWithBase64,
         term: termData,
-        schoolInfo: schoolData,
+        schoolInfo: schoolWithBase64,
         marks: marksData,
         subjects: subjectsData,
         reportData: {
@@ -447,8 +509,8 @@ const ReportCardManagement = () => {
           headteacher_comment: report.headteacher_comment || ''
         },
         template: report.template as 'classic' | 'modern' | 'professional' | 'minimal',
-        classTeacherSignature: studentData.classes?.class_signature_url || null,
-        headteacherSignature: schoolData.headteacher_signature_url || null
+        classTeacherSignature: classTeacherSig,
+        headteacherSignature: headteacherSig
       };
     } catch (error) {
       console.error('Error fetching report data:', error);
