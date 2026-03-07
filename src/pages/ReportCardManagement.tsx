@@ -350,7 +350,7 @@ const ReportCardManagement = () => {
     if (!report) return;
 
     try {
-      toast({ title: "Preparing...", description: "Generating report card for sharing" });
+      toast({ title: "Preparing...", description: "Generating report card PDF" });
 
       const reportData = await fetchFullReportData(reportId);
       if (!reportData) return;
@@ -366,32 +366,13 @@ const ReportCardManagement = () => {
       }
 
       const fileName = `${reportData.student.name.replace(/\s+/g, '_')}_Report_${reportData.term.term_name}_${reportData.term.year}.pdf`;
-      const pdfBlob = pdf.output('blob');
-      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-      // Try Web Share API with file support
-      if (navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
-        await navigator.share({
-          title: `Report Card - ${report.students?.name}`,
-          text: `Report Card for ${report.students?.name} - ${report.terms?.term_name} ${report.terms?.year}`,
-          files: [pdfFile]
-        });
-        toast({ title: "Success", description: "Report card shared successfully" });
-      } else if (navigator.share) {
-        // Share without file (text only fallback)
-        const shareText = `Report Card - ${report.students?.name}\nTerm: ${report.terms?.term_name} ${report.terms?.year}\nAverage: ${report.overall_average?.toFixed(1)}%\nGrade: ${report.overall_grade}`;
-        await navigator.share({ title: 'Report Card', text: shareText });
-        toast({ title: "Success", description: "Report card shared successfully" });
-      } else {
-        // Final fallback: download the PDF
-        pdf.save(fileName);
-        toast({ title: "Downloaded", description: "Share not supported — PDF downloaded instead" });
-      }
+      // Download the PDF directly (share API requires immediate user gesture which async breaks)
+      pdf.save(fileName);
+      toast({ title: "Downloaded", description: `${fileName} saved — you can now share it from your device` });
     } catch (error) {
-      if ((error as Error).name !== 'AbortError') {
-        console.error('Error sharing:', error);
-        toast({ title: "Error", description: "Failed to share report card", variant: "destructive" });
-      }
+      console.error('Error sharing:', error);
+      toast({ title: "Error", description: "Failed to generate report card", variant: "destructive" });
     }
   };
 
