@@ -270,7 +270,21 @@ const ReportGenerator = () => {
     // Convert images to base64 for PDF
     const studentWithBase64Photo = { ...student };
     if (student.photo_url && !student.photo_url.startsWith('data:image')) {
-      studentWithBase64Photo.photo_url = await urlToBase64(student.photo_url);
+      const photoUrl = student.photo_url;
+      const bucketPath = photoUrl.includes('/student-photos/')
+        ? photoUrl.split('/student-photos/').pop()
+        : null;
+
+      if (bucketPath) {
+        const { data: signedUrlData } = await supabase.storage
+          .from('student-photos')
+          .createSignedUrl(bucketPath, 3600);
+        if (signedUrlData?.signedUrl) {
+          studentWithBase64Photo.photo_url = await urlToBase64(signedUrlData.signedUrl);
+        }
+      } else {
+        studentWithBase64Photo.photo_url = await urlToBase64(photoUrl);
+      }
     }
 
     const schoolInfoWithBase64Logo = { ...schoolInfo! };
