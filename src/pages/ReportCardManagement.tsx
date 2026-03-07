@@ -470,8 +470,26 @@ const ReportCardManagement = () => {
       // Convert student photo to base64 for PDF
       const studentWithBase64 = { ...studentData };
       if (studentData.photo_url && !studentData.photo_url.startsWith('data:image')) {
-        const base64Photo = await urlToBase64(studentData.photo_url);
-        if (base64Photo) studentWithBase64.photo_url = base64Photo;
+        // Extract file path from the stored URL for private bucket signed URL
+        const photoUrl = studentData.photo_url;
+        const bucketPath = photoUrl.includes('/student-photos/') 
+          ? photoUrl.split('/student-photos/').pop() 
+          : null;
+        
+        if (bucketPath) {
+          // Use signed URL for private bucket
+          const { data: signedUrlData } = await supabase.storage
+            .from('student-photos')
+            .createSignedUrl(bucketPath, 3600);
+          
+          if (signedUrlData?.signedUrl) {
+            const base64Photo = await urlToBase64(signedUrlData.signedUrl);
+            if (base64Photo) studentWithBase64.photo_url = base64Photo;
+          }
+        } else {
+          const base64Photo = await urlToBase64(photoUrl);
+          if (base64Photo) studentWithBase64.photo_url = base64Photo;
+        }
       }
 
       // Convert school logo to base64 for PDF
