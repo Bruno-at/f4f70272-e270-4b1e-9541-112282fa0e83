@@ -366,8 +366,26 @@ const ReportCardManagement = () => {
       }
 
       const fileName = `${reportData.student.name.replace(/\s+/g, '_')}_Report_${reportData.term.term_name}_${reportData.term.year}.pdf`;
+      const pdfBlob = pdf.output('blob');
+      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-      // Download the PDF directly (share API requires immediate user gesture which async breaks)
+      // Try native share API (works well on mobile)
+      if (navigator.share && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+        try {
+          await navigator.share({
+            title: `Report Card - ${reportData.student.name}`,
+            text: `${reportData.term.term_name} ${reportData.term.year} Report Card`,
+            files: [pdfFile]
+          });
+          toast({ title: "Shared", description: "Report card shared successfully" });
+          return;
+        } catch (shareError: any) {
+          // User cancelled or share failed - fall through to download
+          if (shareError.name === 'AbortError') return;
+        }
+      }
+
+      // Fallback: download the PDF
       pdf.save(fileName);
       toast({ title: "Downloaded", description: `${fileName} saved — you can now share it from your device` });
     } catch (error) {
