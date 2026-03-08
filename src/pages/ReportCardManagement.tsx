@@ -530,7 +530,8 @@ const ReportCardManagement = () => {
         },
         template: report.template as 'classic' | 'modern' | 'professional' | 'minimal',
         classTeacherSignature: classTeacherSig,
-        headteacherSignature: headteacherSig
+        headteacherSignature: headteacherSig,
+        stampUrl: null // stamp applied on demand
       };
     } catch (error) {
       console.error('Error fetching report data:', error);
