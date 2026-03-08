@@ -19,6 +19,7 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { generateReportCardPDF } from '@/utils/pdfGenerator';
+import { calculateStudentFees } from '@/utils/feesCalculator';
 
 interface ReportCardWithDetails {
   id: string;
