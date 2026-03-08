@@ -428,18 +428,19 @@ export const generateClassicTemplate = (data: TemplateData) => {
   
   yPosition = gradeTableY + 15;
   
-  // Comments + Signatures Section - same row layout
+  // Comments + Signatures Section - single outer border, no internal lines
   const commentsColor = hexToRgb(fieldColors.comments);
   const commentRowH = 18;
-  const sigColX = 145; // Where signature column starts
+  const totalCommentsH = commentRowH * 2;
+  const sigColX = 145;
   
-  // Row 1: Class Teacher Comment + Signature
+  // Single outer border
   pdf.setFillColor(commentsColor.r, commentsColor.g, commentsColor.b);
   pdf.setDrawColor(120, 120, 120);
   pdf.setLineWidth(0.2);
-  pdf.rect(10, yPosition, sigColX - 10, commentRowH, 'FD');
-  pdf.rect(sigColX, yPosition, pageWidth - 10 - sigColX, commentRowH, 'FD');
+  pdf.rect(10, yPosition, pageWidth - 20, totalCommentsH, 'FD');
   
+  // Row 1: Class Teacher Comment + Signature
   pdf.setFont('helvetica', 'bolditalic');
   pdf.setFontSize(8);
   pdf.setTextColor(0, 0, 0);
@@ -457,7 +458,6 @@ export const generateClassicTemplate = (data: TemplateData) => {
       pdf.addImage(classTeacherSignature, 'PNG', sigColX + 10, yPosition + 5, 35, 12);
     } catch (error) { console.log('Could not add class teacher signature'); }
   } else {
-    pdf.setLineWidth(0.2);
     pdf.setDrawColor(80, 80, 80);
     pdf.line(sigColX + 5, yPosition + 15, pageWidth - 15, yPosition + 15);
   }
@@ -465,11 +465,6 @@ export const generateClassicTemplate = (data: TemplateData) => {
   yPosition += commentRowH;
   
   // Row 2: Headteacher Comment + Signature
-  pdf.setFillColor(commentsColor.r, commentsColor.g, commentsColor.b);
-  pdf.setDrawColor(120, 120, 120);
-  pdf.rect(10, yPosition, sigColX - 10, commentRowH, 'FD');
-  pdf.rect(sigColX, yPosition, pageWidth - 10 - sigColX, commentRowH, 'FD');
-  
   pdf.setFont('helvetica', 'bolditalic');
   pdf.setFontSize(8);
   pdf.setTextColor(0, 0, 0);
@@ -487,7 +482,6 @@ export const generateClassicTemplate = (data: TemplateData) => {
       pdf.addImage(headteacherSignature, 'PNG', sigColX + 10, yPosition + 5, 35, 12);
     } catch (error) { console.log('Could not add headteacher signature'); }
   } else {
-    pdf.setLineWidth(0.2);
     pdf.setDrawColor(80, 80, 80);
     pdf.line(sigColX + 5, yPosition + 15, pageWidth - 15, yPosition + 15);
   }
