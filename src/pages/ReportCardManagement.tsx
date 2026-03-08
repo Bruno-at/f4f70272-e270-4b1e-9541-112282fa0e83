@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ReportCard, Student, Term, SchoolInfo, StudentMark, Subject } from '@/types/database';
 import { Eye, Pencil, Printer, Download, Share2, Trash2, ArrowLeft, FileText, Loader2, Stamp } from 'lucide-react';
-import ReportCardPreview from '@/components/ReportCardPreview';
+import ReportCardPreview, { StampPosition } from '@/components/ReportCardPreview';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -75,6 +75,7 @@ const ReportCardManagement = () => {
   });
   const [previewLoading, setPreviewLoading] = useState(false);
   const [printPreviewLoading, setPrintPreviewLoading] = useState(false);
+  const [stampPosition, setStampPosition] = useState<StampPosition>('bottom-right');
   const [previewData, setPreviewData] = useState<{
     student: Student;
     term: Term;
@@ -831,6 +832,7 @@ const ReportCardManagement = () => {
                 classTeacherSignature={previewData.classTeacherSignature}
                 headteacherSignature={previewData.headteacherSignature}
                 stampUrl={previewData.stampUrl}
+                stampPosition={stampPosition}
               />
             </div>
           ) : (
@@ -844,10 +846,23 @@ const ReportCardManagement = () => {
             </Button>
             {selectedReport && (
               <>
-                <Button variant="outline" onClick={handleApplyStamp}>
-                  <Stamp className="w-4 h-4 mr-2" />
-                  Apply Stamp
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Select value={stampPosition} onValueChange={(v) => setStampPosition(v as StampPosition)}>
+                    <SelectTrigger className="w-[160px] h-9">
+                      <SelectValue placeholder="Stamp position" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                      <SelectItem value="bottom-center">Bottom Center</SelectItem>
+                      <SelectItem value="over-signatures">Over Signatures</SelectItem>
+                      <SelectItem value="center">Center</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" onClick={handleApplyStamp}>
+                    <Stamp className="w-4 h-4 mr-2" />
+                    Apply Stamp
+                  </Button>
+                </div>
                 <Button variant="outline" onClick={() => handlePrint(selectedReport.id)}>
                   <Printer className="w-4 h-4 mr-2" />
                   Print
@@ -891,6 +906,7 @@ const ReportCardManagement = () => {
                 classTeacherSignature={printPreviewData.classTeacherSignature}
                 headteacherSignature={printPreviewData.headteacherSignature}
                 stampUrl={printPreviewData.stampUrl}
+                stampPosition={stampPosition}
               />
             </div>
           ) : (

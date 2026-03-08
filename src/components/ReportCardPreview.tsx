@@ -1,5 +1,7 @@
 import { Student, Term, SchoolInfo, StudentMark, Subject } from '@/types/database';
 
+export type StampPosition = 'bottom-right' | 'bottom-center' | 'over-signatures' | 'center';
+
 interface ReportCardPreviewProps {
   student: Student;
   term: Term;
@@ -17,6 +19,7 @@ interface ReportCardPreviewProps {
   classTeacherSignature?: string | null;
   headteacherSignature?: string | null;
   stampUrl?: string | null;
+  stampPosition?: StampPosition;
 }
 
 const ReportCardPreview = ({
@@ -27,7 +30,8 @@ const ReportCardPreview = ({
   reportData,
   classTeacherSignature,
   headteacherSignature,
-  stampUrl
+  stampUrl,
+  stampPosition = 'bottom-right'
 }: ReportCardPreviewProps) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {
@@ -217,7 +221,7 @@ const ReportCardPreview = ({
       </table>
 
       {/* Comments Section with Signatures - single border */}
-      <div className="mt-2 border border-gray-400 text-[9px]">
+      <div className="mt-2 border border-gray-400 text-[9px] relative">
         <div className="flex p-2">
           <div className="flex-1" style={{ width: '70%' }}>
             <p className="font-bold italic">Class teacher's Comment:</p>
@@ -254,11 +258,22 @@ const ReportCardPreview = ({
             )}
           </div>
         </div>
+
+        {/* Stamp over signatures */}
+        {stampUrl && stampPosition === 'over-signatures' && (
+          <div className="absolute bottom-1 right-4 pointer-events-none">
+            <img src={stampUrl} alt="School Stamp" className="h-16 w-auto object-contain opacity-70" />
+          </div>
+        )}
       </div>
 
-      {/* School Stamp */}
-      {stampUrl && (
-        <div className="mt-2 flex justify-end">
+      {/* School Stamp - other positions */}
+      {stampUrl && stampPosition !== 'over-signatures' && (
+        <div className={`mt-2 flex ${
+          stampPosition === 'bottom-right' ? 'justify-end' :
+          stampPosition === 'bottom-center' ? 'justify-center' :
+          stampPosition === 'center' ? 'justify-center' : 'justify-end'
+        }`}>
           <img 
             src={stampUrl} 
             alt="School Stamp" 
