@@ -26,7 +26,8 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
     telephone: '',
     email: '',
     website: '',
-    logo_url: ''
+    logo_url: '',
+    stamp_url: ''
   });
 
   useEffect(() => {
