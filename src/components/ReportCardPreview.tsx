@@ -259,28 +259,21 @@ const ReportCardPreview = ({
           </div>
         </div>
 
-        {/* Stamp over signatures */}
-        {stampUrl && stampPosition === 'over-signatures' && (
-          <div className="absolute bottom-1 right-4 pointer-events-none">
-            <img src={stampUrl} alt="School Stamp" className="h-16 w-auto object-contain opacity-70" />
+        {/* School Stamp - below headteacher signature */}
+        {stampUrl && (
+          <div className={`p-2 flex ${
+            stampPosition === 'over-signatures' ? 'justify-end' :
+            stampPosition === 'bottom-center' ? 'justify-center' :
+            stampPosition === 'center' ? 'justify-center' : 'justify-end'
+          }`}>
+            <img 
+              src={stampUrl} 
+              alt="School Stamp" 
+              className={`h-16 w-auto object-contain ${stampPosition === 'over-signatures' ? 'opacity-70' : 'opacity-80'}`}
+            />
           </div>
         )}
       </div>
-
-      {/* School Stamp - other positions */}
-      {stampUrl && stampPosition !== 'over-signatures' && (
-        <div className={`mt-2 flex ${
-          stampPosition === 'bottom-right' ? 'justify-end' :
-          stampPosition === 'bottom-center' ? 'justify-center' :
-          stampPosition === 'center' ? 'justify-center' : 'justify-end'
-        }`}>
-          <img 
-            src={stampUrl} 
-            alt="School Stamp" 
-            className="h-20 w-auto object-contain opacity-80"
-          />
-        </div>
-      )}
 
       {/* Key to Terms Used */}
       <div className="mt-2 text-[8px] border border-gray-400 p-2">
