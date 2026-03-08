@@ -846,10 +846,23 @@ const ReportCardManagement = () => {
             </Button>
             {selectedReport && (
               <>
-                <Button variant="outline" onClick={handleApplyStamp}>
-                  <Stamp className="w-4 h-4 mr-2" />
-                  Apply Stamp
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Select value={stampPosition} onValueChange={(v) => setStampPosition(v as StampPosition)}>
+                    <SelectTrigger className="w-[160px] h-9">
+                      <SelectValue placeholder="Stamp position" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bottom-right">Bottom Right</SelectItem>
+                      <SelectItem value="bottom-center">Bottom Center</SelectItem>
+                      <SelectItem value="over-signatures">Over Signatures</SelectItem>
+                      <SelectItem value="center">Center</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" onClick={handleApplyStamp}>
+                    <Stamp className="w-4 h-4 mr-2" />
+                    Apply Stamp
+                  </Button>
+                </div>
                 <Button variant="outline" onClick={() => handlePrint(selectedReport.id)}>
                   <Printer className="w-4 h-4 mr-2" />
                   Print
