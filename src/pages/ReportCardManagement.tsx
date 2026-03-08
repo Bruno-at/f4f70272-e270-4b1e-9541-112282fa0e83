@@ -95,6 +95,7 @@ const ReportCardManagement = () => {
     classTeacherSignature?: string | null;
     headteacherSignature?: string | null;
     stampUrl?: string | null;
+    feesData?: { feesBalance: number; feesNextTerm: number; otherRequirements: string } | null;
   } | null>(null);
   const [printPreviewData, setPrintPreviewData] = useState<{
     student: Student;
