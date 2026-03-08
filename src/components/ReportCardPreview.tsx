@@ -20,6 +20,11 @@ interface ReportCardPreviewProps {
   headteacherSignature?: string | null;
   stampUrl?: string | null;
   stampPosition?: StampPosition;
+  feesData?: {
+    feesBalance: number;
+    feesNextTerm: number;
+    otherRequirements: string;
+  } | null;
 }
 
 const ReportCardPreview = ({
