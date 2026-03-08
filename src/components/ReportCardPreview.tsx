@@ -17,6 +17,7 @@ interface ReportCardPreviewProps {
   classTeacherSignature?: string | null;
   headteacherSignature?: string | null;
   stampUrl?: string | null;
+  stampPosition?: StampPosition;
 }
 
 const ReportCardPreview = ({
