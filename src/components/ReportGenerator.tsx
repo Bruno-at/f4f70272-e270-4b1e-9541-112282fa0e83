@@ -243,6 +243,9 @@ const ReportGenerator = () => {
       autoHeadteacherComment = headteacherComment;
     }
 
+    // Calculate fees automatically
+    const feesData = await calculateStudentFees(studentId, selectedTerm, student.class_id);
+
     const reportData = {
       student_id: studentId,
       term_id: selectedTerm,
@@ -254,7 +257,8 @@ const ReportGenerator = () => {
         Math.round(marks.reduce((sum, mark) => sum + (mark.identifier || 2), 0) / marks.length) : 2,
       achievement_level: calculateAchievementLevel(marks && marks.length > 0 ?
         Math.round(marks.reduce((sum, mark) => sum + (mark.identifier || 2), 0) / marks.length) : 2),
-      generated_at: new Date().toISOString()
+      generated_at: new Date().toISOString(),
+      fees_balance: feesData.feesBalance
     };
 
     if (existingReport) {
