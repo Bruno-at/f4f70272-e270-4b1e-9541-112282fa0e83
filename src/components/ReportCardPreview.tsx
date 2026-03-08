@@ -16,6 +16,7 @@ interface ReportCardPreviewProps {
   };
   classTeacherSignature?: string | null;
   headteacherSignature?: string | null;
+  stampUrl?: string | null;
 }
 
 const ReportCardPreview = ({
