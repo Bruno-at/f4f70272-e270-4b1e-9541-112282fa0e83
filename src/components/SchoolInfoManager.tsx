@@ -54,7 +54,8 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
           telephone: data.telephone || '',
           email: data.email || '',
           website: data.website || '',
-          logo_url: data.logo_url || ''
+          logo_url: data.logo_url || '',
+          stamp_url: (data as any).stamp_url || ''
         });
       }
     } catch (error) {
