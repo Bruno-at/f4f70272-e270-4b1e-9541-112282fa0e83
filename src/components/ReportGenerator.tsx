@@ -315,7 +315,12 @@ const ReportGenerator = () => {
       template: selectedTemplate,
       reportColor: selectedColor,
       classTeacherSignature,
-      headteacherSignature
+      headteacherSignature,
+      feesData: {
+        feesBalance: feesData.feesBalance,
+        feesNextTerm: feesData.feesNextTerm,
+        otherRequirements: feesData.otherRequirements,
+      }
     });
   };
 
