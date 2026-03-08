@@ -844,6 +844,7 @@ const ReportCardManagement = () => {
                 headteacherSignature={previewData.headteacherSignature}
                 stampUrl={previewData.stampUrl}
                 stampPosition={stampPosition}
+                feesData={previewData.feesData}
               />
             </div>
           ) : (
