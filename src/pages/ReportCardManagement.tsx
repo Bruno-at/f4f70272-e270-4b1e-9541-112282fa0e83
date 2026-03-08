@@ -844,6 +844,10 @@ const ReportCardManagement = () => {
             </Button>
             {selectedReport && (
               <>
+                <Button variant="outline" onClick={handleApplyStamp}>
+                  <Stamp className="w-4 h-4 mr-2" />
+                  Apply Stamp
+                </Button>
                 <Button variant="outline" onClick={() => handlePrint(selectedReport.id)}>
                   <Printer className="w-4 h-4 mr-2" />
                   Print
