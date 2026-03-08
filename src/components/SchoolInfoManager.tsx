@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { SchoolInfo } from '@/types/database';
-import { Save, Upload } from 'lucide-react';
+import { Save, Upload, Stamp } from 'lucide-react';
 
 interface SchoolInfoManagerProps {
   onSuccess?: () => void;
