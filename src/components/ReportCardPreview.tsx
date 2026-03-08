@@ -312,13 +312,15 @@ const ReportCardPreview = ({
             <p className="font-bold">NEXT TERM BEGINS</p>
           </div>
           <div className="border-r border-gray-400 p-1">
+            <p className="font-bold">{feesData ? `${feesData.feesBalance.toLocaleString()} UGX` : ''}</p>
             <p className="font-bold">FEES BALANCE</p>
           </div>
           <div className="border-r border-gray-400 p-1">
+            <p className="font-bold">{feesData ? `${feesData.feesNextTerm.toLocaleString()} UGX` : ''}</p>
             <p className="font-bold">FEES NEXT TERM</p>
           </div>
           <div className="p-1">
-            <p className="font-bold italic">Other Requirement</p>
+            <p className="font-bold italic">{feesData?.otherRequirements || 'Other Requirement'}</p>
           </div>
         </div>
       </div>
