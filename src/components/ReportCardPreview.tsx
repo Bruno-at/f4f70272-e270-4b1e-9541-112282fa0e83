@@ -1,5 +1,7 @@
 import { Student, Term, SchoolInfo, StudentMark, Subject } from '@/types/database';
 
+export type StampPosition = 'bottom-right' | 'bottom-center' | 'over-signatures' | 'center';
+
 interface ReportCardPreviewProps {
   student: Student;
   term: Term;
