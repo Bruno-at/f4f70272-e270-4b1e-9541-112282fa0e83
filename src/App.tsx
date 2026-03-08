@@ -26,6 +26,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<AuthGuard><Index /></AuthGuard>} />
             <Route path="/report-cards" element={<AuthGuard><ReportCardManagement /></AuthGuard>} />
+            <Route path="/finance" element={<AuthGuard><FinancePortal /></AuthGuard>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

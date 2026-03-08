@@ -41,6 +41,8 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
   const handleItemClick = (sectionId: string, isRoute?: boolean) => {
     if (isRoute && sectionId === 'manage-reports') {
       navigate('/report-cards');
+    } else if (isRoute && sectionId === 'finance') {
+      navigate('/finance');
     } else {
       onSectionChange(sectionId);
     }
