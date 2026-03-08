@@ -36,7 +36,8 @@ const ReportCardPreview = ({
   classTeacherSignature,
   headteacherSignature,
   stampUrl,
-  stampPosition = 'bottom-right'
+  stampPosition = 'bottom-right',
+  feesData
 }: ReportCardPreviewProps) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {
