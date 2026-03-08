@@ -111,6 +111,7 @@ const ReportCardManagement = () => {
     template?: 'classic' | 'modern' | 'professional' | 'minimal';
     classTeacherSignature?: string | null;
     headteacherSignature?: string | null;
+    stampUrl?: string | null;
   } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
