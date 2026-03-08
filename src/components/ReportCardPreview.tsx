@@ -26,7 +26,8 @@ const ReportCardPreview = ({
   marks,
   reportData,
   classTeacherSignature,
-  headteacherSignature
+  headteacherSignature,
+  stampUrl
 }: ReportCardPreviewProps) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {
