@@ -8,6 +8,7 @@ import AuthGuard from "./components/AuthGuard";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import ReportCardManagement from "./pages/ReportCardManagement";
+import FinancePortal from "./pages/FinancePortal";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 
