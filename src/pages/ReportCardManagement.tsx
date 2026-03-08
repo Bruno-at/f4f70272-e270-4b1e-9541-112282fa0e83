@@ -19,6 +19,7 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { generateReportCardPDF } from '@/utils/pdfGenerator';
+import { calculateStudentFees } from '@/utils/feesCalculator';
 
 interface ReportCardWithDetails {
   id: string;
@@ -94,6 +95,7 @@ const ReportCardManagement = () => {
     classTeacherSignature?: string | null;
     headteacherSignature?: string | null;
     stampUrl?: string | null;
+    feesData?: { feesBalance: number; feesNextTerm: number; otherRequirements: string } | null;
   } | null>(null);
   const [printPreviewData, setPrintPreviewData] = useState<{
     student: Student;
@@ -113,6 +115,7 @@ const ReportCardManagement = () => {
     classTeacherSignature?: string | null;
     headteacherSignature?: string | null;
     stampUrl?: string | null;
+    feesData?: { feesBalance: number; feesNextTerm: number; otherRequirements: string } | null;
   } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -515,6 +518,9 @@ const ReportCardManagement = () => {
         if (base64Sig) headteacherSig = base64Sig;
       }
 
+      // Calculate fees data
+      const feesData = await calculateStudentFees(report.student_id, report.term_id, studentData.class_id);
+
       return {
         student: studentWithBase64,
         term: termData,
@@ -532,7 +538,12 @@ const ReportCardManagement = () => {
         template: report.template as 'classic' | 'modern' | 'professional' | 'minimal',
         classTeacherSignature: classTeacherSig,
         headteacherSignature: headteacherSig,
-        stampUrl: null // stamp applied on demand
+        stampUrl: null, // stamp applied on demand
+        feesData: {
+          feesBalance: feesData.feesBalance,
+          feesNextTerm: feesData.feesNextTerm,
+          otherRequirements: feesData.otherRequirements,
+        }
       };
     } catch (error) {
       console.error('Error fetching report data:', error);
@@ -833,6 +844,7 @@ const ReportCardManagement = () => {
                 headteacherSignature={previewData.headteacherSignature}
                 stampUrl={previewData.stampUrl}
                 stampPosition={stampPosition}
+                feesData={previewData.feesData}
               />
             </div>
           ) : (
@@ -907,6 +919,7 @@ const ReportCardManagement = () => {
                 headteacherSignature={printPreviewData.headteacherSignature}
                 stampUrl={printPreviewData.stampUrl}
                 stampPosition={stampPosition}
+                feesData={printPreviewData.feesData}
               />
             </div>
           ) : (

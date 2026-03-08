@@ -10,6 +10,7 @@ import { Student, Term, Class, Subject, SchoolInfo } from '@/types/database';
 import { Download, FileText, Users } from 'lucide-react';
 import { generateReportCardPDF } from '@/utils/pdfGenerator';
 import { TemplateSelector, TemplateType, ReportColor } from '@/components/TemplateSelector';
+import { calculateStudentFees } from '@/utils/feesCalculator';
 
 const ReportGenerator = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -242,6 +243,9 @@ const ReportGenerator = () => {
       autoHeadteacherComment = headteacherComment;
     }
 
+    // Calculate fees automatically
+    const feesData = await calculateStudentFees(studentId, selectedTerm, student.class_id);
+
     const reportData = {
       student_id: studentId,
       term_id: selectedTerm,
@@ -253,7 +257,8 @@ const ReportGenerator = () => {
         Math.round(marks.reduce((sum, mark) => sum + (mark.identifier || 2), 0) / marks.length) : 2,
       achievement_level: calculateAchievementLevel(marks && marks.length > 0 ?
         Math.round(marks.reduce((sum, mark) => sum + (mark.identifier || 2), 0) / marks.length) : 2),
-      generated_at: new Date().toISOString()
+      generated_at: new Date().toISOString(),
+      fees_balance: feesData.feesBalance
     };
 
     if (existingReport) {
@@ -310,7 +315,12 @@ const ReportGenerator = () => {
       template: selectedTemplate,
       reportColor: selectedColor,
       classTeacherSignature,
-      headteacherSignature
+      headteacherSignature,
+      feesData: {
+        feesBalance: feesData.feesBalance,
+        feesNextTerm: feesData.feesNextTerm,
+        otherRequirements: feesData.otherRequirements,
+      }
     });
   };
 

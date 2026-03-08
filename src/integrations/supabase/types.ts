@@ -106,6 +106,134 @@ export type Database = {
         }
         Relationships: []
       }
+      fee_audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          performed_by: string | null
+          student_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          performed_by?: string | null
+          student_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          performed_by?: string | null
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_audit_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fee_balance_overrides: {
+        Row: {
+          created_at: string
+          id: string
+          overridden_by: string | null
+          override_amount: number
+          reason: string
+          student_id: string
+          term_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          overridden_by?: string | null
+          override_amount: number
+          reason: string
+          student_id: string
+          term_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          overridden_by?: string | null
+          override_amount?: number
+          reason?: string
+          student_id?: string
+          term_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_balance_overrides_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_balance_overrides_term_id_fkey"
+            columns: ["term_id"]
+            isOneToOne: false
+            referencedRelation: "terms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fee_structures: {
+        Row: {
+          class_id: string
+          created_at: string
+          fees_next_term: number | null
+          id: string
+          other_requirements: string | null
+          term_id: string
+          total_fees: number
+          updated_at: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          fees_next_term?: number | null
+          id?: string
+          other_requirements?: string | null
+          term_id: string
+          total_fees?: number
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          fees_next_term?: number | null
+          id?: string
+          other_requirements?: string | null
+          term_id?: string
+          total_fees?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fee_structures_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fee_structures_term_id_fkey"
+            columns: ["term_id"]
+            isOneToOne: false
+            referencedRelation: "terms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       grading_systems: {
         Row: {
           created_at: string
@@ -387,6 +515,47 @@ export type Database = {
         }
         Relationships: []
       }
+      student_bursaries: {
+        Row: {
+          bursary_percentage: number
+          bursary_type: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          bursary_percentage?: number
+          bursary_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          bursary_percentage?: number
+          bursary_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_bursaries_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_marks: {
         Row: {
           a1_score: number | null
@@ -483,6 +652,60 @@ export type Database = {
           },
           {
             foreignKeyName: "student_marks_term_id_fkey"
+            columns: ["term_id"]
+            isOneToOne: false
+            referencedRelation: "terms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          payment_date: string
+          payment_method: string
+          receipt_number: string | null
+          recorded_by: string | null
+          student_id: string
+          term_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+          receipt_number?: string | null
+          recorded_by?: string | null
+          student_id: string
+          term_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string
+          receipt_number?: string | null
+          recorded_by?: string | null
+          student_id?: string
+          term_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_payments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_payments_term_id_fkey"
             columns: ["term_id"]
             isOneToOne: false
             referencedRelation: "terms"

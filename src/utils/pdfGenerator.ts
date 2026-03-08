@@ -31,6 +31,11 @@ export interface ReportCardData {
   reportColor?: ReportColor;
   classTeacherSignature?: string | null;
   headteacherSignature?: string | null;
+  feesData?: {
+    feesBalance: number;
+    feesNextTerm: number;
+    otherRequirements: string;
+  };
 }
 
 export const generateReportCardPDF = async (data: ReportCardData) => {
