@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ReportCard, Student, Term, SchoolInfo, StudentMark, Subject } from '@/types/database';
 import { Eye, Pencil, Printer, Download, Share2, Trash2, ArrowLeft, FileText, Loader2, Stamp } from 'lucide-react';
-import ReportCardPreview from '@/components/ReportCardPreview';
+import ReportCardPreview, { StampPosition } from '@/components/ReportCardPreview';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
