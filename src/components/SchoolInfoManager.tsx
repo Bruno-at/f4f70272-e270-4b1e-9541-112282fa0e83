@@ -121,13 +121,13 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
     }));
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const dataUrl = event.target?.result as string;
-        handleInputChange('logo_url', dataUrl);
+        handleInputChange(field, dataUrl);
       };
       reader.readAsDataURL(file);
     }
