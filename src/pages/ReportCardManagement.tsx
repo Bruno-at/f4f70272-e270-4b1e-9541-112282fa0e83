@@ -549,6 +549,52 @@ const ReportCardManagement = () => {
     setDeleteDialogOpen(true);
   };
 
+  const handleApplyStamp = async () => {
+    try {
+      const { data: schoolData } = await supabase
+        .from('school_info')
+        .select('stamp_url')
+        .limit(1)
+        .maybeSingle();
+
+      const stampUrl = (schoolData as any)?.stamp_url;
+
+      if (!stampUrl) {
+        toast({
+          title: "No Stamp Found",
+          description: "Please upload a school stamp first in the School Information settings.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Convert stamp to base64 if needed
+      let stampBase64 = stampUrl;
+      if (!stampUrl.startsWith('data:image')) {
+        stampBase64 = await urlToBase64(stampUrl);
+      }
+
+      if (previewData) {
+        setPreviewData({ ...previewData, stampUrl: stampBase64 });
+      }
+      if (printPreviewData) {
+        setPrintPreviewData({ ...printPreviewData, stampUrl: stampBase64 });
+      }
+
+      toast({
+        title: "Stamp Applied",
+        description: "School stamp has been applied to the report card"
+      });
+    } catch (error) {
+      console.error('Error applying stamp:', error);
+      toast({
+        title: "Error",
+        description: "Failed to apply stamp",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (!selectedReportId) return;
 
