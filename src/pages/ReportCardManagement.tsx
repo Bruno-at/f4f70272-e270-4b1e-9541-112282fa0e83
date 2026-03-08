@@ -906,6 +906,7 @@ const ReportCardManagement = () => {
                 classTeacherSignature={printPreviewData.classTeacherSignature}
                 headteacherSignature={printPreviewData.headteacherSignature}
                 stampUrl={printPreviewData.stampUrl}
+                stampPosition={stampPosition}
               />
             </div>
           ) : (
