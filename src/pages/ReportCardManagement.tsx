@@ -75,6 +75,7 @@ const ReportCardManagement = () => {
   });
   const [previewLoading, setPreviewLoading] = useState(false);
   const [printPreviewLoading, setPrintPreviewLoading] = useState(false);
+  const [stampPosition, setStampPosition] = useState<StampPosition>('bottom-right');
   const [previewData, setPreviewData] = useState<{
     student: Student;
     term: Term;
