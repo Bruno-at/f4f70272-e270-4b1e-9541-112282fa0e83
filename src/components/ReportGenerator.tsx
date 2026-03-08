@@ -10,6 +10,7 @@ import { Student, Term, Class, Subject, SchoolInfo } from '@/types/database';
 import { Download, FileText, Users } from 'lucide-react';
 import { generateReportCardPDF } from '@/utils/pdfGenerator';
 import { TemplateSelector, TemplateType, ReportColor } from '@/components/TemplateSelector';
+import { calculateStudentFees } from '@/utils/feesCalculator';
 
 const ReportGenerator = () => {
   const [students, setStudents] = useState<Student[]>([]);
