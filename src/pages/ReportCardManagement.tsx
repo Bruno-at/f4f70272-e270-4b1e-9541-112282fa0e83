@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ReportCard, Student, Term, SchoolInfo, StudentMark, Subject } from '@/types/database';
-import { Eye, Pencil, Printer, Download, Share2, Trash2, ArrowLeft, FileText, Loader2 } from 'lucide-react';
+import { Eye, Pencil, Printer, Download, Share2, Trash2, ArrowLeft, FileText, Loader2, Stamp } from 'lucide-react';
 import ReportCardPreview from '@/components/ReportCardPreview';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -92,6 +92,7 @@ const ReportCardManagement = () => {
     template?: 'classic' | 'modern' | 'professional' | 'minimal';
     classTeacherSignature?: string | null;
     headteacherSignature?: string | null;
+    stampUrl?: string | null;
   } | null>(null);
   const [printPreviewData, setPrintPreviewData] = useState<{
     student: Student;
@@ -110,6 +111,7 @@ const ReportCardManagement = () => {
     template?: 'classic' | 'modern' | 'professional' | 'minimal';
     classTeacherSignature?: string | null;
     headteacherSignature?: string | null;
+    stampUrl?: string | null;
   } | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -528,7 +530,8 @@ const ReportCardManagement = () => {
         },
         template: report.template as 'classic' | 'modern' | 'professional' | 'minimal',
         classTeacherSignature: classTeacherSig,
-        headteacherSignature: headteacherSig
+        headteacherSignature: headteacherSig,
+        stampUrl: null // stamp applied on demand
       };
     } catch (error) {
       console.error('Error fetching report data:', error);
@@ -544,6 +547,52 @@ const ReportCardManagement = () => {
   const handleDeleteClick = (reportId: string) => {
     setSelectedReportId(reportId);
     setDeleteDialogOpen(true);
+  };
+
+  const handleApplyStamp = async () => {
+    try {
+      const { data: schoolData } = await supabase
+        .from('school_info')
+        .select('stamp_url')
+        .limit(1)
+        .maybeSingle();
+
+      const stampUrl = (schoolData as any)?.stamp_url;
+
+      if (!stampUrl) {
+        toast({
+          title: "No Stamp Found",
+          description: "Please upload a school stamp first in the School Information settings.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Convert stamp to base64 if needed
+      let stampBase64 = stampUrl;
+      if (!stampUrl.startsWith('data:image')) {
+        stampBase64 = await urlToBase64(stampUrl);
+      }
+
+      if (previewData) {
+        setPreviewData({ ...previewData, stampUrl: stampBase64 });
+      }
+      if (printPreviewData) {
+        setPrintPreviewData({ ...printPreviewData, stampUrl: stampBase64 });
+      }
+
+      toast({
+        title: "Stamp Applied",
+        description: "School stamp has been applied to the report card"
+      });
+    } catch (error) {
+      console.error('Error applying stamp:', error);
+      toast({
+        title: "Error",
+        description: "Failed to apply stamp",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -781,6 +830,7 @@ const ReportCardManagement = () => {
                 reportData={previewData.reportData}
                 classTeacherSignature={previewData.classTeacherSignature}
                 headteacherSignature={previewData.headteacherSignature}
+                stampUrl={previewData.stampUrl}
               />
             </div>
           ) : (
@@ -794,6 +844,10 @@ const ReportCardManagement = () => {
             </Button>
             {selectedReport && (
               <>
+                <Button variant="outline" onClick={handleApplyStamp}>
+                  <Stamp className="w-4 h-4 mr-2" />
+                  Apply Stamp
+                </Button>
                 <Button variant="outline" onClick={() => handlePrint(selectedReport.id)}>
                   <Printer className="w-4 h-4 mr-2" />
                   Print
@@ -836,6 +890,7 @@ const ReportCardManagement = () => {
                 reportData={printPreviewData.reportData}
                 classTeacherSignature={printPreviewData.classTeacherSignature}
                 headteacherSignature={printPreviewData.headteacherSignature}
+                stampUrl={printPreviewData.stampUrl}
               />
             </div>
           ) : (

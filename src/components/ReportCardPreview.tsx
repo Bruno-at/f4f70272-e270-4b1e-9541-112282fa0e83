@@ -16,6 +16,7 @@ interface ReportCardPreviewProps {
   };
   classTeacherSignature?: string | null;
   headteacherSignature?: string | null;
+  stampUrl?: string | null;
 }
 
 const ReportCardPreview = ({
@@ -25,7 +26,8 @@ const ReportCardPreview = ({
   marks,
   reportData,
   classTeacherSignature,
-  headteacherSignature
+  headteacherSignature,
+  stampUrl
 }: ReportCardPreviewProps) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-GB', {
@@ -253,6 +255,17 @@ const ReportCardPreview = ({
           </div>
         </div>
       </div>
+
+      {/* School Stamp */}
+      {stampUrl && (
+        <div className="mt-2 flex justify-end">
+          <img 
+            src={stampUrl} 
+            alt="School Stamp" 
+            className="h-20 w-auto object-contain opacity-80"
+          />
+        </div>
+      )}
 
       {/* Key to Terms Used */}
       <div className="mt-2 text-[8px] border border-gray-400 p-2">

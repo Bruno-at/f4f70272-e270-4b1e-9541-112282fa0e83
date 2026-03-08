@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { SchoolInfo } from '@/types/database';
-import { Save, Upload } from 'lucide-react';
+import { Save, Upload, Stamp } from 'lucide-react';
 
 interface SchoolInfoManagerProps {
   onSuccess?: () => void;
@@ -26,7 +26,8 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
     telephone: '',
     email: '',
     website: '',
-    logo_url: ''
+    logo_url: '',
+    stamp_url: ''
   });
 
   useEffect(() => {
@@ -53,7 +54,8 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
           telephone: data.telephone || '',
           email: data.email || '',
           website: data.website || '',
-          logo_url: data.logo_url || ''
+          logo_url: data.logo_url || '',
+          stamp_url: (data as any).stamp_url || ''
         });
       }
     } catch (error) {
@@ -119,13 +121,13 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
     }));
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const dataUrl = event.target?.result as string;
-        handleInputChange('logo_url', dataUrl);
+        handleInputChange(field, dataUrl);
       };
       reader.readAsDataURL(file);
     }
@@ -220,7 +222,7 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
                 id="logo"
                 type="file"
                 accept="image/*"
-                onChange={handleLogoUpload}
+                onChange={handleFileUpload('logo_url')}
                 className="cursor-pointer"
               />
               {formData.logo_url && (
@@ -231,6 +233,34 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
                     className="w-16 h-16 object-contain border rounded"
                   />
                   <span className="text-sm text-muted-foreground">Logo uploaded</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="stamp">
+              <span className="flex items-center gap-1">
+                <Stamp className="w-4 h-4" />
+                School Stamp
+              </span>
+            </Label>
+            <div className="space-y-2">
+              <Input
+                id="stamp"
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload('stamp_url')}
+                className="cursor-pointer"
+              />
+              {formData.stamp_url && (
+                <div className="flex items-center gap-2">
+                  <img 
+                    src={formData.stamp_url} 
+                    alt="School Stamp" 
+                    className="w-16 h-16 object-contain border rounded"
+                  />
+                  <span className="text-sm text-muted-foreground">Stamp uploaded</span>
                 </div>
               )}
             </div>

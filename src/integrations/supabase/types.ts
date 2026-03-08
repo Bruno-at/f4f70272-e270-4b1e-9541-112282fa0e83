@@ -350,6 +350,7 @@ export type Database = {
           motto: string | null
           po_box: string | null
           school_name: string
+          stamp_url: string | null
           telephone: string | null
           updated_at: string
           website: string | null
@@ -364,6 +365,7 @@ export type Database = {
           motto?: string | null
           po_box?: string | null
           school_name: string
+          stamp_url?: string | null
           telephone?: string | null
           updated_at?: string
           website?: string | null
@@ -378,6 +380,7 @@ export type Database = {
           motto?: string | null
           po_box?: string | null
           school_name?: string
+          stamp_url?: string | null
           telephone?: string | null
           updated_at?: string
           website?: string | null
