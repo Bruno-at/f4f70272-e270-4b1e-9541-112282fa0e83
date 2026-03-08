@@ -8,6 +8,7 @@ export interface SchoolInfo {
   email?: string;
   website?: string;
   logo_url?: string;
+  stamp_url?: string;
   created_at: string;
   updated_at: string;
 }

@@ -222,7 +222,7 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
                 id="logo"
                 type="file"
                 accept="image/*"
-                onChange={handleLogoUpload}
+                onChange={handleFileUpload('logo_url')}
                 className="cursor-pointer"
               />
               {formData.logo_url && (
@@ -233,6 +233,34 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
                     className="w-16 h-16 object-contain border rounded"
                   />
                   <span className="text-sm text-muted-foreground">Logo uploaded</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="stamp">
+              <span className="flex items-center gap-1">
+                <Stamp className="w-4 h-4" />
+                School Stamp
+              </span>
+            </Label>
+            <div className="space-y-2">
+              <Input
+                id="stamp"
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload('stamp_url')}
+                className="cursor-pointer"
+              />
+              {formData.stamp_url && (
+                <div className="flex items-center gap-2">
+                  <img 
+                    src={formData.stamp_url} 
+                    alt="School Stamp" 
+                    className="w-16 h-16 object-contain border rounded"
+                  />
+                  <span className="text-sm text-muted-foreground">Stamp uploaded</span>
                 </div>
               )}
             </div>
