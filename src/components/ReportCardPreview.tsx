@@ -256,6 +256,17 @@ const ReportCardPreview = ({
         </div>
       </div>
 
+      {/* School Stamp */}
+      {stampUrl && (
+        <div className="mt-2 flex justify-end">
+          <img 
+            src={stampUrl} 
+            alt="School Stamp" 
+            className="h-20 w-auto object-contain opacity-80"
+          />
+        </div>
+      )}
+
       {/* Key to Terms Used */}
       <div className="mt-2 text-[8px] border border-gray-400 p-2">
         <p className="font-bold mb-1">Key to Terms Used: A1 Average Chapter Assessment 80% End of term assessment</p>
