@@ -92,6 +92,7 @@ const ReportCardManagement = () => {
     template?: 'classic' | 'modern' | 'professional' | 'minimal';
     classTeacherSignature?: string | null;
     headteacherSignature?: string | null;
+    stampUrl?: string | null;
   } | null>(null);
   const [printPreviewData, setPrintPreviewData] = useState<{
     student: Student;
