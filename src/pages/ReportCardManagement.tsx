@@ -518,6 +518,9 @@ const ReportCardManagement = () => {
         if (base64Sig) headteacherSig = base64Sig;
       }
 
+      // Calculate fees data
+      const feesData = await calculateStudentFees(report.student_id, report.term_id, studentData.class_id);
+
       return {
         student: studentWithBase64,
         term: termData,
@@ -535,7 +538,12 @@ const ReportCardManagement = () => {
         template: report.template as 'classic' | 'modern' | 'professional' | 'minimal',
         classTeacherSignature: classTeacherSig,
         headteacherSignature: headteacherSig,
-        stampUrl: null // stamp applied on demand
+        stampUrl: null, // stamp applied on demand
+        feesData: {
+          feesBalance: feesData.feesBalance,
+          feesNextTerm: feesData.feesNextTerm,
+          otherRequirements: feesData.otherRequirements,
+        }
       };
     } catch (error) {
       console.error('Error fetching report data:', error);
