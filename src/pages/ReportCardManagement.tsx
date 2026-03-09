@@ -569,9 +569,9 @@ const ReportCardManagement = () => {
         .limit(1)
         .maybeSingle();
 
-      const stampUrl = (schoolData as any)?.stamp_url;
+      const stampPath = (schoolData as any)?.stamp_url;
 
-      if (!stampUrl) {
+      if (!stampPath) {
         toast({
           title: "No Stamp Found",
           description: "Please upload a school stamp first in the School Information settings.",
@@ -580,10 +580,20 @@ const ReportCardManagement = () => {
         return;
       }
 
-      // Convert stamp to base64 if needed
-      let stampBase64 = stampUrl;
-      if (!stampUrl.startsWith('data:image')) {
-        stampBase64 = await urlToBase64(stampUrl);
+      // Get the stamp image - handle storage paths and URLs
+      let stampBase64 = stampPath;
+      if (stampPath.startsWith('data:image')) {
+        // Already base64
+      } else if (!stampPath.startsWith('http')) {
+        // Storage path - get signed URL first, then convert to base64
+        const { data: signedData } = await supabase.storage
+          .from('student-photos')
+          .createSignedUrl(stampPath, 31536000);
+        if (signedData?.signedUrl) {
+          stampBase64 = await urlToBase64(signedData.signedUrl);
+        }
+      } else {
+        stampBase64 = await urlToBase64(stampPath);
       }
 
       if (previewData) {
