@@ -17,6 +17,7 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const [filePreview, setFilePreview] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState({
     school_name: '',
