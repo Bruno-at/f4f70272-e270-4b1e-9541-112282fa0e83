@@ -33,8 +33,8 @@ const BursaryManager = () => {
   const fetchData = async () => {
     try {
       const [burRes, studRes, classRes] = await Promise.all([
-        supabase.from('student_bursaries').select('*, students(name, class_id, classes(class_name, section))').order('created_at', { ascending: false }),
-        supabase.from('students').select('*, classes(class_name, section)').order('name'),
+        supabase.from('student_bursaries').select('*, students(name, class_id, classes!students_class_id_fkey(class_name, section))').order('created_at', { ascending: false }),
+        supabase.from('students').select('*, classes!students_class_id_fkey(class_name, section)').order('name'),
         supabase.from('classes').select('*').order('class_name')
       ]);
       if (burRes.error) throw burRes.error;
