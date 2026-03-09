@@ -265,17 +265,18 @@ const ReportCardPreview = ({
           </div>
         </div>
 
-        {/* School Stamp - below headteacher signature */}
+        {/* School Stamp - overlaid on top of content */}
         {stampUrl && (
-          <div className={`p-2 flex ${
-            stampPosition === 'over-signatures' ? 'justify-end' :
-            stampPosition === 'bottom-center' ? 'justify-center' :
-            stampPosition === 'center' ? 'justify-center' : 'justify-end'
+          <div className={`absolute pointer-events-none ${
+            stampPosition === 'bottom-right' ? 'bottom-2 right-2' :
+            stampPosition === 'bottom-center' ? 'bottom-2 left-1/2 -translate-x-1/2' :
+            stampPosition === 'over-signatures' ? 'bottom-2 right-8' :
+            'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'
           }`}>
             <img 
               src={stampUrl} 
               alt="School Stamp" 
-              className={`h-16 w-auto object-contain ${stampPosition === 'over-signatures' ? 'opacity-70' : 'opacity-80'}`}
+              className="h-20 w-auto object-contain opacity-80"
             />
           </div>
         )}
