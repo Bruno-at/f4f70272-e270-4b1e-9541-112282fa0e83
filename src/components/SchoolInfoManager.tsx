@@ -47,6 +47,8 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
 
       if (data) {
         setSchoolInfo(data);
+        const stampPath = (data as any).stamp_url || '';
+        const logoPath = data.logo_url || '';
         setFormData({
           school_name: data.school_name || '',
           motto: data.motto || '',
@@ -55,9 +57,25 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
           telephone: data.telephone || '',
           email: data.email || '',
           website: data.website || '',
-          logo_url: data.logo_url || '',
-          stamp_url: (data as any).stamp_url || ''
+          logo_url: logoPath,
+          stamp_url: stampPath
         });
+
+        // Generate signed URLs for previews (for storage paths, not data URLs)
+        const previews: Record<string, string> = {};
+        for (const [field, path] of [['stamp_url', stampPath], ['logo_url', logoPath]]) {
+          if (path && !path.startsWith('data:') && !path.startsWith('http')) {
+            const { data: signedData } = await supabase.storage
+              .from('student-photos')
+              .createSignedUrl(path, 31536000);
+            if (signedData?.signedUrl) {
+              previews[field] = signedData.signedUrl;
+            }
+          } else if (path) {
+            previews[field] = path;
+          }
+        }
+        setFilePreview(previews);
       }
     } catch (error) {
       console.error('Error fetching school info:', error);
