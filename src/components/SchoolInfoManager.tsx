@@ -121,9 +121,47 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
     }));
   };
 
-  const handleFileUpload = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (field: string) => async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
+    if (!file) return;
+
+    // For stamp and logo, upload to Supabase Storage
+    if (field === 'stamp_url' || field === 'logo_url') {
+      try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${field.replace('_url', '')}-${Date.now()}.${fileExt}`;
+        const filePath = `school/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('student-photos')
+          .upload(filePath, file, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        // Store the storage path in the form
+        handleInputChange(field, filePath);
+
+        // Show preview using local data URL
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const dataUrl = event.target?.result as string;
+          setFilePreview(prev => ({ ...prev, [field]: dataUrl }));
+        };
+        reader.readAsDataURL(file);
+
+        toast({
+          title: "File Uploaded",
+          description: `${field === 'stamp_url' ? 'Stamp' : 'Logo'} uploaded successfully.`,
+        });
+      } catch (error) {
+        console.error('Upload error:', error);
+        toast({
+          title: "Upload Failed",
+          description: "Failed to upload file to storage.",
+          variant: "destructive"
+        });
+      }
+    } else {
       const reader = new FileReader();
       reader.onload = (event) => {
         const dataUrl = event.target?.result as string;
