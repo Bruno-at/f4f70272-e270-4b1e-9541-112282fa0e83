@@ -28,8 +28,8 @@ const BalanceOverrideManager = () => {
   const fetchData = async () => {
     try {
       const [ovRes, studRes, termRes, classRes] = await Promise.all([
-        supabase.from('fee_balance_overrides').select('*, students(name, class_id, classes(class_name, section)), terms(term_name, year)').order('created_at', { ascending: false }),
-        supabase.from('students').select('*, classes(class_name, section)').order('name'),
+        supabase.from('fee_balance_overrides').select('*, students(name, class_id, classes!students_class_id_fkey(class_name, section)), terms(term_name, year)').order('created_at', { ascending: false }),
+        supabase.from('students').select('*, classes!students_class_id_fkey(class_name, section)').order('name'),
         supabase.from('terms').select('*').order('year', { ascending: false }),
         supabase.from('classes').select('*').order('class_name')
       ]);

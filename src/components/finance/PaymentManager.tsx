@@ -33,8 +33,8 @@ const PaymentManager = () => {
   const fetchData = async () => {
     try {
       const [payRes, studRes, termRes, classRes] = await Promise.all([
-        supabase.from('student_payments').select('*, students(name, class_id, classes(class_name, section)), terms(term_name, year)').order('created_at', { ascending: false }).limit(100),
-        supabase.from('students').select('*, classes(class_name, section)').order('name'),
+        supabase.from('student_payments').select('*, students(name, class_id, classes!students_class_id_fkey(class_name, section)), terms(term_name, year)').order('created_at', { ascending: false }).limit(100),
+        supabase.from('students').select('*, classes!students_class_id_fkey(class_name, section)').order('name'),
         supabase.from('terms').select('*').order('year', { ascending: false }),
         supabase.from('classes').select('*').order('class_name')
       ]);
