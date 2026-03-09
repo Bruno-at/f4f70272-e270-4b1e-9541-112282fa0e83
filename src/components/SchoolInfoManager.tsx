@@ -282,10 +282,10 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
                 onChange={handleFileUpload('logo_url')}
                 className="cursor-pointer"
               />
-              {formData.logo_url && (
+              {(filePreview.logo_url || formData.logo_url) && (
                 <div className="flex items-center gap-2">
                   <img 
-                    src={formData.logo_url} 
+                    src={filePreview.logo_url || formData.logo_url} 
                     alt="School Logo" 
                     className="w-16 h-16 object-contain border rounded"
                   />
