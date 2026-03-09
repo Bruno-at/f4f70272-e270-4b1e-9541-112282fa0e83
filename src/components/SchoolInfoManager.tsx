@@ -310,10 +310,10 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
                 onChange={handleFileUpload('stamp_url')}
                 className="cursor-pointer"
               />
-              {formData.stamp_url && (
+              {(filePreview.stamp_url || formData.stamp_url) && (
                 <div className="flex items-center gap-2">
                   <img 
-                    src={formData.stamp_url} 
+                    src={filePreview.stamp_url || formData.stamp_url} 
                     alt="School Stamp" 
                     className="w-16 h-16 object-contain border rounded"
                   />
