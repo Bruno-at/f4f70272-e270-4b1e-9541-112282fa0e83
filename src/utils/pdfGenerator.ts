@@ -13,6 +13,13 @@ export const reportColorHex: Record<ReportColor, string> = {
   gray: '#F3F4F6',
 };
 
+export interface StampConfig {
+  positionX: number;
+  positionY: number;
+  size: number;
+  opacity: number;
+}
+
 export interface ReportCardData {
   student: Student;
   term: Term;
@@ -31,6 +38,8 @@ export interface ReportCardData {
   reportColor?: ReportColor;
   classTeacherSignature?: string | null;
   headteacherSignature?: string | null;
+  stampUrl?: string | null;
+  stampConfig?: StampConfig | null;
   feesData?: {
     feesBalance: number;
     feesNextTerm: number;
