@@ -385,7 +385,9 @@ const ReportCardManagement = () => {
       const reportData = await fetchFullReportData(reportId);
       if (!reportData) return;
 
-      await generateReportCardPDF(reportData);
+      // Load stamp and config for PDF
+      const stampInfo = await loadStampForPdf();
+      await generateReportCardPDF({ ...reportData, ...stampInfo });
 
       toast({
         title: "Success",
@@ -398,6 +400,44 @@ const ReportCardManagement = () => {
         description: "Failed to download report card",
         variant: "destructive"
       });
+    }
+  };
+
+  const loadStampForPdf = async (): Promise<{ stampUrl?: string | null; stampConfig?: { positionX: number; positionY: number; size: number; opacity: number } | null }> => {
+    try {
+      const { data } = await supabase
+        .from('school_info')
+        .select('stamp_url, stamp_position_x, stamp_position_y, stamp_size, stamp_opacity')
+        .limit(1)
+        .maybeSingle();
+      
+      if (!data) return {};
+      const sd = data as any;
+      let stampBase64: string | null = null;
+      
+      if (sd.stamp_url) {
+        if (sd.stamp_url.startsWith('data:image')) {
+          stampBase64 = sd.stamp_url;
+        } else if (!sd.stamp_url.startsWith('http')) {
+          const { data: signedData } = await supabase.storage.from('student-photos').createSignedUrl(sd.stamp_url, 3600);
+          if (signedData?.signedUrl) stampBase64 = await urlToBase64(signedData.signedUrl);
+        } else {
+          stampBase64 = await urlToBase64(sd.stamp_url);
+        }
+      }
+      
+      return {
+        stampUrl: stampBase64,
+        stampConfig: {
+          positionX: sd.stamp_position_x ?? 75,
+          positionY: sd.stamp_position_y ?? 80,
+          size: sd.stamp_size ?? 60,
+          opacity: sd.stamp_opacity ?? 70,
+        }
+      };
+    } catch (e) {
+      console.error('Error loading stamp for PDF:', e);
+      return {};
     }
   };
 
