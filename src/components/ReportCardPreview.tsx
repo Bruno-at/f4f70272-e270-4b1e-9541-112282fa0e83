@@ -1,4 +1,5 @@
 import { Student, Term, SchoolInfo, StudentMark, Subject } from '@/types/database';
+import { StampConfig } from './StampConfigurator';
 
 export type StampPosition = 'bottom-right' | 'bottom-center' | 'over-signatures' | 'center';
 
@@ -20,6 +21,7 @@ interface ReportCardPreviewProps {
   headteacherSignature?: string | null;
   stampUrl?: string | null;
   stampPosition?: StampPosition;
+  stampConfig?: StampConfig | null;
   feesData?: {
     feesBalance: number;
     feesNextTerm: number;
@@ -37,6 +39,7 @@ const ReportCardPreview = ({
   headteacherSignature,
   stampUrl,
   stampPosition = 'bottom-right',
+  stampConfig,
   feesData
 }: ReportCardPreviewProps) => {
   const formatDate = (dateString: string) => {
@@ -53,11 +56,32 @@ const ReportCardPreview = ({
     return formatDate(date.toISOString());
   };
 
+  // Determine stamp style: use stampConfig (flexible) if available, otherwise fall back to preset positions
+  const getStampStyle = (): React.CSSProperties | null => {
+    if (!stampUrl) return null;
+
+    if (stampConfig) {
+      return {
+        position: 'absolute' as const,
+        left: `${stampConfig.positionX}%`,
+        top: `${stampConfig.positionY}%`,
+        transform: 'translate(-50%, -50%)',
+        width: `${stampConfig.size}px`,
+        height: 'auto',
+        opacity: stampConfig.opacity / 100,
+        pointerEvents: 'none' as const,
+        zIndex: 10,
+      };
+    }
+    return null;
+  };
+
+  const stampStyle = getStampStyle();
+
   return (
-    <div className="bg-white text-black p-4 border border-gray-400 text-[10px] leading-tight" style={{ fontFamily: 'Arial, sans-serif' }}>
+    <div className="bg-white text-black p-4 border border-gray-400 text-[10px] leading-tight relative" style={{ fontFamily: 'Arial, sans-serif' }}>
       {/* Header Section */}
       <div className="flex justify-between items-start mb-3">
-        {/* Logo */}
         <div className="w-16 h-16 border border-gray-400 flex items-center justify-center overflow-hidden bg-white">
           {schoolInfo.logo_url ? (
             <img src={schoolInfo.logo_url} alt="Logo" className="w-full h-full object-contain" />
@@ -65,8 +89,6 @@ const ReportCardPreview = ({
             <span className="text-[8px] text-gray-400">LOGO</span>
           )}
         </div>
-
-        {/* School Details */}
         <div className="flex-1 text-center px-3">
           <h1 className="text-gray-800 font-bold text-lg uppercase tracking-wide">{schoolInfo.school_name}</h1>
           <p className="italic text-[10px] text-gray-600">"{schoolInfo.motto || 'Mbizi we are'}"</p>
@@ -77,8 +99,6 @@ const ReportCardPreview = ({
             Email: {schoolInfo.email || 'mugabifood@gmail.com'} | Website: {schoolInfo.website || 'mugabifood@gmail.com'}
           </p>
         </div>
-
-        {/* Student Photo */}
         <div className="w-20 h-20 border border-gray-400 flex items-center justify-center overflow-hidden bg-white">
           {student.photo_url ? (
             <img src={student.photo_url} alt="Student" className="w-full h-full object-cover" />
@@ -95,45 +115,21 @@ const ReportCardPreview = ({
         </h2>
       </div>
 
-      {/* Student Information - Horizontal Layout */}
+      {/* Student Information */}
       <div className="border-t border-b border-gray-400 py-2 mb-3 text-[9px]">
         <div className="flex justify-between items-center">
-          <div className="flex gap-1">
-            <span className="font-bold">NAME:</span>
-            <span className="font-semibold">{student.name.toUpperCase()}</span>
-          </div>
-          <div className="flex gap-1">
-            <span className="font-bold">GENDER:</span>
-            <span className="font-semibold">{student.gender.toUpperCase()}</span>
-          </div>
-          <div className="flex gap-1">
-            <span className="font-bold">TERM:</span>
-            <span className="font-semibold">{term.term_name.toUpperCase()}</span>
-          </div>
+          <div className="flex gap-1"><span className="font-bold">NAME:</span><span className="font-semibold">{student.name.toUpperCase()}</span></div>
+          <div className="flex gap-1"><span className="font-bold">GENDER:</span><span className="font-semibold">{student.gender.toUpperCase()}</span></div>
+          <div className="flex gap-1"><span className="font-bold">TERM:</span><span className="font-semibold">{term.term_name.toUpperCase()}</span></div>
         </div>
         <div className="flex justify-between items-center mt-1">
-          <div className="flex gap-1">
-            <span className="font-bold">SECTION:</span>
-            <span className="font-semibold">{student.classes?.section || 'East'}</span>
-          </div>
-          <div className="flex gap-1">
-            <span className="font-bold">CLASS:</span>
-            <span className="font-semibold">{student.classes?.class_name || 'S.1'}</span>
-          </div>
-          <div className="flex gap-1">
-            <span>Printed on</span>
-            <span className="font-semibold">{new Date().toLocaleDateString('en-GB')}</span>
-          </div>
+          <div className="flex gap-1"><span className="font-bold">SECTION:</span><span className="font-semibold">{student.classes?.section || 'East'}</span></div>
+          <div className="flex gap-1"><span className="font-bold">CLASS:</span><span className="font-semibold">{student.classes?.class_name || 'S.1'}</span></div>
+          <div className="flex gap-1"><span>Printed on</span><span className="font-semibold">{new Date().toLocaleDateString('en-GB')}</span></div>
         </div>
         <div className="flex gap-6 mt-1">
-          <div className="flex gap-1">
-            <span className="font-bold">House:</span>
-            <span className="font-semibold">{student.house || 'Blue'}</span>
-          </div>
-          <div className="flex gap-1">
-            <span className="font-bold">Age:</span>
-            <span className="font-semibold">{student.age || 'N/A'}</span>
-          </div>
+          <div className="flex gap-1"><span className="font-bold">House:</span><span className="font-semibold">{student.house || 'Blue'}</span></div>
+          <div className="flex gap-1"><span className="font-bold">Age:</span><span className="font-semibold">{student.age || 'N/A'}</span></div>
         </div>
       </div>
 
@@ -226,7 +222,7 @@ const ReportCardPreview = ({
         </tbody>
       </table>
 
-      {/* Comments Section with Signatures - single border */}
+      {/* Comments Section with Signatures */}
       <div className="mt-2 border border-gray-400 text-[9px] relative">
         <div className="flex p-2">
           <div className="flex-1" style={{ width: '70%' }}>
@@ -236,11 +232,7 @@ const ReportCardPreview = ({
           <div className="text-right" style={{ width: '30%' }}>
             <p className="font-bold italic">Class Teacher's Signature:</p>
             {classTeacherSignature ? (
-              <img 
-                src={classTeacherSignature} 
-                alt="Class Teacher Signature" 
-                className="h-10 w-auto object-contain ml-auto mt-1"
-              />
+              <img src={classTeacherSignature} alt="Class Teacher Signature" className="h-10 w-auto object-contain ml-auto mt-1" />
             ) : (
               <div className="border-b border-gray-600 w-28 h-8 mt-1 ml-auto"></div>
             )}
@@ -254,32 +246,12 @@ const ReportCardPreview = ({
           <div className="text-right" style={{ width: '30%' }}>
             <p className="font-bold italic">Headteacher's Signature:</p>
             {headteacherSignature ? (
-              <img 
-                src={headteacherSignature} 
-                alt="Headteacher Signature" 
-                className="h-10 w-auto object-contain ml-auto mt-1"
-              />
+              <img src={headteacherSignature} alt="Headteacher Signature" className="h-10 w-auto object-contain ml-auto mt-1" />
             ) : (
               <div className="border-b border-gray-600 w-28 h-8 mt-1 ml-auto"></div>
             )}
           </div>
         </div>
-
-        {/* School Stamp - overlaid on top of content */}
-        {stampUrl && (
-          <div className={`absolute pointer-events-none ${
-            stampPosition === 'bottom-right' ? 'bottom-2 right-2' :
-            stampPosition === 'bottom-center' ? 'bottom-2 left-1/2 -translate-x-1/2' :
-            stampPosition === 'over-signatures' ? 'bottom-2 right-8' :
-            'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'
-          }`}>
-            <img 
-              src={stampUrl} 
-              alt="School Stamp" 
-              className="h-20 w-auto object-contain opacity-80"
-            />
-          </div>
-        )}
       </div>
 
       {/* Key to Terms Used */}
@@ -330,6 +302,27 @@ const ReportCardPreview = ({
       <div className="text-center mt-2 bg-gray-100 border border-gray-400 py-1 font-bold italic text-[10px]">
         {schoolInfo.motto || 'Work hard to excel'}
       </div>
+
+      {/* Stamp overlay - positioned over the entire report card */}
+      {stampUrl && stampStyle && (
+        <img
+          src={stampUrl}
+          alt="School Stamp"
+          style={stampStyle}
+        />
+      )}
+
+      {/* Fallback: legacy preset position stamp (if no stampConfig) */}
+      {stampUrl && !stampConfig && (
+        <div className={`absolute pointer-events-none ${
+          stampPosition === 'bottom-right' ? 'bottom-2 right-2' :
+          stampPosition === 'bottom-center' ? 'bottom-2 left-1/2 -translate-x-1/2' :
+          stampPosition === 'over-signatures' ? 'bottom-2 right-8' :
+          'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'
+        }`}>
+          <img src={stampUrl} alt="School Stamp" className="h-20 w-auto object-contain opacity-80" />
+        </div>
+      )}
     </div>
   );
 };

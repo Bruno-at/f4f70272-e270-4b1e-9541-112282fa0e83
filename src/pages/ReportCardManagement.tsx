@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ReportCard, Student, Term, SchoolInfo, StudentMark, Subject } from '@/types/database';
 import { Eye, Pencil, Printer, Download, Share2, Trash2, ArrowLeft, FileText, Loader2, Stamp } from 'lucide-react';
 import ReportCardPreview, { StampPosition } from '@/components/ReportCardPreview';
+import StampConfigurator, { StampConfig } from '@/components/StampConfigurator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -77,6 +78,8 @@ const ReportCardManagement = () => {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [printPreviewLoading, setPrintPreviewLoading] = useState(false);
   const [stampPosition, setStampPosition] = useState<StampPosition>('bottom-right');
+  const [stampConfig, setStampConfig] = useState<StampConfig>({ positionX: 75, positionY: 80, size: 60, opacity: 70 });
+  const [stampSaving, setStampSaving] = useState(false);
   const [previewData, setPreviewData] = useState<{
     student: Student;
     term: Term;
@@ -122,7 +125,54 @@ const ReportCardManagement = () => {
 
   useEffect(() => {
     fetchReportCards();
+    loadStampConfig();
   }, []);
+
+  const loadStampConfig = async () => {
+    try {
+      const { data } = await supabase
+        .from('school_info')
+        .select('stamp_position_x, stamp_position_y, stamp_size, stamp_opacity')
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setStampConfig({
+          positionX: (data as any).stamp_position_x ?? 75,
+          positionY: (data as any).stamp_position_y ?? 80,
+          size: (data as any).stamp_size ?? 60,
+          opacity: (data as any).stamp_opacity ?? 70,
+        });
+      }
+    } catch (e) {
+      console.error('Error loading stamp config:', e);
+    }
+  };
+
+  const handleSaveStampConfig = async (config: StampConfig) => {
+    setStampSaving(true);
+    try {
+      const { data: schoolData } = await supabase.from('school_info').select('id').limit(1).maybeSingle();
+      if (!schoolData) throw new Error('No school info found');
+      
+      const { error } = await supabase
+        .from('school_info')
+        .update({
+          stamp_position_x: config.positionX,
+          stamp_position_y: config.positionY,
+          stamp_size: config.size,
+          stamp_opacity: config.opacity,
+        } as any)
+        .eq('id', schoolData.id);
+      
+      if (error) throw error;
+      toast({ title: 'Stamp Position Saved', description: 'This position will be applied to all report cards.' });
+    } catch (error) {
+      console.error('Error saving stamp config:', error);
+      toast({ title: 'Error', description: 'Failed to save stamp configuration', variant: 'destructive' });
+    } finally {
+      setStampSaving(false);
+    }
+  };
 
   const fetchReportCards = async () => {
     try {
@@ -335,7 +385,9 @@ const ReportCardManagement = () => {
       const reportData = await fetchFullReportData(reportId);
       if (!reportData) return;
 
-      await generateReportCardPDF(reportData);
+      // Load stamp and config for PDF
+      const stampInfo = await loadStampForPdf();
+      await generateReportCardPDF({ ...reportData, ...stampInfo });
 
       toast({
         title: "Success",
@@ -351,6 +403,44 @@ const ReportCardManagement = () => {
     }
   };
 
+  const loadStampForPdf = async (): Promise<{ stampUrl?: string | null; stampConfig?: { positionX: number; positionY: number; size: number; opacity: number } | null }> => {
+    try {
+      const { data } = await supabase
+        .from('school_info')
+        .select('stamp_url, stamp_position_x, stamp_position_y, stamp_size, stamp_opacity')
+        .limit(1)
+        .maybeSingle();
+      
+      if (!data) return {};
+      const sd = data as any;
+      let stampBase64: string | null = null;
+      
+      if (sd.stamp_url) {
+        if (sd.stamp_url.startsWith('data:image')) {
+          stampBase64 = sd.stamp_url;
+        } else if (!sd.stamp_url.startsWith('http')) {
+          const { data: signedData } = await supabase.storage.from('student-photos').createSignedUrl(sd.stamp_url, 3600);
+          if (signedData?.signedUrl) stampBase64 = await urlToBase64(signedData.signedUrl);
+        } else {
+          stampBase64 = await urlToBase64(sd.stamp_url);
+        }
+      }
+      
+      return {
+        stampUrl: stampBase64,
+        stampConfig: {
+          positionX: sd.stamp_position_x ?? 75,
+          positionY: sd.stamp_position_y ?? 80,
+          size: sd.stamp_size ?? 60,
+          opacity: sd.stamp_opacity ?? 70,
+        }
+      };
+    } catch (e) {
+      console.error('Error loading stamp for PDF:', e);
+      return {};
+    }
+  };
+
   const handleShare = async (reportId: string) => {
     const report = reportCards.find(r => r.id === reportId);
     if (!report) return;
@@ -358,17 +448,34 @@ const ReportCardManagement = () => {
     try {
       toast({ title: "Preparing...", description: "Generating report card PDF" });
 
-      const reportData = await fetchFullReportData(reportId);
+      const [reportData, stampInfo] = await Promise.all([
+        fetchFullReportData(reportId),
+        loadStampForPdf()
+      ]);
       if (!reportData) return;
+      const fullData = { ...reportData, ...stampInfo };
 
       const { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } = await import('@/utils/pdfTemplates');
 
       let pdf;
-      switch (reportData.template) {
-        case 'modern': pdf = generateModernTemplate(reportData); break;
-        case 'professional': pdf = generateProfessionalTemplate(reportData); break;
-        case 'minimal': pdf = generateMinimalTemplate(reportData); break;
-        default: pdf = generateClassicTemplate(reportData);
+      switch (fullData.template) {
+        case 'modern': pdf = generateModernTemplate(fullData); break;
+        case 'professional': pdf = generateProfessionalTemplate(fullData); break;
+        case 'minimal': pdf = generateMinimalTemplate(fullData); break;
+        default: pdf = generateClassicTemplate(fullData);
+      }
+
+      // Add stamp to PDF
+      if (fullData.stampUrl && fullData.stampUrl.startsWith('data:image') && fullData.stampConfig) {
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const cfg = fullData.stampConfig;
+        const stampX = (cfg.positionX / 100) * pageWidth;
+        const stampY = (cfg.positionY / 100) * pageHeight;
+        const stampSizeMm = cfg.size * 0.35;
+        try {
+          pdf.addImage(fullData.stampUrl, 'PNG', stampX - stampSizeMm / 2, stampY - stampSizeMm / 2, stampSizeMm, stampSizeMm);
+        } catch (e) { console.error('Stamp overlay error:', e); }
       }
 
       const fileName = `${reportData.student.name.replace(/\s+/g, '_')}_Report_${reportData.term.term_name}_${reportData.term.year}.pdf`;
@@ -832,7 +939,7 @@ const ReportCardManagement = () => {
       </AlertDialog>
 
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Report Card Preview</DialogTitle>
           </DialogHeader>
@@ -842,20 +949,37 @@ const ReportCardManagement = () => {
               <span className="ml-2 text-muted-foreground">Loading report card...</span>
             </div>
           ) : previewData ? (
-            <div className="border rounded-lg overflow-hidden">
-              <ReportCardPreview
-                student={previewData.student}
-                term={previewData.term}
-                schoolInfo={previewData.schoolInfo}
-                marks={previewData.marks}
-                subjects={previewData.subjects}
-                reportData={previewData.reportData}
-                classTeacherSignature={previewData.classTeacherSignature}
-                headteacherSignature={previewData.headteacherSignature}
-                stampUrl={previewData.stampUrl}
-                stampPosition={stampPosition}
-                feesData={previewData.feesData}
-              />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Report card preview - 2/3 width */}
+              <div className="lg:col-span-2 border rounded-lg overflow-hidden">
+                <ReportCardPreview
+                  student={previewData.student}
+                  term={previewData.term}
+                  schoolInfo={previewData.schoolInfo}
+                  marks={previewData.marks}
+                  subjects={previewData.subjects}
+                  reportData={previewData.reportData}
+                  classTeacherSignature={previewData.classTeacherSignature}
+                  headteacherSignature={previewData.headteacherSignature}
+                  stampUrl={previewData.stampUrl}
+                  stampPosition={stampPosition}
+                  stampConfig={previewData.stampUrl ? stampConfig : undefined}
+                  feesData={previewData.feesData}
+                />
+              </div>
+
+              {/* Stamp configurator - 1/3 width */}
+              {previewData.stampUrl && (
+                <div className="lg:col-span-1">
+                  <StampConfigurator
+                    stampUrl={previewData.stampUrl}
+                    config={stampConfig}
+                    onChange={setStampConfig}
+                    onSave={handleSaveStampConfig}
+                    saving={stampSaving}
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-12 text-muted-foreground">
@@ -868,23 +992,12 @@ const ReportCardManagement = () => {
             </Button>
             {selectedReport && (
               <>
-                <div className="flex items-center gap-2">
-                  <Select value={stampPosition} onValueChange={(v) => setStampPosition(v as StampPosition)}>
-                    <SelectTrigger className="w-[160px] h-9">
-                      <SelectValue placeholder="Stamp position" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="bottom-right">Bottom Right</SelectItem>
-                      <SelectItem value="bottom-center">Bottom Center</SelectItem>
-                      <SelectItem value="over-signatures">Over Signatures</SelectItem>
-                      <SelectItem value="center">Center</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {!previewData?.stampUrl && (
                   <Button variant="outline" onClick={handleApplyStamp}>
                     <Stamp className="w-4 h-4 mr-2" />
                     Apply Stamp
                   </Button>
-                </div>
+                )}
                 <Button variant="outline" onClick={() => handlePrint(selectedReport.id)}>
                   <Printer className="w-4 h-4 mr-2" />
                   Print
@@ -929,6 +1042,7 @@ const ReportCardManagement = () => {
                 headteacherSignature={printPreviewData.headteacherSignature}
                 stampUrl={printPreviewData.stampUrl}
                 stampPosition={stampPosition}
+                stampConfig={printPreviewData.stampUrl ? stampConfig : undefined}
                 feesData={printPreviewData.feesData}
               />
             </div>
