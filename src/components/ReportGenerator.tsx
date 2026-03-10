@@ -297,6 +297,41 @@ const ReportGenerator = () => {
       schoolInfoWithBase64Logo.logo_url = await urlToBase64(schoolInfo.logo_url);
     }
 
+    // Load stamp URL and config
+    let stampBase64: string | null = null;
+    let stampConfig: { positionX: number; positionY: number; size: number; opacity: number } | null = null;
+    
+    const { data: stampData } = await supabase
+      .from('school_info')
+      .select('stamp_url, stamp_position_x, stamp_position_y, stamp_size, stamp_opacity')
+      .limit(1)
+      .maybeSingle();
+    
+    if (stampData) {
+      const sd = stampData as any;
+      if (sd.stamp_url) {
+        // Convert stamp to base64
+        if (sd.stamp_url.startsWith('data:image')) {
+          stampBase64 = sd.stamp_url;
+        } else if (!sd.stamp_url.startsWith('http')) {
+          const { data: signedData } = await supabase.storage
+            .from('student-photos')
+            .createSignedUrl(sd.stamp_url, 3600);
+          if (signedData?.signedUrl) {
+            stampBase64 = await urlToBase64(signedData.signedUrl);
+          }
+        } else {
+          stampBase64 = await urlToBase64(sd.stamp_url);
+        }
+      }
+      stampConfig = {
+        positionX: sd.stamp_position_x ?? 75,
+        positionY: sd.stamp_position_y ?? 80,
+        size: sd.stamp_size ?? 60,
+        opacity: sd.stamp_opacity ?? 70,
+      };
+    }
+
     // Generate PDF
     await generateReportCardPDF({
       student: studentWithBase64Photo,
@@ -316,6 +351,8 @@ const ReportGenerator = () => {
       reportColor: selectedColor,
       classTeacherSignature,
       headteacherSignature,
+      stampUrl: stampBase64,
+      stampConfig,
       feesData: {
         feesBalance: feesData.feesBalance,
         feesNextTerm: feesData.feesNextTerm,
