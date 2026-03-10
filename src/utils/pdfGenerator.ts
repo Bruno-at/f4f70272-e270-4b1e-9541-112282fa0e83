@@ -50,7 +50,6 @@ export interface ReportCardData {
 export const generateReportCardPDF = async (data: ReportCardData) => {
   const { student, term, template = 'classic' } = data;
   
-  // Select template generator
   let pdf: jsPDF;
   
   switch (template) {
@@ -68,7 +67,50 @@ export const generateReportCardPDF = async (data: ReportCardData) => {
       pdf = generateClassicTemplate(data);
       break;
   }
-  // Save the PDF
+
+  // Add stamp overlay to PDF if available
+  if (data.stampUrl && data.stampUrl.startsWith('data:image') && data.stampConfig) {
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const cfg = data.stampConfig;
+    
+    // Convert percentage position to mm coordinates
+    const stampX = (cfg.positionX / 100) * pageWidth;
+    const stampY = (cfg.positionY / 100) * pageHeight;
+    // Scale size: cfg.size is in px, convert to mm (roughly 1px = 0.264mm)
+    const stampSizeMm = cfg.size * 0.35;
+    
+    try {
+      const gState = new (pdf as any).GState({ opacity: cfg.opacity / 100 });
+      pdf.saveGraphicsState();
+      pdf.setGState(gState);
+      pdf.addImage(
+        data.stampUrl,
+        'PNG',
+        stampX - stampSizeMm / 2,
+        stampY - stampSizeMm / 2,
+        stampSizeMm,
+        stampSizeMm
+      );
+      pdf.restoreGraphicsState();
+    } catch (error) {
+      console.error('Error adding stamp to PDF:', error);
+      // Fallback without opacity
+      try {
+        pdf.addImage(
+          data.stampUrl,
+          'PNG',
+          stampX - stampSizeMm / 2,
+          stampY - stampSizeMm / 2,
+          stampSizeMm,
+          stampSizeMm
+        );
+      } catch (e) {
+        console.error('Fallback stamp also failed:', e);
+      }
+    }
+  }
+
   const fileName = `${student.name.replace(/\s+/g, '_')}_Report_${term.term_name}_${term.year}.pdf`;
   pdf.save(fileName);
 };
