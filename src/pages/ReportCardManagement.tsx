@@ -448,8 +448,12 @@ const ReportCardManagement = () => {
     try {
       toast({ title: "Preparing...", description: "Generating report card PDF" });
 
-      const reportData = await fetchFullReportData(reportId);
+      const [reportData, stampInfo] = await Promise.all([
+        fetchFullReportData(reportId),
+        loadStampForPdf()
+      ]);
       if (!reportData) return;
+      const fullData = { ...reportData, ...stampInfo };
 
       const { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } = await import('@/utils/pdfTemplates');
 
