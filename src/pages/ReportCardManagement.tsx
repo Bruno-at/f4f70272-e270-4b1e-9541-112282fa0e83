@@ -78,6 +78,8 @@ const ReportCardManagement = () => {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [printPreviewLoading, setPrintPreviewLoading] = useState(false);
   const [stampPosition, setStampPosition] = useState<StampPosition>('bottom-right');
+  const [stampConfig, setStampConfig] = useState<StampConfig>({ positionX: 75, positionY: 80, size: 60, opacity: 70 });
+  const [stampSaving, setStampSaving] = useState(false);
   const [previewData, setPreviewData] = useState<{
     student: Student;
     term: Term;
