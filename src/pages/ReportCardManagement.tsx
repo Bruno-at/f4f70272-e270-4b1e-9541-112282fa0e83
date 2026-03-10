@@ -125,7 +125,54 @@ const ReportCardManagement = () => {
 
   useEffect(() => {
     fetchReportCards();
+    loadStampConfig();
   }, []);
+
+  const loadStampConfig = async () => {
+    try {
+      const { data } = await supabase
+        .from('school_info')
+        .select('stamp_position_x, stamp_position_y, stamp_size, stamp_opacity')
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setStampConfig({
+          positionX: (data as any).stamp_position_x ?? 75,
+          positionY: (data as any).stamp_position_y ?? 80,
+          size: (data as any).stamp_size ?? 60,
+          opacity: (data as any).stamp_opacity ?? 70,
+        });
+      }
+    } catch (e) {
+      console.error('Error loading stamp config:', e);
+    }
+  };
+
+  const handleSaveStampConfig = async (config: StampConfig) => {
+    setStampSaving(true);
+    try {
+      const { data: schoolData } = await supabase.from('school_info').select('id').limit(1).maybeSingle();
+      if (!schoolData) throw new Error('No school info found');
+      
+      const { error } = await supabase
+        .from('school_info')
+        .update({
+          stamp_position_x: config.positionX,
+          stamp_position_y: config.positionY,
+          stamp_size: config.size,
+          stamp_opacity: config.opacity,
+        } as any)
+        .eq('id', schoolData.id);
+      
+      if (error) throw error;
+      toast({ title: 'Stamp Position Saved', description: 'This position will be applied to all report cards.' });
+    } catch (error) {
+      console.error('Error saving stamp config:', error);
+      toast({ title: 'Error', description: 'Failed to save stamp configuration', variant: 'destructive' });
+    } finally {
+      setStampSaving(false);
+    }
+  };
 
   const fetchReportCards = async () => {
     try {
