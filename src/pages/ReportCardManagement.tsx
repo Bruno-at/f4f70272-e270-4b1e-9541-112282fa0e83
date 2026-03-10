@@ -458,11 +458,24 @@ const ReportCardManagement = () => {
       const { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } = await import('@/utils/pdfTemplates');
 
       let pdf;
-      switch (reportData.template) {
-        case 'modern': pdf = generateModernTemplate(reportData); break;
-        case 'professional': pdf = generateProfessionalTemplate(reportData); break;
-        case 'minimal': pdf = generateMinimalTemplate(reportData); break;
-        default: pdf = generateClassicTemplate(reportData);
+      switch (fullData.template) {
+        case 'modern': pdf = generateModernTemplate(fullData); break;
+        case 'professional': pdf = generateProfessionalTemplate(fullData); break;
+        case 'minimal': pdf = generateMinimalTemplate(fullData); break;
+        default: pdf = generateClassicTemplate(fullData);
+      }
+
+      // Add stamp to PDF
+      if (fullData.stampUrl && fullData.stampUrl.startsWith('data:image') && fullData.stampConfig) {
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const cfg = fullData.stampConfig;
+        const stampX = (cfg.positionX / 100) * pageWidth;
+        const stampY = (cfg.positionY / 100) * pageHeight;
+        const stampSizeMm = cfg.size * 0.35;
+        try {
+          pdf.addImage(fullData.stampUrl, 'PNG', stampX - stampSizeMm / 2, stampY - stampSizeMm / 2, stampSizeMm, stampSizeMm);
+        } catch (e) { console.error('Stamp overlay error:', e); }
       }
 
       const fileName = `${reportData.student.name.replace(/\s+/g, '_')}_Report_${reportData.term.term_name}_${reportData.term.year}.pdf`;
