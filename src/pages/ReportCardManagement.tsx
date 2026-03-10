@@ -882,7 +882,7 @@ const ReportCardManagement = () => {
       </AlertDialog>
 
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Report Card Preview</DialogTitle>
           </DialogHeader>
@@ -892,20 +892,37 @@ const ReportCardManagement = () => {
               <span className="ml-2 text-muted-foreground">Loading report card...</span>
             </div>
           ) : previewData ? (
-            <div className="border rounded-lg overflow-hidden">
-              <ReportCardPreview
-                student={previewData.student}
-                term={previewData.term}
-                schoolInfo={previewData.schoolInfo}
-                marks={previewData.marks}
-                subjects={previewData.subjects}
-                reportData={previewData.reportData}
-                classTeacherSignature={previewData.classTeacherSignature}
-                headteacherSignature={previewData.headteacherSignature}
-                stampUrl={previewData.stampUrl}
-                stampPosition={stampPosition}
-                feesData={previewData.feesData}
-              />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Report card preview - 2/3 width */}
+              <div className="lg:col-span-2 border rounded-lg overflow-hidden">
+                <ReportCardPreview
+                  student={previewData.student}
+                  term={previewData.term}
+                  schoolInfo={previewData.schoolInfo}
+                  marks={previewData.marks}
+                  subjects={previewData.subjects}
+                  reportData={previewData.reportData}
+                  classTeacherSignature={previewData.classTeacherSignature}
+                  headteacherSignature={previewData.headteacherSignature}
+                  stampUrl={previewData.stampUrl}
+                  stampPosition={stampPosition}
+                  stampConfig={previewData.stampUrl ? stampConfig : undefined}
+                  feesData={previewData.feesData}
+                />
+              </div>
+
+              {/* Stamp configurator - 1/3 width */}
+              {previewData.stampUrl && (
+                <div className="lg:col-span-1">
+                  <StampConfigurator
+                    stampUrl={previewData.stampUrl}
+                    config={stampConfig}
+                    onChange={setStampConfig}
+                    onSave={handleSaveStampConfig}
+                    saving={stampSaving}
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-12 text-muted-foreground">
@@ -918,23 +935,12 @@ const ReportCardManagement = () => {
             </Button>
             {selectedReport && (
               <>
-                <div className="flex items-center gap-2">
-                  <Select value={stampPosition} onValueChange={(v) => setStampPosition(v as StampPosition)}>
-                    <SelectTrigger className="w-[160px] h-9">
-                      <SelectValue placeholder="Stamp position" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="bottom-right">Bottom Right</SelectItem>
-                      <SelectItem value="bottom-center">Bottom Center</SelectItem>
-                      <SelectItem value="over-signatures">Over Signatures</SelectItem>
-                      <SelectItem value="center">Center</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {!previewData?.stampUrl && (
                   <Button variant="outline" onClick={handleApplyStamp}>
                     <Stamp className="w-4 h-4 mr-2" />
                     Apply Stamp
                   </Button>
-                </div>
+                )}
                 <Button variant="outline" onClick={() => handlePrint(selectedReport.id)}>
                   <Printer className="w-4 h-4 mr-2" />
                   Print
