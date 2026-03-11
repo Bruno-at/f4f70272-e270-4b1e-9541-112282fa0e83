@@ -322,22 +322,51 @@ const ReportCardManagement = () => {
         return;
       }
 
+      // Load stamp and config for PDF
+      const stampInfo = await loadStampForPdf();
+
       // Generate PDF using the appropriate template
       const { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } = await import('@/utils/pdfTemplates');
       
+      const fullData = { ...reportData, ...stampInfo };
       let pdf;
-      switch (reportData.template) {
+      switch (fullData.template) {
         case 'modern':
-          pdf = generateModernTemplate(reportData);
+          pdf = generateModernTemplate(fullData);
           break;
         case 'professional':
-          pdf = generateProfessionalTemplate(reportData);
+          pdf = generateProfessionalTemplate(fullData);
           break;
         case 'minimal':
-          pdf = generateMinimalTemplate(reportData);
+          pdf = generateMinimalTemplate(fullData);
           break;
         default:
-          pdf = generateClassicTemplate(reportData);
+          pdf = generateClassicTemplate(fullData);
+      }
+
+      // Add stamp overlay to PDF if available
+      if (fullData.stampUrl && fullData.stampUrl.startsWith('data:image') && fullData.stampConfig) {
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const cfg = fullData.stampConfig;
+        const stampX = (cfg.positionX / 100) * pageWidth;
+        const stampY = (cfg.positionY / 100) * pageHeight;
+        const stampSizeMm = cfg.size * 0.35;
+        
+        try {
+          const gState = new (pdf as any).GState({ opacity: cfg.opacity / 100 });
+          pdf.saveGraphicsState();
+          pdf.setGState(gState);
+          pdf.addImage(fullData.stampUrl, 'PNG', stampX - stampSizeMm / 2, stampY - stampSizeMm / 2, stampSizeMm, stampSizeMm);
+          pdf.restoreGraphicsState();
+        } catch (e) {
+          console.error('Error adding stamp to print PDF:', e);
+          try {
+            pdf.addImage(fullData.stampUrl, 'PNG', stampX - stampSizeMm / 2, stampY - stampSizeMm / 2, stampSizeMm, stampSizeMm);
+          } catch (e2) {
+            console.error('Fallback stamp also failed:', e2);
+          }
+        }
       }
 
       // Create blob URL (less likely to be blocked than data URI)
