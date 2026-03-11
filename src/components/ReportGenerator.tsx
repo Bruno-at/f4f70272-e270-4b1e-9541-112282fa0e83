@@ -314,11 +314,28 @@ const ReportGenerator = () => {
         if (sd.stamp_url.startsWith('data:image')) {
           stampBase64 = sd.stamp_url;
         } else if (!sd.stamp_url.startsWith('http')) {
-          const { data: signedData } = await supabase.storage
-            .from('student-photos')
-            .createSignedUrl(sd.stamp_url, 3600);
-          if (signedData?.signedUrl) {
-            stampBase64 = await urlToBase64(signedData.signedUrl);
+          // Use download() to avoid CORS issues with signed URLs
+          try {
+            const { data: fileData, error: downloadError } = await supabase.storage
+              .from('student-photos')
+              .download(sd.stamp_url);
+            
+            if (!downloadError && fileData) {
+              stampBase64 = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = () => resolve('');
+                reader.readAsDataURL(fileData);
+              });
+            } else {
+              // Fallback to signed URL
+              const { data: signedData } = await supabase.storage.from('student-photos').createSignedUrl(sd.stamp_url, 3600);
+              if (signedData?.signedUrl) stampBase64 = await urlToBase64(signedData.signedUrl);
+            }
+          } catch (e) {
+            console.error('Stamp download error:', e);
+            const { data: signedData } = await supabase.storage.from('student-photos').createSignedUrl(sd.stamp_url, 3600);
+            if (signedData?.signedUrl) stampBase64 = await urlToBase64(signedData.signedUrl);
           }
         } else {
           stampBase64 = await urlToBase64(sd.stamp_url);
