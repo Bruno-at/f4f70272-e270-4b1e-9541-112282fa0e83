@@ -19,7 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { generateReportCardPDF } from '@/utils/pdfGenerator';
+import { generateReportCardPDF, addStampOverlayToPdf } from '@/utils/pdfGenerator';
 import { calculateStudentFees } from '@/utils/feesCalculator';
 
 interface ReportCardWithDetails {
@@ -322,13 +322,19 @@ const ReportCardManagement = () => {
         return;
       }
 
-      // Load stamp and config for PDF
+      // Load stamp/config and fall back to the stamp already rendered in preview DOM
       const stampInfo = await loadStampForPdf();
+      let resolvedStampUrl = stampInfo.stampUrl || null;
+      if (!resolvedStampUrl && reportData.stampUrl) {
+        resolvedStampUrl = reportData.stampUrl.startsWith('data:image')
+          ? reportData.stampUrl
+          : await urlToBase64(reportData.stampUrl);
+      }
 
       // Generate PDF using the appropriate template
       const { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } = await import('@/utils/pdfTemplates');
       
-      const fullData = { ...reportData, ...stampInfo };
+      const fullData = { ...reportData, ...stampInfo, stampUrl: resolvedStampUrl };
       let pdf;
       switch (fullData.template) {
         case 'modern':
@@ -344,29 +350,9 @@ const ReportCardManagement = () => {
           pdf = generateClassicTemplate(fullData);
       }
 
-      // Add stamp overlay to PDF if available
-      if (fullData.stampUrl && fullData.stampUrl.startsWith('data:image') && fullData.stampConfig) {
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const cfg = fullData.stampConfig;
-        const stampX = (cfg.positionX / 100) * pageWidth;
-        const stampY = (cfg.positionY / 100) * pageHeight;
-        const stampSizeMm = cfg.size * 0.35;
-        
-        try {
-          const gState = new (pdf as any).GState({ opacity: cfg.opacity / 100 });
-          pdf.saveGraphicsState();
-          pdf.setGState(gState);
-          pdf.addImage(fullData.stampUrl, 'PNG', stampX - stampSizeMm / 2, stampY - stampSizeMm / 2, stampSizeMm, stampSizeMm);
-          pdf.restoreGraphicsState();
-        } catch (e) {
-          console.error('Error adding stamp to print PDF:', e);
-          try {
-            pdf.addImage(fullData.stampUrl, 'PNG', stampX - stampSizeMm / 2, stampY - stampSizeMm / 2, stampSizeMm, stampSizeMm);
-          } catch (e2) {
-            console.error('Fallback stamp also failed:', e2);
-          }
-        }
+      // Add stamp overlay to PDF
+      if (fullData.stampUrl && fullData.stampConfig) {
+        addStampOverlayToPdf(pdf, fullData.stampUrl, fullData.stampConfig);
       }
 
       // Create blob URL (less likely to be blocked than data URI)
@@ -414,9 +400,16 @@ const ReportCardManagement = () => {
       const reportData = await fetchFullReportData(reportId);
       if (!reportData) return;
 
-      // Load stamp and config for PDF
+      // Load stamp and config for PDF (fallback to preview stamp in report data)
       const stampInfo = await loadStampForPdf();
-      await generateReportCardPDF({ ...reportData, ...stampInfo });
+      let resolvedStampUrl = stampInfo.stampUrl || null;
+      if (!resolvedStampUrl && reportData.stampUrl) {
+        resolvedStampUrl = reportData.stampUrl.startsWith('data:image')
+          ? reportData.stampUrl
+          : await urlToBase64(reportData.stampUrl);
+      }
+
+      await generateReportCardPDF({ ...reportData, ...stampInfo, stampUrl: resolvedStampUrl });
 
       toast({
         title: "Success",
@@ -439,58 +432,51 @@ const ReportCardManagement = () => {
         .select('stamp_url, stamp_position_x, stamp_position_y, stamp_size, stamp_opacity')
         .limit(1)
         .maybeSingle();
-      
-      if (!data) {
-        console.log('No school_info data found for stamp');
-        return {};
-      }
+
+      if (!data) return {};
+
       const sd = data as any;
       let stampBase64: string | null = null;
-      
-      console.log('Stamp URL from DB:', sd.stamp_url);
-      
+
       if (sd.stamp_url) {
         if (sd.stamp_url.startsWith('data:image')) {
           stampBase64 = sd.stamp_url;
         } else if (!sd.stamp_url.startsWith('http')) {
-          // It's a storage path - use download() instead of signed URL + fetch to avoid CORS
-          try {
-            const { data: fileData, error: downloadError } = await supabase.storage
+          const { data: fileData, error: downloadError } = await supabase.storage
+            .from('student-photos')
+            .download(sd.stamp_url);
+
+          if (!downloadError && fileData) {
+            stampBase64 = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve((reader.result as string) || '');
+              reader.onerror = () => resolve('');
+              reader.readAsDataURL(fileData);
+            });
+          } else {
+            const { data: signedData } = await supabase.storage
               .from('student-photos')
-              .download(sd.stamp_url);
-            
-            if (downloadError) {
-              console.error('Error downloading stamp from storage:', downloadError);
-              // Fallback to signed URL
-              const { data: signedData } = await supabase.storage.from('student-photos').createSignedUrl(sd.stamp_url, 3600);
-              if (signedData?.signedUrl) stampBase64 = await urlToBase64(signedData.signedUrl);
-            } else if (fileData) {
-              stampBase64 = await new Promise<string>((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.onerror = () => resolve('');
-                reader.readAsDataURL(fileData);
-              });
+              .createSignedUrl(sd.stamp_url, 3600);
+            if (signedData?.signedUrl) {
+              stampBase64 = await urlToBase64(signedData.signedUrl);
             }
-          } catch (e) {
-            console.error('Storage download failed, trying signed URL:', e);
-            const { data: signedData } = await supabase.storage.from('student-photos').createSignedUrl(sd.stamp_url, 3600);
-            if (signedData?.signedUrl) stampBase64 = await urlToBase64(signedData.signedUrl);
           }
         } else {
           stampBase64 = await urlToBase64(sd.stamp_url);
         }
       }
-      
-      console.log('Stamp base64 loaded:', stampBase64 ? `yes (${stampBase64.substring(0, 30)}...)` : 'no');
-      
+
+      if (!stampBase64?.startsWith('data:image')) {
+        stampBase64 = null;
+      }
+
       return {
         stampUrl: stampBase64,
         stampConfig: {
-          positionX: sd.stamp_position_x ?? 75,
-          positionY: sd.stamp_position_y ?? 80,
-          size: sd.stamp_size ?? 60,
-          opacity: sd.stamp_opacity ?? 70,
+          positionX: Number(sd.stamp_position_x ?? 75),
+          positionY: Number(sd.stamp_position_y ?? 80),
+          size: Number(sd.stamp_size ?? 60),
+          opacity: Number(sd.stamp_opacity ?? 70),
         }
       };
     } catch (e) {
@@ -511,7 +497,15 @@ const ReportCardManagement = () => {
         loadStampForPdf()
       ]);
       if (!reportData) return;
-      const fullData = { ...reportData, ...stampInfo };
+
+      let resolvedStampUrl = stampInfo.stampUrl || null;
+      if (!resolvedStampUrl && reportData.stampUrl) {
+        resolvedStampUrl = reportData.stampUrl.startsWith('data:image')
+          ? reportData.stampUrl
+          : await urlToBase64(reportData.stampUrl);
+      }
+
+      const fullData = { ...reportData, ...stampInfo, stampUrl: resolvedStampUrl };
 
       const { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } = await import('@/utils/pdfTemplates');
 
@@ -524,16 +518,8 @@ const ReportCardManagement = () => {
       }
 
       // Add stamp to PDF
-      if (fullData.stampUrl && fullData.stampUrl.startsWith('data:image') && fullData.stampConfig) {
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const cfg = fullData.stampConfig;
-        const stampX = (cfg.positionX / 100) * pageWidth;
-        const stampY = (cfg.positionY / 100) * pageHeight;
-        const stampSizeMm = cfg.size * 0.35;
-        try {
-          pdf.addImage(fullData.stampUrl, 'PNG', stampX - stampSizeMm / 2, stampY - stampSizeMm / 2, stampSizeMm, stampSizeMm);
-        } catch (e) { console.error('Stamp overlay error:', e); }
+      if (fullData.stampUrl && fullData.stampConfig) {
+        addStampOverlayToPdf(pdf, fullData.stampUrl, fullData.stampConfig);
       }
 
       const fileName = `${reportData.student.name.replace(/\s+/g, '_')}_Report_${reportData.term.term_name}_${reportData.term.year}.pdf`;
@@ -683,6 +669,20 @@ const ReportCardManagement = () => {
         if (base64Sig) headteacherSig = base64Sig;
       }
 
+      // Resolve stamp URL for in-DOM preview/print container
+      let stampPreviewUrl: string | null = null;
+      if ((schoolData as any).stamp_url) {
+        const stampPath = (schoolData as any).stamp_url as string;
+        if (stampPath.startsWith('data:image') || stampPath.startsWith('http')) {
+          stampPreviewUrl = stampPath;
+        } else {
+          const { data: signedData } = await supabase.storage
+            .from('student-photos')
+            .createSignedUrl(stampPath, 31536000);
+          stampPreviewUrl = signedData?.signedUrl || null;
+        }
+      }
+
       // Calculate fees data
       const feesData = await calculateStudentFees(report.student_id, report.term_id, studentData.class_id);
 
@@ -703,7 +703,7 @@ const ReportCardManagement = () => {
         template: report.template as 'classic' | 'modern' | 'professional' | 'minimal',
         classTeacherSignature: classTeacherSig,
         headteacherSignature: headteacherSig,
-        stampUrl: null, // stamp applied on demand
+        stampUrl: stampPreviewUrl,
         feesData: {
           feesBalance: feesData.feesBalance,
           feesNextTerm: feesData.feesNextTerm,
