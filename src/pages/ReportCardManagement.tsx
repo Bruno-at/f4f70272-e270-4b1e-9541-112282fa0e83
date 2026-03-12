@@ -682,7 +682,7 @@ const ReportCardManagement = () => {
         template: report.template as 'classic' | 'modern' | 'professional' | 'minimal',
         classTeacherSignature: classTeacherSig,
         headteacherSignature: headteacherSig,
-        stampUrl: null, // stamp applied on demand
+        stampUrl: stampPreviewUrl,
         feesData: {
           feesBalance: feesData.feesBalance,
           feesNextTerm: feesData.feesNextTerm,
