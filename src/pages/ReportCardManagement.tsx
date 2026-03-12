@@ -19,7 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { generateReportCardPDF } from '@/utils/pdfGenerator';
+import { generateReportCardPDF, addStampOverlayToPdf } from '@/utils/pdfGenerator';
 import { calculateStudentFees } from '@/utils/feesCalculator';
 
 interface ReportCardWithDetails {
