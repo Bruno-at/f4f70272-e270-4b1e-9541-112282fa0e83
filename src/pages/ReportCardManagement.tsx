@@ -400,9 +400,16 @@ const ReportCardManagement = () => {
       const reportData = await fetchFullReportData(reportId);
       if (!reportData) return;
 
-      // Load stamp and config for PDF
+      // Load stamp and config for PDF (fallback to preview stamp in report data)
       const stampInfo = await loadStampForPdf();
-      await generateReportCardPDF({ ...reportData, ...stampInfo });
+      let resolvedStampUrl = stampInfo.stampUrl || null;
+      if (!resolvedStampUrl && reportData.stampUrl) {
+        resolvedStampUrl = reportData.stampUrl.startsWith('data:image')
+          ? reportData.stampUrl
+          : await urlToBase64(reportData.stampUrl);
+      }
+
+      await generateReportCardPDF({ ...reportData, ...stampInfo, stampUrl: resolvedStampUrl });
 
       toast({
         title: "Success",
