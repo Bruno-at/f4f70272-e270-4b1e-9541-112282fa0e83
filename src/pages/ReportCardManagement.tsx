@@ -419,58 +419,51 @@ const ReportCardManagement = () => {
         .select('stamp_url, stamp_position_x, stamp_position_y, stamp_size, stamp_opacity')
         .limit(1)
         .maybeSingle();
-      
-      if (!data) {
-        console.log('No school_info data found for stamp');
-        return {};
-      }
+
+      if (!data) return {};
+
       const sd = data as any;
       let stampBase64: string | null = null;
-      
-      console.log('Stamp URL from DB:', sd.stamp_url);
-      
+
       if (sd.stamp_url) {
         if (sd.stamp_url.startsWith('data:image')) {
           stampBase64 = sd.stamp_url;
         } else if (!sd.stamp_url.startsWith('http')) {
-          // It's a storage path - use download() instead of signed URL + fetch to avoid CORS
-          try {
-            const { data: fileData, error: downloadError } = await supabase.storage
+          const { data: fileData, error: downloadError } = await supabase.storage
+            .from('student-photos')
+            .download(sd.stamp_url);
+
+          if (!downloadError && fileData) {
+            stampBase64 = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve((reader.result as string) || '');
+              reader.onerror = () => resolve('');
+              reader.readAsDataURL(fileData);
+            });
+          } else {
+            const { data: signedData } = await supabase.storage
               .from('student-photos')
-              .download(sd.stamp_url);
-            
-            if (downloadError) {
-              console.error('Error downloading stamp from storage:', downloadError);
-              // Fallback to signed URL
-              const { data: signedData } = await supabase.storage.from('student-photos').createSignedUrl(sd.stamp_url, 3600);
-              if (signedData?.signedUrl) stampBase64 = await urlToBase64(signedData.signedUrl);
-            } else if (fileData) {
-              stampBase64 = await new Promise<string>((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.onerror = () => resolve('');
-                reader.readAsDataURL(fileData);
-              });
+              .createSignedUrl(sd.stamp_url, 3600);
+            if (signedData?.signedUrl) {
+              stampBase64 = await urlToBase64(signedData.signedUrl);
             }
-          } catch (e) {
-            console.error('Storage download failed, trying signed URL:', e);
-            const { data: signedData } = await supabase.storage.from('student-photos').createSignedUrl(sd.stamp_url, 3600);
-            if (signedData?.signedUrl) stampBase64 = await urlToBase64(signedData.signedUrl);
           }
         } else {
           stampBase64 = await urlToBase64(sd.stamp_url);
         }
       }
-      
-      console.log('Stamp base64 loaded:', stampBase64 ? `yes (${stampBase64.substring(0, 30)}...)` : 'no');
-      
+
+      if (!stampBase64?.startsWith('data:image')) {
+        stampBase64 = null;
+      }
+
       return {
         stampUrl: stampBase64,
         stampConfig: {
-          positionX: sd.stamp_position_x ?? 75,
-          positionY: sd.stamp_position_y ?? 80,
-          size: sd.stamp_size ?? 60,
-          opacity: sd.stamp_opacity ?? 70,
+          positionX: Number(sd.stamp_position_x ?? 75),
+          positionY: Number(sd.stamp_position_y ?? 80),
+          size: Number(sd.stamp_size ?? 60),
+          opacity: Number(sd.stamp_opacity ?? 70),
         }
       };
     } catch (e) {
