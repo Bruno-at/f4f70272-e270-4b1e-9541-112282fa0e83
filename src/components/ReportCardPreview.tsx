@@ -79,7 +79,7 @@ const ReportCardPreview = ({
   const stampStyle = getStampStyle();
 
   return (
-    <div className="bg-white text-black p-4 border border-gray-400 text-[10px] leading-tight relative" style={{ fontFamily: 'Arial, sans-serif' }}>
+    <div className="report-card-container bg-white text-black p-4 border border-gray-400 text-[10px] leading-tight relative" style={{ fontFamily: 'Arial, sans-serif' }}>
       {/* Header Section */}
       <div className="flex justify-between items-start mb-3">
         <div className="w-16 h-16 border border-gray-400 flex items-center justify-center overflow-hidden bg-white">
