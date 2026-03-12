@@ -322,13 +322,19 @@ const ReportCardManagement = () => {
         return;
       }
 
-      // Load stamp and config for PDF
+      // Load stamp/config and fall back to the stamp already rendered in preview DOM
       const stampInfo = await loadStampForPdf();
+      let resolvedStampUrl = stampInfo.stampUrl || null;
+      if (!resolvedStampUrl && reportData.stampUrl) {
+        resolvedStampUrl = reportData.stampUrl.startsWith('data:image')
+          ? reportData.stampUrl
+          : await urlToBase64(reportData.stampUrl);
+      }
 
       // Generate PDF using the appropriate template
       const { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } = await import('@/utils/pdfTemplates');
       
-      const fullData = { ...reportData, ...stampInfo };
+      const fullData = { ...reportData, ...stampInfo, stampUrl: resolvedStampUrl };
       let pdf;
       switch (fullData.template) {
         case 'modern':
