@@ -648,6 +648,20 @@ const ReportCardManagement = () => {
         if (base64Sig) headteacherSig = base64Sig;
       }
 
+      // Resolve stamp URL for in-DOM preview/print container
+      let stampPreviewUrl: string | null = null;
+      if ((schoolData as any).stamp_url) {
+        const stampPath = (schoolData as any).stamp_url as string;
+        if (stampPath.startsWith('data:image') || stampPath.startsWith('http')) {
+          stampPreviewUrl = stampPath;
+        } else {
+          const { data: signedData } = await supabase.storage
+            .from('student-photos')
+            .createSignedUrl(stampPath, 31536000);
+          stampPreviewUrl = signedData?.signedUrl || null;
+        }
+      }
+
       // Calculate fees data
       const feesData = await calculateStudentFees(report.student_id, report.term_id, studentData.class_id);
 
