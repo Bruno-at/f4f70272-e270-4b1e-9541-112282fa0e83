@@ -308,6 +308,7 @@ const ReportCardPreview = ({
         <img
           src={stampUrl}
           alt="School Stamp"
+          className="report-card-stamp"
           style={stampStyle}
         />
       )}
