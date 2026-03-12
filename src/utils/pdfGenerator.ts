@@ -47,6 +47,58 @@ export interface ReportCardData {
   };
 }
 
+const getImageFormatFromDataUrl = (dataUrl: string): 'PNG' | 'JPEG' | 'WEBP' => {
+  const mime = dataUrl.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,/i)?.[1]?.toLowerCase();
+  if (mime === 'jpg' || mime === 'jpeg') return 'JPEG';
+  if (mime === 'webp') return 'WEBP';
+  return 'PNG';
+};
+
+export const addStampOverlayToPdf = (pdf: jsPDF, stampUrl: string, stampConfig: StampConfig) => {
+  if (!stampUrl?.startsWith('data:image') || !stampConfig) return;
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const sizePx = Number(stampConfig.size) || 60;
+  const positionX = Number(stampConfig.positionX) || 75;
+  const positionY = Number(stampConfig.positionY) || 80;
+  const opacity = Math.max(0, Math.min(100, Number(stampConfig.opacity) || 70));
+
+  const stampX = (positionX / 100) * pageWidth;
+  const stampY = (positionY / 100) * pageHeight;
+  const stampSizeMm = sizePx * 0.35;
+  const imageFormat = getImageFormatFromDataUrl(stampUrl);
+
+  try {
+    const gState = new (pdf as any).GState({ opacity: opacity / 100 });
+    pdf.saveGraphicsState();
+    pdf.setGState(gState);
+    pdf.addImage(
+      stampUrl,
+      imageFormat,
+      stampX - stampSizeMm / 2,
+      stampY - stampSizeMm / 2,
+      stampSizeMm,
+      stampSizeMm
+    );
+    pdf.restoreGraphicsState();
+  } catch (error) {
+    console.error('Error adding stamp to PDF:', error);
+    try {
+      pdf.addImage(
+        stampUrl,
+        imageFormat,
+        stampX - stampSizeMm / 2,
+        stampY - stampSizeMm / 2,
+        stampSizeMm,
+        stampSizeMm
+      );
+    } catch (fallbackError) {
+      console.error('Fallback stamp also failed:', fallbackError);
+    }
+  }
+};
+
 export const generateReportCardPDF = async (data: ReportCardData) => {
   const { student, term, template = 'classic' } = data;
   
