@@ -344,29 +344,9 @@ const ReportCardManagement = () => {
           pdf = generateClassicTemplate(fullData);
       }
 
-      // Add stamp overlay to PDF if available
-      if (fullData.stampUrl && fullData.stampUrl.startsWith('data:image') && fullData.stampConfig) {
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const cfg = fullData.stampConfig;
-        const stampX = (cfg.positionX / 100) * pageWidth;
-        const stampY = (cfg.positionY / 100) * pageHeight;
-        const stampSizeMm = cfg.size * 0.35;
-        
-        try {
-          const gState = new (pdf as any).GState({ opacity: cfg.opacity / 100 });
-          pdf.saveGraphicsState();
-          pdf.setGState(gState);
-          pdf.addImage(fullData.stampUrl, 'PNG', stampX - stampSizeMm / 2, stampY - stampSizeMm / 2, stampSizeMm, stampSizeMm);
-          pdf.restoreGraphicsState();
-        } catch (e) {
-          console.error('Error adding stamp to print PDF:', e);
-          try {
-            pdf.addImage(fullData.stampUrl, 'PNG', stampX - stampSizeMm / 2, stampY - stampSizeMm / 2, stampSizeMm, stampSizeMm);
-          } catch (e2) {
-            console.error('Fallback stamp also failed:', e2);
-          }
-        }
+      // Add stamp overlay to PDF
+      if (fullData.stampUrl && fullData.stampConfig) {
+        addStampOverlayToPdf(pdf, fullData.stampUrl, fullData.stampConfig);
       }
 
       // Create blob URL (less likely to be blocked than data URI)
