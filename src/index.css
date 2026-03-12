@@ -97,7 +97,7 @@
   .no-print {
     display: none !important;
   }
-  
+
   .print-page {
     page-break-after: always;
     width: 210mm;
@@ -106,9 +106,20 @@
     padding: 20mm;
     box-sizing: border-box;
   }
-  
+
   .print-page:last-child {
     page-break-after: auto;
+  }
+
+  .report-card-container {
+    position: relative !important;
+  }
+
+  .report-card-stamp {
+    display: block !important;
+    visibility: visible !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }
 
