@@ -497,7 +497,15 @@ const ReportCardManagement = () => {
         loadStampForPdf()
       ]);
       if (!reportData) return;
-      const fullData = { ...reportData, ...stampInfo };
+
+      let resolvedStampUrl = stampInfo.stampUrl || null;
+      if (!resolvedStampUrl && reportData.stampUrl) {
+        resolvedStampUrl = reportData.stampUrl.startsWith('data:image')
+          ? reportData.stampUrl
+          : await urlToBase64(reportData.stampUrl);
+      }
+
+      const fullData = { ...reportData, ...stampInfo, stampUrl: resolvedStampUrl };
 
       const { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } = await import('@/utils/pdfTemplates');
 
