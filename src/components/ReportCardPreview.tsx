@@ -321,7 +321,7 @@ const ReportCardPreview = ({
           stampPosition === 'over-signatures' ? 'bottom-2 right-8' :
           'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2'
         }`}>
-          <img src={stampUrl} alt="School Stamp" className="h-20 w-auto object-contain opacity-80" />
+          <img src={stampUrl} alt="School Stamp" className="report-card-stamp h-20 w-auto object-contain opacity-80" />
         </div>
       )}
     </div>
