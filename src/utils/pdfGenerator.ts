@@ -1,6 +1,8 @@
 import jsPDF from 'jspdf';
 import { Student, Term, SchoolInfo, StudentMark, Subject } from '@/types/database';
 import { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } from './pdfTemplates';
+import { generateALevelTemplate } from './aLevelPdfTemplate';
+import { detectAcademicLevel } from './academicLevel';
 
 export type ReportColor = 'white' | 'green' | 'blue' | 'pink' | 'yellow' | 'gray';
 
@@ -102,22 +104,41 @@ export const addStampOverlayToPdf = (pdf: jsPDF, stampUrl: string, stampConfig: 
 export const generateReportCardPDF = async (data: ReportCardData) => {
   const { student, term, template = 'classic' } = data;
   
+  // Auto-detect academic level
+  const className = student.classes?.class_name || '';
+  const level = detectAcademicLevel(className);
+  
   let pdf: jsPDF;
   
-  switch (template) {
-    case 'modern':
-      pdf = generateModernTemplate(data);
-      break;
-    case 'professional':
-      pdf = generateProfessionalTemplate(data);
-      break;
-    case 'minimal':
-      pdf = generateMinimalTemplate(data);
-      break;
-    case 'classic':
-    default:
-      pdf = generateClassicTemplate(data);
-      break;
+  if (level === 'a-level') {
+    // Use the A-Level template
+    pdf = generateALevelTemplate({
+      student: data.student,
+      term: data.term,
+      schoolInfo: data.schoolInfo,
+      marks: data.marks,
+      reportData: data.reportData,
+      reportColor: data.reportColor,
+      classTeacherSignature: data.classTeacherSignature,
+      headteacherSignature: data.headteacherSignature,
+      feesData: data.feesData,
+    });
+  } else {
+    switch (template) {
+      case 'modern':
+        pdf = generateModernTemplate(data);
+        break;
+      case 'professional':
+        pdf = generateProfessionalTemplate(data);
+        break;
+      case 'minimal':
+        pdf = generateMinimalTemplate(data);
+        break;
+      case 'classic':
+      default:
+        pdf = generateClassicTemplate(data);
+        break;
+    }
   }
 
   if (data.stampUrl && data.stampConfig) {
