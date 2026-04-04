@@ -1,6 +1,8 @@
 import jsPDF from 'jspdf';
 import { Student, Term, SchoolInfo, StudentMark, Subject } from '@/types/database';
 import { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } from './pdfTemplates';
+import { generateALevelTemplate } from './aLevelPdfTemplate';
+import { detectAcademicLevel } from './academicLevel';
 
 export type ReportColor = 'white' | 'green' | 'blue' | 'pink' | 'yellow' | 'gray';
 
