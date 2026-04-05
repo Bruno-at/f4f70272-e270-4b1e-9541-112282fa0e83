@@ -138,27 +138,66 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   }
 
   // School name & details
-  pdf.setTextColor(0, 0, 128);
-  pdf.setFontSize(16);
+  pdf.setTextColor(styles.primaryColor.r, styles.primaryColor.g, styles.primaryColor.b);
+  pdf.setFontSize(styles.titleFontSize + 2);
   pdf.setFont('helvetica', 'bold');
   pdf.text(schoolInfo.school_name.toUpperCase(), pageWidth / 2, y + 6, { align: 'center' });
 
   pdf.setFontSize(8);
-  pdf.setFont('helvetica', 'normal');
+  pdf.setFont('helvetica', template === 'modern' ? 'italic' : 'normal');
   pdf.setTextColor(0, 0, 0);
-  pdf.text(`P.O BOX ${schoolInfo.po_box || ''}, ${schoolInfo.location || ''}`, pageWidth / 2, y + 11, { align: 'center' });
-  pdf.text(`EMAIL: ${schoolInfo.email || ''}`, pageWidth / 2, y + 15, { align: 'center' });
-  pdf.text(`CONTACTS: ${schoolInfo.telephone || ''}`, pageWidth / 2, y + 19, { align: 'center' });
+  if (template === 'minimal') {
+    pdf.text(`${schoolInfo.location || ''} | ${schoolInfo.telephone || ''} | ${schoolInfo.email || ''}`, pageWidth / 2, y + 12, { align: 'center' });
+  } else {
+    pdf.text(`P.O BOX ${schoolInfo.po_box || ''}, ${schoolInfo.location || ''}`, pageWidth / 2, y + 11, { align: 'center' });
+    pdf.text(`EMAIL: ${schoolInfo.email || ''}`, pageWidth / 2, y + 15, { align: 'center' });
+    pdf.text(`CONTACTS: ${schoolInfo.telephone || ''}`, pageWidth / 2, y + 19, { align: 'center' });
+  }
 
-  y = 36;
+  y = template === 'minimal' ? 32 : 36;
 
   // ===== TITLE =====
-  pdf.setFillColor(0, 0, 128);
-  pdf.rect(10, y, pageWidth - 20, 8, 'F');
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(12);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text(`A LEVEL END OF TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`, pageWidth / 2, y + 6, { align: 'center' });
+  if (template === 'minimal') {
+    pdf.setDrawColor(styles.primaryColor.r, styles.primaryColor.g, styles.primaryColor.b);
+    pdf.setLineWidth(0.5);
+    pdf.line(10, y, pageWidth - 10, y);
+    y += 2;
+    pdf.setTextColor(styles.primaryColor.r, styles.primaryColor.g, styles.primaryColor.b);
+    pdf.setFontSize(styles.titleFontSize);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`A LEVEL END OF TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`, pageWidth / 2, y + 5, { align: 'center' });
+    y += 8;
+  } else if (template === 'modern') {
+    // Gradient-like effect with two overlapping rects
+    pdf.setFillColor(styles.primaryColor.r, styles.primaryColor.g, styles.primaryColor.b);
+    pdf.rect(10, y, pageWidth - 20, 8, 'F');
+    pdf.setFillColor(styles.secondaryColor.r, styles.secondaryColor.g, styles.secondaryColor.b);
+    pdf.rect(pageWidth / 2, y, (pageWidth - 20) / 2, 8, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(styles.titleFontSize);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`A LEVEL END OF TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`, pageWidth / 2, y + 6, { align: 'center' });
+    y += 10;
+  } else if (template === 'professional') {
+    pdf.setFillColor(styles.primaryColor.r, styles.primaryColor.g, styles.primaryColor.b);
+    pdf.rect(10, y, pageWidth - 20, 8, 'F');
+    // Gold accent line
+    pdf.setFillColor(styles.accentColor.r, styles.accentColor.g, styles.accentColor.b);
+    pdf.rect(10, y + 8, pageWidth - 20, 1, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(styles.titleFontSize);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`A LEVEL END OF TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`, pageWidth / 2, y + 6, { align: 'center' });
+    y += 11;
+  } else {
+    pdf.setFillColor(styles.primaryColor.r, styles.primaryColor.g, styles.primaryColor.b);
+    pdf.rect(10, y, pageWidth - 20, 8, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(styles.titleFontSize);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`A LEVEL END OF TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`, pageWidth / 2, y + 6, { align: 'center' });
+    y += 10;
+  }
 
   y += 10;
 
