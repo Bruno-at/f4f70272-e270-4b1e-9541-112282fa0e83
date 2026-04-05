@@ -376,9 +376,9 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   });
 
   // ===== AVERAGE SCORES ROW =====
-  pdf.setFillColor(200, 180, 255);
+  pdf.setFillColor(styles.avgRowColor.r, styles.avgRowColor.g, styles.avgRowColor.b);
   pdf.rect(10, y, pageWidth - 20, 5.5, 'F');
-  pdf.setDrawColor(120, 120, 120);
+  pdf.setDrawColor(styles.borderColor.r, styles.borderColor.g, styles.borderColor.b);
   pdf.rect(10, y, pageWidth - 20, 5.5);
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(7);
