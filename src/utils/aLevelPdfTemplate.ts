@@ -11,6 +11,8 @@ const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
   } : { r: 255, g: 255, b: 255 };
 };
 
+export type ALevelTemplateStyle = 'classic' | 'modern' | 'professional' | 'minimal';
+
 interface ALevelTemplateData {
   student: Student;
   term: Term;
@@ -32,7 +34,71 @@ interface ALevelTemplateData {
     feesNextTerm: number;
     otherRequirements: string;
   };
+  template?: ALevelTemplateStyle;
 }
+
+// Style presets for different templates
+const getTemplateStyles = (template: ALevelTemplateStyle) => {
+  switch (template) {
+    case 'modern':
+      return {
+        primaryColor: { r: 59, g: 130, b: 246 },   // Blue-500
+        secondaryColor: { r: 99, g: 102, b: 241 },  // Indigo-500
+        accentColor: { r: 139, g: 92, b: 246 },     // Violet-500
+        headerTextColor: { r: 255, g: 255, b: 255 },
+        titleFontSize: 14,
+        bodyFontSize: 7,
+        headerStyle: 'gradient' as const,
+        borderRadius: true,
+        borderColor: { r: 99, g: 102, b: 241 },
+        altRowColor: { r: 238, g: 242, b: 255 },
+        avgRowColor: { r: 224, g: 231, b: 255 },
+      };
+    case 'professional':
+      return {
+        primaryColor: { r: 30, g: 58, b: 95 },      // Dark navy
+        secondaryColor: { r: 44, g: 82, b: 130 },
+        accentColor: { r: 163, g: 138, b: 89 },     // Gold
+        headerTextColor: { r: 255, g: 255, b: 255 },
+        titleFontSize: 13,
+        bodyFontSize: 7,
+        headerStyle: 'solid' as const,
+        borderRadius: false,
+        borderColor: { r: 30, g: 58, b: 95 },
+        altRowColor: { r: 245, g: 245, b: 245 },
+        avgRowColor: { r: 255, g: 248, b: 225 },
+      };
+    case 'minimal':
+      return {
+        primaryColor: { r: 64, g: 64, b: 64 },      // Gray-700
+        secondaryColor: { r: 100, g: 100, b: 100 },
+        accentColor: { r: 64, g: 64, b: 64 },
+        headerTextColor: { r: 255, g: 255, b: 255 },
+        titleFontSize: 13,
+        bodyFontSize: 7,
+        headerStyle: 'minimal' as const,
+        borderRadius: false,
+        borderColor: { r: 180, g: 180, b: 180 },
+        altRowColor: { r: 250, g: 250, b: 250 },
+        avgRowColor: { r: 245, g: 245, b: 245 },
+      };
+    case 'classic':
+    default:
+      return {
+        primaryColor: { r: 0, g: 0, b: 128 },       // Navy
+        secondaryColor: { r: 0, g: 0, b: 128 },
+        accentColor: { r: 0, g: 0, b: 128 },
+        headerTextColor: { r: 255, g: 255, b: 255 },
+        titleFontSize: 12,
+        bodyFontSize: 7,
+        headerStyle: 'solid' as const,
+        borderRadius: false,
+        borderColor: { r: 120, g: 120, b: 120 },
+        altRowColor: { r: 248, g: 248, b: 248 },
+        avgRowColor: { r: 200, g: 180, b: 255 },
+      };
+  }
+};
 
 export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   const { student, term, schoolInfo, marks, reportData, reportColor = 'white', classTeacherSignature, headteacherSignature, feesData } = data;
