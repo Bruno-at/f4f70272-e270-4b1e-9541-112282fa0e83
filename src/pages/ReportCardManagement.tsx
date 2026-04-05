@@ -509,14 +509,23 @@ const ReportCardManagement = () => {
 
       const fullData = { ...reportData, ...stampInfo, stampUrl: resolvedStampUrl };
 
+      const { detectAcademicLevel } = await import('@/utils/academicLevel');
+      const { generateALevelTemplate } = await import('@/utils/aLevelPdfTemplate');
       const { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } = await import('@/utils/pdfTemplates');
 
+      const className = fullData.student.classes?.class_name || '';
+      const level = detectAcademicLevel(className);
+      
       let pdf;
-      switch (fullData.template) {
-        case 'modern': pdf = generateModernTemplate(fullData); break;
-        case 'professional': pdf = generateProfessionalTemplate(fullData); break;
-        case 'minimal': pdf = generateMinimalTemplate(fullData); break;
-        default: pdf = generateClassicTemplate(fullData);
+      if (level === 'a-level') {
+        pdf = generateALevelTemplate(fullData);
+      } else {
+        switch (fullData.template) {
+          case 'modern': pdf = generateModernTemplate(fullData); break;
+          case 'professional': pdf = generateProfessionalTemplate(fullData); break;
+          case 'minimal': pdf = generateMinimalTemplate(fullData); break;
+          default: pdf = generateClassicTemplate(fullData);
+        }
       }
 
       // Add stamp to PDF
