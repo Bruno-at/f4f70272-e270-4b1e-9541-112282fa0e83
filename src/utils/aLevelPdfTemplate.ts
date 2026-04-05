@@ -219,7 +219,7 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
     [{ label: 'CLASS', value: className }, { label: 'Stream', value: section }, { label: 'Combination', value: combination }],
   ];
 
-  pdf.setDrawColor(120, 120, 120);
+  pdf.setDrawColor(styles.borderColor.r, styles.borderColor.g, styles.borderColor.b);
   pdf.setLineWidth(0.2);
 
   infoRows.forEach((row) => {
