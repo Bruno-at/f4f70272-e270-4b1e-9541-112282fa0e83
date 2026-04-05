@@ -101,7 +101,8 @@ const getTemplateStyles = (template: ALevelTemplateStyle) => {
 };
 
 export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
-  const { student, term, schoolInfo, marks, reportData, reportColor = 'white', classTeacherSignature, headteacherSignature, feesData } = data;
+  const { student, term, schoolInfo, marks, reportData, reportColor = 'white', classTeacherSignature, headteacherSignature, feesData, template = 'classic' } = data;
+  const styles = getTemplateStyles(template);
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -112,8 +113,8 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   pdf.rect(0, 0, pageWidth, pageHeight, 'F');
 
   // Outer border
-  pdf.setDrawColor(120, 120, 120);
-  pdf.setLineWidth(0.3);
+  pdf.setDrawColor(styles.borderColor.r, styles.borderColor.g, styles.borderColor.b);
+  pdf.setLineWidth(template === 'minimal' ? 0.2 : 0.3);
   pdf.rect(5, 5, pageWidth - 10, pageHeight - 10);
 
   let y = 12;
