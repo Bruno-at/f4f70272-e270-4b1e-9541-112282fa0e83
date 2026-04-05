@@ -111,7 +111,7 @@ export const generateReportCardPDF = async (data: ReportCardData) => {
   let pdf: jsPDF;
   
   if (level === 'a-level') {
-    // Use the A-Level template
+    // Use the A-Level template with the selected style
     pdf = generateALevelTemplate({
       student: data.student,
       term: data.term,
@@ -122,6 +122,7 @@ export const generateReportCardPDF = async (data: ReportCardData) => {
       classTeacherSignature: data.classTeacherSignature,
       headteacherSignature: data.headteacherSignature,
       feesData: data.feesData,
+      template: template,
     });
   } else {
     switch (template) {
