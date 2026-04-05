@@ -286,7 +286,7 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   y += 5;
 
   // Header row 2: column labels
-  pdf.setFillColor(248, 248, 248);
+  pdf.setFillColor(styles.altRowColor.r, styles.altRowColor.g, styles.altRowColor.b);
   pdf.rect(10, y, pageWidth - 20, 5, 'FD');
   pdf.setFontSize(6);
 
