@@ -318,7 +318,8 @@ const ReportCardManagement = () => {
     if (!selectedReport) return;
 
     try {
-      const reportData = printPreviewData || await fetchFullReportData(selectedReport.id);
+      // Always fetch fresh data to prevent stale/wrong student data
+      const reportData = await fetchFullReportData(selectedReport.id);
       if (!reportData) {
         return;
       }
