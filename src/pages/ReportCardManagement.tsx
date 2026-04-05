@@ -344,7 +344,7 @@ const ReportCardManagement = () => {
       
       let pdf;
       if (level === 'a-level') {
-        pdf = generateALevelTemplate(fullData);
+        pdf = generateALevelTemplate({ ...fullData, template: fullData.template || 'classic' });
       } else {
         switch (fullData.template) {
           case 'modern': pdf = generateModernTemplate(fullData); break;
@@ -520,7 +520,7 @@ const ReportCardManagement = () => {
       
       let pdf;
       if (level === 'a-level') {
-        pdf = generateALevelTemplate(fullData);
+        pdf = generateALevelTemplate({ ...fullData, template: fullData.template || 'classic' });
       } else {
         switch (fullData.template) {
           case 'modern': pdf = generateModernTemplate(fullData); break;

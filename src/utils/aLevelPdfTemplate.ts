@@ -11,6 +11,8 @@ const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
   } : { r: 255, g: 255, b: 255 };
 };
 
+export type ALevelTemplateStyle = 'classic' | 'modern' | 'professional' | 'minimal';
+
 interface ALevelTemplateData {
   student: Student;
   term: Term;
@@ -32,10 +34,75 @@ interface ALevelTemplateData {
     feesNextTerm: number;
     otherRequirements: string;
   };
+  template?: ALevelTemplateStyle;
 }
 
+// Style presets for different templates
+const getTemplateStyles = (template: ALevelTemplateStyle) => {
+  switch (template) {
+    case 'modern':
+      return {
+        primaryColor: { r: 59, g: 130, b: 246 },   // Blue-500
+        secondaryColor: { r: 99, g: 102, b: 241 },  // Indigo-500
+        accentColor: { r: 139, g: 92, b: 246 },     // Violet-500
+        headerTextColor: { r: 255, g: 255, b: 255 },
+        titleFontSize: 14,
+        bodyFontSize: 7,
+        headerStyle: 'gradient' as const,
+        borderRadius: true,
+        borderColor: { r: 99, g: 102, b: 241 },
+        altRowColor: { r: 238, g: 242, b: 255 },
+        avgRowColor: { r: 224, g: 231, b: 255 },
+      };
+    case 'professional':
+      return {
+        primaryColor: { r: 30, g: 58, b: 95 },      // Dark navy
+        secondaryColor: { r: 44, g: 82, b: 130 },
+        accentColor: { r: 163, g: 138, b: 89 },     // Gold
+        headerTextColor: { r: 255, g: 255, b: 255 },
+        titleFontSize: 13,
+        bodyFontSize: 7,
+        headerStyle: 'solid' as const,
+        borderRadius: false,
+        borderColor: { r: 30, g: 58, b: 95 },
+        altRowColor: { r: 245, g: 245, b: 245 },
+        avgRowColor: { r: 255, g: 248, b: 225 },
+      };
+    case 'minimal':
+      return {
+        primaryColor: { r: 64, g: 64, b: 64 },      // Gray-700
+        secondaryColor: { r: 100, g: 100, b: 100 },
+        accentColor: { r: 64, g: 64, b: 64 },
+        headerTextColor: { r: 255, g: 255, b: 255 },
+        titleFontSize: 13,
+        bodyFontSize: 7,
+        headerStyle: 'minimal' as const,
+        borderRadius: false,
+        borderColor: { r: 180, g: 180, b: 180 },
+        altRowColor: { r: 250, g: 250, b: 250 },
+        avgRowColor: { r: 245, g: 245, b: 245 },
+      };
+    case 'classic':
+    default:
+      return {
+        primaryColor: { r: 0, g: 0, b: 128 },       // Navy
+        secondaryColor: { r: 0, g: 0, b: 128 },
+        accentColor: { r: 0, g: 0, b: 128 },
+        headerTextColor: { r: 255, g: 255, b: 255 },
+        titleFontSize: 12,
+        bodyFontSize: 7,
+        headerStyle: 'solid' as const,
+        borderRadius: false,
+        borderColor: { r: 120, g: 120, b: 120 },
+        altRowColor: { r: 248, g: 248, b: 248 },
+        avgRowColor: { r: 200, g: 180, b: 255 },
+      };
+  }
+};
+
 export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
-  const { student, term, schoolInfo, marks, reportData, reportColor = 'white', classTeacherSignature, headteacherSignature, feesData } = data;
+  const { student, term, schoolInfo, marks, reportData, reportColor = 'white', classTeacherSignature, headteacherSignature, feesData, template = 'classic' } = data;
+  const styles = getTemplateStyles(template);
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -46,8 +113,8 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   pdf.rect(0, 0, pageWidth, pageHeight, 'F');
 
   // Outer border
-  pdf.setDrawColor(120, 120, 120);
-  pdf.setLineWidth(0.3);
+  pdf.setDrawColor(styles.borderColor.r, styles.borderColor.g, styles.borderColor.b);
+  pdf.setLineWidth(template === 'minimal' ? 0.2 : 0.3);
   pdf.rect(5, 5, pageWidth - 10, pageHeight - 10);
 
   let y = 12;
@@ -71,27 +138,66 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   }
 
   // School name & details
-  pdf.setTextColor(0, 0, 128);
-  pdf.setFontSize(16);
+  pdf.setTextColor(styles.primaryColor.r, styles.primaryColor.g, styles.primaryColor.b);
+  pdf.setFontSize(styles.titleFontSize + 2);
   pdf.setFont('helvetica', 'bold');
   pdf.text(schoolInfo.school_name.toUpperCase(), pageWidth / 2, y + 6, { align: 'center' });
 
   pdf.setFontSize(8);
-  pdf.setFont('helvetica', 'normal');
+  pdf.setFont('helvetica', template === 'modern' ? 'italic' : 'normal');
   pdf.setTextColor(0, 0, 0);
-  pdf.text(`P.O BOX ${schoolInfo.po_box || ''}, ${schoolInfo.location || ''}`, pageWidth / 2, y + 11, { align: 'center' });
-  pdf.text(`EMAIL: ${schoolInfo.email || ''}`, pageWidth / 2, y + 15, { align: 'center' });
-  pdf.text(`CONTACTS: ${schoolInfo.telephone || ''}`, pageWidth / 2, y + 19, { align: 'center' });
+  if (template === 'minimal') {
+    pdf.text(`${schoolInfo.location || ''} | ${schoolInfo.telephone || ''} | ${schoolInfo.email || ''}`, pageWidth / 2, y + 12, { align: 'center' });
+  } else {
+    pdf.text(`P.O BOX ${schoolInfo.po_box || ''}, ${schoolInfo.location || ''}`, pageWidth / 2, y + 11, { align: 'center' });
+    pdf.text(`EMAIL: ${schoolInfo.email || ''}`, pageWidth / 2, y + 15, { align: 'center' });
+    pdf.text(`CONTACTS: ${schoolInfo.telephone || ''}`, pageWidth / 2, y + 19, { align: 'center' });
+  }
 
-  y = 36;
+  y = template === 'minimal' ? 32 : 36;
 
   // ===== TITLE =====
-  pdf.setFillColor(0, 0, 128);
-  pdf.rect(10, y, pageWidth - 20, 8, 'F');
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(12);
-  pdf.setFont('helvetica', 'bold');
-  pdf.text(`A LEVEL END OF TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`, pageWidth / 2, y + 6, { align: 'center' });
+  if (template === 'minimal') {
+    pdf.setDrawColor(styles.primaryColor.r, styles.primaryColor.g, styles.primaryColor.b);
+    pdf.setLineWidth(0.5);
+    pdf.line(10, y, pageWidth - 10, y);
+    y += 2;
+    pdf.setTextColor(styles.primaryColor.r, styles.primaryColor.g, styles.primaryColor.b);
+    pdf.setFontSize(styles.titleFontSize);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`A LEVEL END OF TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`, pageWidth / 2, y + 5, { align: 'center' });
+    y += 8;
+  } else if (template === 'modern') {
+    // Gradient-like effect with two overlapping rects
+    pdf.setFillColor(styles.primaryColor.r, styles.primaryColor.g, styles.primaryColor.b);
+    pdf.rect(10, y, pageWidth - 20, 8, 'F');
+    pdf.setFillColor(styles.secondaryColor.r, styles.secondaryColor.g, styles.secondaryColor.b);
+    pdf.rect(pageWidth / 2, y, (pageWidth - 20) / 2, 8, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(styles.titleFontSize);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`A LEVEL END OF TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`, pageWidth / 2, y + 6, { align: 'center' });
+    y += 10;
+  } else if (template === 'professional') {
+    pdf.setFillColor(styles.primaryColor.r, styles.primaryColor.g, styles.primaryColor.b);
+    pdf.rect(10, y, pageWidth - 20, 8, 'F');
+    // Gold accent line
+    pdf.setFillColor(styles.accentColor.r, styles.accentColor.g, styles.accentColor.b);
+    pdf.rect(10, y + 8, pageWidth - 20, 1, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(styles.titleFontSize);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`A LEVEL END OF TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`, pageWidth / 2, y + 6, { align: 'center' });
+    y += 11;
+  } else {
+    pdf.setFillColor(styles.primaryColor.r, styles.primaryColor.g, styles.primaryColor.b);
+    pdf.rect(10, y, pageWidth - 20, 8, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(styles.titleFontSize);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(`A LEVEL END OF TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`, pageWidth / 2, y + 6, { align: 'center' });
+    y += 10;
+  }
 
   y += 10;
 
@@ -113,7 +219,7 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
     [{ label: 'CLASS', value: className }, { label: 'Stream', value: section }, { label: 'Combination', value: combination }],
   ];
 
-  pdf.setDrawColor(120, 120, 120);
+  pdf.setDrawColor(styles.borderColor.r, styles.borderColor.g, styles.borderColor.b);
   pdf.setLineWidth(0.2);
 
   infoRows.forEach((row) => {
@@ -134,9 +240,9 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   y += 3;
 
   // ===== TERM PERFORMANCE RECORDS =====
-  pdf.setFillColor(0, 0, 128);
+  pdf.setFillColor(styles.primaryColor.r, styles.primaryColor.g, styles.primaryColor.b);
   pdf.rect(10, y, pageWidth - 20, 6, 'F');
-  pdf.setTextColor(255, 255, 255);
+  pdf.setTextColor(styles.headerTextColor.r, styles.headerTextColor.g, styles.headerTextColor.b);
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'bold');
   pdf.text('TERM PERFORMANCE RECORDS', pageWidth / 2, y + 4.5, { align: 'center' });
@@ -164,7 +270,7 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   ];
 
   // Header row 1: group headers
-  pdf.setFillColor(248, 248, 248);
+  pdf.setFillColor(styles.altRowColor.r, styles.altRowColor.g, styles.altRowColor.b);
   pdf.rect(10, y, pageWidth - 20, 5, 'FD');
   pdf.setTextColor(0, 0, 0);
   pdf.setFontSize(6.5);
@@ -180,7 +286,7 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   y += 5;
 
   // Header row 2: column labels
-  pdf.setFillColor(248, 248, 248);
+  pdf.setFillColor(styles.altRowColor.r, styles.altRowColor.g, styles.altRowColor.b);
   pdf.rect(10, y, pageWidth - 20, 5, 'FD');
   pdf.setFontSize(6);
 
@@ -270,9 +376,9 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   });
 
   // ===== AVERAGE SCORES ROW =====
-  pdf.setFillColor(200, 180, 255);
+  pdf.setFillColor(styles.avgRowColor.r, styles.avgRowColor.g, styles.avgRowColor.b);
   pdf.rect(10, y, pageWidth - 20, 5.5, 'F');
-  pdf.setDrawColor(120, 120, 120);
+  pdf.setDrawColor(styles.borderColor.r, styles.borderColor.g, styles.borderColor.b);
   pdf.rect(10, y, pageWidth - 20, 5.5);
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(7);
@@ -362,9 +468,9 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   y += 22;
 
   // ===== STUDENT'S PROJECTS WORK =====
-  pdf.setFillColor(0, 0, 128);
+  pdf.setFillColor(styles.primaryColor.r, styles.primaryColor.g, styles.primaryColor.b);
   pdf.rect(10, y, pageWidth - 20, 6, 'F');
-  pdf.setTextColor(255, 255, 255);
+  pdf.setTextColor(styles.headerTextColor.r, styles.headerTextColor.g, styles.headerTextColor.b);
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'bold');
   pdf.text("STUDENT'S PROJECTS WORK", pageWidth / 2, y + 4.5, { align: 'center' });
