@@ -286,7 +286,8 @@ const ReportCardManagement = () => {
   };
 
   const handlePrint = async (reportId: string) => {
-    // Open print preview dialog first
+    // Clear any stale data before loading new report
+    setPrintPreviewData(null);
     setPrintPreviewLoading(true);
     setPrintPreviewDialogOpen(true);
     
@@ -317,7 +318,8 @@ const ReportCardManagement = () => {
     if (!selectedReport) return;
 
     try {
-      const reportData = printPreviewData || await fetchFullReportData(selectedReport.id);
+      // Always fetch fresh data to prevent stale/wrong student data
+      const reportData = await fetchFullReportData(selectedReport.id);
       if (!reportData) {
         return;
       }
@@ -331,23 +333,25 @@ const ReportCardManagement = () => {
           : await urlToBase64(reportData.stampUrl);
       }
 
-      // Generate PDF using the appropriate template
+      // Generate PDF using the unified generator (handles A-Level detection)
+      const fullData = { ...reportData, ...stampInfo, stampUrl: resolvedStampUrl };
+      const { detectAcademicLevel } = await import('@/utils/academicLevel');
+      const { generateALevelTemplate } = await import('@/utils/aLevelPdfTemplate');
       const { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } = await import('@/utils/pdfTemplates');
       
-      const fullData = { ...reportData, ...stampInfo, stampUrl: resolvedStampUrl };
+      const className = fullData.student.classes?.class_name || '';
+      const level = detectAcademicLevel(className);
+      
       let pdf;
-      switch (fullData.template) {
-        case 'modern':
-          pdf = generateModernTemplate(fullData);
-          break;
-        case 'professional':
-          pdf = generateProfessionalTemplate(fullData);
-          break;
-        case 'minimal':
-          pdf = generateMinimalTemplate(fullData);
-          break;
-        default:
-          pdf = generateClassicTemplate(fullData);
+      if (level === 'a-level') {
+        pdf = generateALevelTemplate(fullData);
+      } else {
+        switch (fullData.template) {
+          case 'modern': pdf = generateModernTemplate(fullData); break;
+          case 'professional': pdf = generateProfessionalTemplate(fullData); break;
+          case 'minimal': pdf = generateMinimalTemplate(fullData); break;
+          default: pdf = generateClassicTemplate(fullData);
+        }
       }
 
       // Add stamp overlay to PDF
@@ -507,14 +511,23 @@ const ReportCardManagement = () => {
 
       const fullData = { ...reportData, ...stampInfo, stampUrl: resolvedStampUrl };
 
+      const { detectAcademicLevel } = await import('@/utils/academicLevel');
+      const { generateALevelTemplate } = await import('@/utils/aLevelPdfTemplate');
       const { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } = await import('@/utils/pdfTemplates');
 
+      const className = fullData.student.classes?.class_name || '';
+      const level = detectAcademicLevel(className);
+      
       let pdf;
-      switch (fullData.template) {
-        case 'modern': pdf = generateModernTemplate(fullData); break;
-        case 'professional': pdf = generateProfessionalTemplate(fullData); break;
-        case 'minimal': pdf = generateMinimalTemplate(fullData); break;
-        default: pdf = generateClassicTemplate(fullData);
+      if (level === 'a-level') {
+        pdf = generateALevelTemplate(fullData);
+      } else {
+        switch (fullData.template) {
+          case 'modern': pdf = generateModernTemplate(fullData); break;
+          case 'professional': pdf = generateProfessionalTemplate(fullData); break;
+          case 'minimal': pdf = generateMinimalTemplate(fullData); break;
+          default: pdf = generateClassicTemplate(fullData);
+        }
       }
 
       // Add stamp to PDF
