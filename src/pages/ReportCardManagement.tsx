@@ -286,7 +286,8 @@ const ReportCardManagement = () => {
   };
 
   const handlePrint = async (reportId: string) => {
-    // Open print preview dialog first
+    // Clear any stale data before loading new report
+    setPrintPreviewData(null);
     setPrintPreviewLoading(true);
     setPrintPreviewDialogOpen(true);
     
