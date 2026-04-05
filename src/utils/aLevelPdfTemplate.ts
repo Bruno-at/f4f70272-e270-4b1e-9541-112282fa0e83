@@ -468,9 +468,9 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   y += 22;
 
   // ===== STUDENT'S PROJECTS WORK =====
-  pdf.setFillColor(0, 0, 128);
+  pdf.setFillColor(styles.primaryColor.r, styles.primaryColor.g, styles.primaryColor.b);
   pdf.rect(10, y, pageWidth - 20, 6, 'F');
-  pdf.setTextColor(255, 255, 255);
+  pdf.setTextColor(styles.headerTextColor.r, styles.headerTextColor.g, styles.headerTextColor.b);
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'bold');
   pdf.text("STUDENT'S PROJECTS WORK", pageWidth / 2, y + 4.5, { align: 'center' });
