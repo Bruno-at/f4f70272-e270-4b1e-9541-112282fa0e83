@@ -90,7 +90,7 @@ const TermsManager = () => {
 
         const { error } = await supabase
           .from('terms')
-          .insert([formData]);
+          .insert([{ ...formData, school_id: schoolId }]);
 
         if (error) throw error;
 

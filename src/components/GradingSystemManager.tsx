@@ -87,7 +87,7 @@ const GradingSystemManager = () => {
       } else {
         const { error } = await supabase
           .from('grading_systems')
-          .insert([gradingData]);
+          .insert([{ ...gradingData, school_id: schoolId }]);
         
         if (error) throw error;
         toast({

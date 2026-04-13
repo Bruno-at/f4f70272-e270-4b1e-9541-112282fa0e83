@@ -82,7 +82,7 @@ const CommentTemplatesManager = () => {
       } else {
         const {
           error
-        } = await supabase.from('comment_templates').insert([commentData]);
+        } = await supabase.from('comment_templates').insert([{ ...commentData, school_id: schoolId }]);
         if (error) throw error;
         toast({
           title: "Success",

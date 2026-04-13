@@ -93,7 +93,7 @@ const SubjectsManager = () => {
       } else {
         const { error } = await supabase
           .from('subjects')
-          .insert([formData]);
+          .insert([{ ...formData, school_id: schoolId }]);
 
         if (error) throw error;
 

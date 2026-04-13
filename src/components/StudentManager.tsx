@@ -177,7 +177,7 @@ const StudentManager = () => {
         // Insert new student
         const { error } = await supabase
           .from('students')
-          .insert([dataToSubmit]);
+          .insert([{ ...dataToSubmit, school_id: schoolId }]);
 
         if (error) {
           if (error.code === '23505' && error.message.includes('student_id')) {
