@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useSchool } from '@/contexts/SchoolContext';
 import { Plus, Trash2 } from 'lucide-react';
 
 const PAYMENT_METHODS = ['cash', 'bank', 'mobile_money', 'online'];
