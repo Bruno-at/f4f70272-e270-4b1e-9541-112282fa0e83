@@ -20,6 +20,7 @@ const StudentManager = () => {
   const [uploading, setUploading] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [activeTab, setActiveTab] = useState('add');
+  const { schoolId } = useSchool();
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
