@@ -53,7 +53,7 @@ const SignaturePad = ({ targetType, targetId, existingSignature, onSignatureSave
         if (error) throw error;
       } else if (targetType === 'headteacher') {
         const { error } = await supabase
-          .from('school_info')
+          .from('schools')
           .update({ headteacher_signature_url: signatureDataUrl })
           .eq('id', targetId);
         if (error) throw error;
@@ -90,7 +90,7 @@ const SignaturePad = ({ targetType, targetId, existingSignature, onSignatureSave
         if (error) throw error;
       } else if (targetType === 'headteacher') {
         const { error } = await supabase
-          .from('school_info')
+          .from('schools')
           .update({ headteacher_signature_url: null })
           .eq('id', targetId);
         if (error) throw error;
