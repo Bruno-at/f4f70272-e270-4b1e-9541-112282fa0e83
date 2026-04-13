@@ -31,6 +31,7 @@ const ReportGenerator = () => {
   const [selectedColor, setSelectedColor] = useState<ReportColor>('white');
 
   const { toast } = useToast();
+  const { schoolId } = useSchool();
 
   useEffect(() => {
     fetchData();
