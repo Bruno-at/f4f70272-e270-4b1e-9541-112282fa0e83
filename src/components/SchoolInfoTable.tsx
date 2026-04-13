@@ -5,37 +5,34 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { SchoolInfo } from '@/types/database';
-import { Edit, Plus, School } from 'lucide-react';
+import { useSchool } from '@/contexts/SchoolContext';
+import { Edit, School } from 'lucide-react';
 import SchoolInfoManager from './SchoolInfoManager';
 
 const SchoolInfoTable = () => {
-  const [schoolInfo, setSchoolInfo] = useState<SchoolInfo | null>(null);
+  const { school, schoolId } = useSchool();
+  const [schoolData, setSchoolData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchSchoolInfo();
-  }, []);
+    if (schoolId) fetchSchoolInfo();
+    else setLoading(false);
+  }, [schoolId]);
 
   const fetchSchoolInfo = async () => {
     try {
       const { data, error } = await supabase
-        .from('school_info')
+        .from('schools')
         .select('*')
-        .limit(1)
+        .eq('id', schoolId!)
         .maybeSingle();
-
       if (error) throw error;
-      setSchoolInfo(data);
+      setSchoolData(data);
     } catch (error) {
       console.error('Error fetching school info:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load school information",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Failed to load school information", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -44,10 +41,6 @@ const SchoolInfoTable = () => {
   const handleEditSuccess = () => {
     setDialogOpen(false);
     fetchSchoolInfo();
-    toast({
-      title: "Success",
-      description: "School information updated successfully",
-    });
   };
 
   if (loading) {
@@ -74,24 +67,12 @@ const SchoolInfoTable = () => {
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">
-                {schoolInfo ? (
-                  <>
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit
-                  </>
-                ) : (
-                  <>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add School Info
-                  </>
-                )}
+                <Edit className="w-4 h-4 mr-2" /> Edit
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>
-                  {schoolInfo ? 'Edit School Information' : 'Add School Information'}
-                </DialogTitle>
+                <DialogTitle>Edit School Information</DialogTitle>
               </DialogHeader>
               <div className="mt-6">
                 <SchoolInfoManager onSuccess={handleEditSuccess} />
@@ -101,7 +82,7 @@ const SchoolInfoTable = () => {
         </div>
       </CardHeader>
       <CardContent>
-        {schoolInfo ? (
+        {schoolData ? (
           <Table>
             <TableHeader>
               <TableRow>
@@ -110,76 +91,20 @@ const SchoolInfoTable = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">School Name</TableCell>
-                <TableCell>{schoolInfo.school_name}</TableCell>
-              </TableRow>
-              {schoolInfo.motto && (
-                <TableRow>
-                  <TableCell className="font-medium">Motto</TableCell>
-                  <TableCell>{schoolInfo.motto}</TableCell>
-                </TableRow>
-              )}
-              {schoolInfo.location && (
-                <TableRow>
-                  <TableCell className="font-medium">Location</TableCell>
-                  <TableCell>{schoolInfo.location}</TableCell>
-                </TableRow>
-              )}
-              {schoolInfo.po_box && (
-                <TableRow>
-                  <TableCell className="font-medium">P.O. Box</TableCell>
-                  <TableCell>{schoolInfo.po_box}</TableCell>
-                </TableRow>
-              )}
-              {schoolInfo.telephone && (
-                <TableRow>
-                  <TableCell className="font-medium">Telephone</TableCell>
-                  <TableCell>{schoolInfo.telephone}</TableCell>
-                </TableRow>
-              )}
-              {schoolInfo.email && (
-                <TableRow>
-                  <TableCell className="font-medium">Email</TableCell>
-                  <TableCell>{schoolInfo.email}</TableCell>
-                </TableRow>
-              )}
-              {schoolInfo.website && (
-                <TableRow>
-                  <TableCell className="font-medium">Website</TableCell>
-                  <TableCell>
-                    <a 
-                      href={schoolInfo.website} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      {schoolInfo.website}
-                    </a>
-                  </TableCell>
-                </TableRow>
-              )}
-              {schoolInfo.logo_url && (
-                <TableRow>
-                  <TableCell className="font-medium">School Logo</TableCell>
-                  <TableCell>
-                    <img 
-                      src={schoolInfo.logo_url} 
-                      alt="School Logo" 
-                      className="w-16 h-16 object-contain border rounded"
-                    />
-                  </TableCell>
-                </TableRow>
-              )}
+              <TableRow><TableCell className="font-medium">School Name</TableCell><TableCell>{schoolData.school_name}</TableCell></TableRow>
+              <TableRow><TableCell className="font-medium">School Code</TableCell><TableCell>{schoolData.slug}</TableCell></TableRow>
+              {schoolData.motto && <TableRow><TableCell className="font-medium">Motto</TableCell><TableCell>{schoolData.motto}</TableCell></TableRow>}
+              {schoolData.location && <TableRow><TableCell className="font-medium">Location</TableCell><TableCell>{schoolData.location}</TableCell></TableRow>}
+              {schoolData.po_box && <TableRow><TableCell className="font-medium">P.O. Box</TableCell><TableCell>{schoolData.po_box}</TableCell></TableRow>}
+              {schoolData.telephone && <TableRow><TableCell className="font-medium">Telephone</TableCell><TableCell>{schoolData.telephone}</TableCell></TableRow>}
+              {schoolData.email && <TableRow><TableCell className="font-medium">Email</TableCell><TableCell>{schoolData.email}</TableCell></TableRow>}
+              {schoolData.website && <TableRow><TableCell className="font-medium">Website</TableCell><TableCell><a href={schoolData.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{schoolData.website}</a></TableCell></TableRow>}
             </TableBody>
           </Table>
         ) : (
           <div className="text-center py-8">
             <School className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground mb-4">No school information found</p>
-            <p className="text-sm text-muted-foreground">
-              Click "Add School Info" to set up your school's information
-            </p>
+            <p className="text-muted-foreground">No school information found</p>
           </div>
         )}
       </CardContent>
