@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useSchool } from '@/contexts/SchoolContext';
 import { Student, Class, StudentCSVData } from '@/types/database';
 import { Upload, Plus, Download, FileSpreadsheet } from 'lucide-react';
 import Papa from 'papaparse';
@@ -19,6 +20,7 @@ const StudentManager = () => {
   const [uploading, setUploading] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [activeTab, setActiveTab] = useState('add');
+  const { schoolId } = useSchool();
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -175,7 +177,7 @@ const StudentManager = () => {
         // Insert new student
         const { error } = await supabase
           .from('students')
-          .insert([dataToSubmit]);
+          .insert([{ ...dataToSubmit, school_id: schoolId }]);
 
         if (error) {
           if (error.code === '23505' && error.message.includes('student_id')) {
@@ -228,7 +230,8 @@ const StudentManager = () => {
                   .from('classes')
                   .insert([{
                     class_name: row.class,
-                    section: row.section || null
+                    section: row.section || null,
+                    school_id: schoolId
                   }])
                   .select()
                   .single();
@@ -250,7 +253,7 @@ const StudentManager = () => {
           if (validStudents.length > 0) {
             const { error } = await supabase
               .from('students')
-              .insert(validStudents);
+              .insert(validStudents.map(s => ({ ...s, school_id: schoolId })));
 
             if (error) throw error;
 

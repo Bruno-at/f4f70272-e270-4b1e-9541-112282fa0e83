@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useSchool } from '@/contexts/SchoolContext';
 import { Plus, Save, Trash2 } from 'lucide-react';
 
 interface FeeStructure {
@@ -31,6 +32,7 @@ const FeeStructureManager = () => {
   const [otherRequirements, setOtherRequirements] = useState('');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { schoolId } = useSchool();
 
   useEffect(() => { fetchData(); }, []);
 

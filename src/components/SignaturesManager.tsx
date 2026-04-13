@@ -35,7 +35,7 @@ const SignaturesManager = () => {
     try {
       const [classesResult, schoolResult] = await Promise.all([
         supabase.from('classes').select('id, class_name, section, class_signature_url').order('class_name'),
-        supabase.from('school_info').select('id, school_name, headteacher_signature_url').limit(1).maybeSingle()
+        supabase.from('schools').select('id, school_name, headteacher_signature_url').limit(1).maybeSingle()
       ]);
 
       if (classesResult.error) throw classesResult.error;

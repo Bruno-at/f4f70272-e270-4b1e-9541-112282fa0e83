@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { useSchool } from '@/contexts/SchoolContext';
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Edit, Plus } from "lucide-react";
 interface CommentTemplate {
@@ -25,9 +26,8 @@ const CommentTemplatesManager = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CommentTemplate | null>(null);
   const [loading, setLoading] = useState(true);
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+  const { schoolId } = useSchool();
   const [formData, setFormData] = useState({
     comment_type: 'class_teacher' as 'class_teacher' | 'headteacher',
     min_average: '',
@@ -82,7 +82,7 @@ const CommentTemplatesManager = () => {
       } else {
         const {
           error
-        } = await supabase.from('comment_templates').insert([commentData]);
+        } = await supabase.from('comment_templates').insert([{ ...commentData, school_id: schoolId }]);
         if (error) throw error;
         toast({
           title: "Success",

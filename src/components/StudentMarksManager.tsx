@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useSchool } from '@/contexts/SchoolContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ const StudentMarksManager = () => {
   const [filteredMarks, setFilteredMarks] = useState<StudentMark[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const { schoolId } = useSchool();
   const [selectedClass, setSelectedClass] = useState<string>('all-classes');
   const [selectedTerm, setSelectedTerm] = useState<string>('all-terms');
   const [selectedSubject, setSelectedSubject] = useState<string>('all-subjects');
@@ -299,7 +301,7 @@ const StudentMarksManager = () => {
 
       const { error } = await supabase
         .from('student_marks')
-        .insert(marksData);
+        .insert(marksData.map(m => ({ ...m, school_id: schoolId })));
 
       if (error) throw error;
 

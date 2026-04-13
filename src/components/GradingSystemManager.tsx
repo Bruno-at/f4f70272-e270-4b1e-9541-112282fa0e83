@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { useSchool } from '@/contexts/SchoolContext';
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Edit, Plus } from "lucide-react";
 
@@ -25,6 +26,7 @@ const GradingSystemManager = () => {
   const [editingItem, setEditingItem] = useState<GradingSystem | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { schoolId } = useSchool();
 
   const [formData, setFormData] = useState({
     grade_name: '',
@@ -85,7 +87,7 @@ const GradingSystemManager = () => {
       } else {
         const { error } = await supabase
           .from('grading_systems')
-          .insert([gradingData]);
+          .insert([{ ...gradingData, school_id: schoolId }]);
         
         if (error) throw error;
         toast({

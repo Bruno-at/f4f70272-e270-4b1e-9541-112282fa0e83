@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useSchool } from '@/contexts/SchoolContext';
 import { Class } from '@/types/database';
 import { Plus, Edit, Trash2, Users, UserCheck } from 'lucide-react';
 
@@ -26,6 +27,7 @@ const ClassesManager = () => {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { schoolId } = useSchool();
 
   const [formData, setFormData] = useState({
     class_name: '',
@@ -95,7 +97,8 @@ const ClassesManager = () => {
       const dataToSave = {
         class_name: formData.class_name,
         section: formData.section || null,
-        class_teacher_id: formData.class_teacher_id || null
+        class_teacher_id: formData.class_teacher_id || null,
+        ...(editingId ? {} : { school_id: schoolId })
       };
 
       if (editingId) {

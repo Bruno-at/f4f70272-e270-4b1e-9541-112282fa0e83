@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useSchool } from '@/contexts/SchoolContext';
 import { Term } from '@/types/database';
 import { Plus, Calendar, Edit, Trash2 } from 'lucide-react';
 
@@ -16,6 +17,7 @@ const TermsManager = () => {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { schoolId } = useSchool();
 
   const [formData, setFormData] = useState({
     term_name: '',
@@ -88,7 +90,7 @@ const TermsManager = () => {
 
         const { error } = await supabase
           .from('terms')
-          .insert([formData]);
+          .insert([{ ...formData, school_id: schoolId }]);
 
         if (error) throw error;
 

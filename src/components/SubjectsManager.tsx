@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useSchool } from '@/contexts/SchoolContext';
 import { Subject, Class } from '@/types/database';
 import { Plus, Edit, Trash2, BookOpen } from 'lucide-react';
 
@@ -17,6 +18,7 @@ const SubjectsManager = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const { toast } = useToast();
+  const { schoolId } = useSchool();
 
   const [formData, setFormData] = useState({
     subject_name: '',
@@ -91,7 +93,7 @@ const SubjectsManager = () => {
       } else {
         const { error } = await supabase
           .from('subjects')
-          .insert([formData]);
+          .insert([{ ...formData, school_id: schoolId }]);
 
         if (error) throw error;
 

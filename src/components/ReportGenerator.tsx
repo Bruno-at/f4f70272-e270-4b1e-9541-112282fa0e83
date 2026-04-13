@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useSchool } from '@/contexts/SchoolContext';
 import { Student, Term, Class, Subject, SchoolInfo } from '@/types/database';
 import { Download, FileText, Users } from 'lucide-react';
 import { generateReportCardPDF } from '@/utils/pdfGenerator';
@@ -30,6 +31,7 @@ const ReportGenerator = () => {
   const [selectedColor, setSelectedColor] = useState<ReportColor>('white');
 
   const { toast } = useToast();
+  const { schoolId } = useSchool();
 
   useEffect(() => {
     fetchData();
@@ -42,7 +44,7 @@ const ReportGenerator = () => {
         supabase.from('terms').select('*').order('year', { ascending: false }),
         supabase.from('classes').select('*').order('class_name'),
         supabase.from('subjects').select('*').order('subject_name'),
-        supabase.from('school_info').select('*').limit(1).maybeSingle()
+        supabase.from('schools').select('*').limit(1).maybeSingle()
       ]);
 
       if (studentsResult.error) throw studentsResult.error;
@@ -187,9 +189,9 @@ const ReportGenerator = () => {
     // Get class teacher signature if available
     const classTeacherSignature = classData?.class_signature_url || null;
 
-    // Fetch head teacher signature from school_info
+    // Fetch head teacher signature from schools
     const { data: schoolData } = await supabase
-      .from('school_info')
+      .from('schools')
       .select('headteacher_signature_url')
       .limit(1)
       .maybeSingle();
@@ -269,7 +271,7 @@ const ReportGenerator = () => {
     } else {
       await supabase
         .from('report_cards')
-        .insert([reportData]);
+        .insert([{ ...reportData, school_id: schoolId }]);
     }
 
     // Convert images to base64 for PDF
@@ -302,7 +304,7 @@ const ReportGenerator = () => {
     let stampConfig: { positionX: number; positionY: number; size: number; opacity: number } | null = null;
     
     const { data: stampData } = await supabase
-      .from('school_info')
+      .from('schools')
       .select('stamp_url, stamp_position_x, stamp_position_y, stamp_size, stamp_opacity')
       .limit(1)
       .maybeSingle();

@@ -131,7 +131,7 @@ const ReportCardManagement = () => {
   const loadStampConfig = async () => {
     try {
       const { data } = await supabase
-        .from('school_info')
+        .from('schools')
         .select('stamp_position_x, stamp_position_y, stamp_size, stamp_opacity')
         .limit(1)
         .maybeSingle();
@@ -151,11 +151,11 @@ const ReportCardManagement = () => {
   const handleSaveStampConfig = async (config: StampConfig) => {
     setStampSaving(true);
     try {
-      const { data: schoolData } = await supabase.from('school_info').select('id').limit(1).maybeSingle();
+      const { data: schoolData } = await supabase.from('schools').select('id').limit(1).maybeSingle();
       if (!schoolData) throw new Error('No school info found');
       
       const { error } = await supabase
-        .from('school_info')
+        .from('schools')
         .update({
           stamp_position_x: config.positionX,
           stamp_position_y: config.positionY,
@@ -432,7 +432,7 @@ const ReportCardManagement = () => {
   const loadStampForPdf = async (): Promise<{ stampUrl?: string | null; stampConfig?: { positionX: number; positionY: number; size: number; opacity: number } | null }> => {
     try {
       const { data } = await supabase
-        .from('school_info')
+        .from('schools')
         .select('stamp_url, stamp_position_x, stamp_position_y, stamp_size, stamp_opacity')
         .limit(1)
         .maybeSingle();
@@ -613,7 +613,7 @@ const ReportCardManagement = () => {
 
       // Fetch school info
       const { data: schoolData, error: schoolError } = await supabase
-        .from('school_info')
+        .from('schools')
         .select('*')
         .limit(1)
         .single();
@@ -742,7 +742,7 @@ const ReportCardManagement = () => {
   const handleApplyStamp = async () => {
     try {
       const { data: schoolData } = await supabase
-        .from('school_info')
+        .from('schools')
         .select('stamp_url')
         .limit(1)
         .maybeSingle();
