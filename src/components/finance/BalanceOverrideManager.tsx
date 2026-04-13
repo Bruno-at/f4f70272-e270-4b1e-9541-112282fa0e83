@@ -23,6 +23,7 @@ const BalanceOverrideManager = () => {
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { schoolId } = useSchool();
 
   useEffect(() => { fetchData(); }, []);
 
@@ -74,7 +75,8 @@ const BalanceOverrideManager = () => {
         student_id: selectedStudent,
         action: 'balance_override',
         details: { override_amount: parseFloat(overrideAmount), reason },
-        performed_by: user?.user?.id
+        performed_by: user?.user?.id,
+        school_id: schoolId
       });
 
       toast({ title: "Success", description: "Balance override saved" });
