@@ -230,7 +230,8 @@ const StudentManager = () => {
                   .from('classes')
                   .insert([{
                     class_name: row.class,
-                    section: row.section || null
+                    section: row.section || null,
+                    school_id: schoolId
                   }])
                   .select()
                   .single();
