@@ -253,7 +253,7 @@ const StudentManager = () => {
           if (validStudents.length > 0) {
             const { error } = await supabase
               .from('students')
-              .insert(validStudents);
+              .insert(validStudents.map(s => ({ ...s, school_id: schoolId })));
 
             if (error) throw error;
 
