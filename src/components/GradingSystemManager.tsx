@@ -26,6 +26,7 @@ const GradingSystemManager = () => {
   const [editingItem, setEditingItem] = useState<GradingSystem | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { schoolId } = useSchool();
 
   const [formData, setFormData] = useState({
     grade_name: '',

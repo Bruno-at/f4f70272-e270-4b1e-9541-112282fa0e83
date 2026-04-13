@@ -17,6 +17,7 @@ const TermsManager = () => {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { schoolId } = useSchool();
 
   const [formData, setFormData] = useState({
     term_name: '',

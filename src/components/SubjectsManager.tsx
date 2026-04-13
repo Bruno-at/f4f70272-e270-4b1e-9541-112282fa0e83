@@ -18,6 +18,7 @@ const SubjectsManager = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const { toast } = useToast();
+  const { schoolId } = useSchool();
 
   const [formData, setFormData] = useState({
     subject_name: '',
