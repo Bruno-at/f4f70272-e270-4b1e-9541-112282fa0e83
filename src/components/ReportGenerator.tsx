@@ -42,7 +42,7 @@ const ReportGenerator = () => {
         supabase.from('terms').select('*').order('year', { ascending: false }),
         supabase.from('classes').select('*').order('class_name'),
         supabase.from('subjects').select('*').order('subject_name'),
-        supabase.from('school_info').select('*').limit(1).maybeSingle()
+        supabase.from('schools').select('*').limit(1).maybeSingle()
       ]);
 
       if (studentsResult.error) throw studentsResult.error;
@@ -187,9 +187,9 @@ const ReportGenerator = () => {
     // Get class teacher signature if available
     const classTeacherSignature = classData?.class_signature_url || null;
 
-    // Fetch head teacher signature from school_info
+    // Fetch head teacher signature from schools
     const { data: schoolData } = await supabase
-      .from('school_info')
+      .from('schools')
       .select('headteacher_signature_url')
       .limit(1)
       .maybeSingle();
@@ -302,7 +302,7 @@ const ReportGenerator = () => {
     let stampConfig: { positionX: number; positionY: number; size: number; opacity: number } | null = null;
     
     const { data: stampData } = await supabase
-      .from('school_info')
+      .from('schools')
       .select('stamp_url, stamp_position_x, stamp_position_y, stamp_size, stamp_opacity')
       .limit(1)
       .maybeSingle();
