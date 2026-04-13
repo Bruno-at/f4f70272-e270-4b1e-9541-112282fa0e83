@@ -26,9 +26,8 @@ const CommentTemplatesManager = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CommentTemplate | null>(null);
   const [loading, setLoading] = useState(true);
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+  const { schoolId } = useSchool();
   const [formData, setFormData] = useState({
     comment_type: 'class_teacher' as 'class_teacher' | 'headteacher',
     min_average: '',
