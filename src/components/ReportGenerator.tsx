@@ -271,7 +271,7 @@ const ReportGenerator = () => {
     } else {
       await supabase
         .from('report_cards')
-        .insert([reportData]);
+        .insert([{ ...reportData, school_id: schoolId }]);
     }
 
     // Convert images to base64 for PDF
