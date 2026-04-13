@@ -32,6 +32,7 @@ const FeeStructureManager = () => {
   const [otherRequirements, setOtherRequirements] = useState('');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { schoolId } = useSchool();
 
   useEffect(() => { fetchData(); }, []);
 

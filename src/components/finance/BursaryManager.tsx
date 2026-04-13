@@ -28,6 +28,7 @@ const BursaryManager = () => {
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { schoolId } = useSchool();
 
   useEffect(() => { fetchData(); }, []);
 
