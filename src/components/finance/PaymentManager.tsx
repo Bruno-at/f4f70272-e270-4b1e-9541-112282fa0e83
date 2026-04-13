@@ -28,6 +28,7 @@ const PaymentManager = () => {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { schoolId } = useSchool();
 
   useEffect(() => { fetchData(); }, []);
 
@@ -74,7 +75,8 @@ const PaymentManager = () => {
         payment_date: paymentDate,
         receipt_number: receiptNumber || null,
         notes: notes || null,
-        recorded_by: user?.user?.id
+        recorded_by: user?.user?.id,
+        school_id: schoolId
       });
       if (error) throw error;
 
@@ -82,7 +84,8 @@ const PaymentManager = () => {
         student_id: selectedStudent,
         action: 'payment_recorded',
         details: { amount: parseFloat(amount), payment_method: paymentMethod, receipt_number: receiptNumber },
-        performed_by: user?.user?.id
+        performed_by: user?.user?.id,
+        school_id: schoolId
       });
 
       toast({ title: "Success", description: "Payment recorded" });
@@ -104,7 +107,8 @@ const PaymentManager = () => {
         student_id: payment?.student_id,
         action: 'payment_deleted',
         details: { amount: payment?.amount, payment_method: payment?.payment_method },
-        performed_by: user?.user?.id
+        performed_by: user?.user?.id,
+        school_id: schoolId
       });
 
       toast({ title: "Deleted", description: "Payment removed" });
