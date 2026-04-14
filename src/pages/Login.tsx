@@ -21,6 +21,45 @@ const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Auto-redirect if user already has an active session (e.g. after email confirmation)
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // Verify user has a profile with a school
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('school_id')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (profile?.school_id) {
+          navigate('/', { replace: true });
+        }
+      }
+    };
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // Small delay to let the profile trigger complete
+        setTimeout(async () => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('school_id')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+          if (profile?.school_id) {
+            navigate('/', { replace: true });
+          }
+        }, 1000);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   const handleSchoolLookup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!schoolCode.trim()) return;
