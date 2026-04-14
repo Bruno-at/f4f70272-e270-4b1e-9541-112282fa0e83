@@ -51,18 +51,26 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    // Capture schoolId before async operations to avoid stale closures
+    const currentSchoolId = schoolId;
     try {
       const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
-      // Verify user belongs to this school
-      const { data: profile } = await supabase
+      // Verify user belongs to this school using a direct query
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('school_id')
         .eq('id', authData.user.id)
         .maybeSingle();
 
-      if (profile?.school_id !== schoolId) {
+      if (profileError) {
+        console.error('Profile query error:', profileError);
+      }
+
+      console.log('Login check - profile school_id:', profile?.school_id, 'expected:', currentSchoolId);
+
+      if (!profile || profile.school_id !== currentSchoolId) {
         await supabase.auth.signOut();
         toast({ title: 'Access denied', description: 'Your account is not registered with this school.', variant: 'destructive' });
         return;
