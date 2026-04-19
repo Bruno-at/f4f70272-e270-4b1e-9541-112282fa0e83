@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -80,6 +80,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const isManualLoginInProgress = useRef(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { refreshSchool } = useSchool();
@@ -112,6 +113,7 @@ const Login = () => {
     bootstrapSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (isManualLoginInProgress.current) return;
       if (!session || !isActive) return;
 
       setTimeout(async () => {
@@ -144,6 +146,7 @@ const Login = () => {
     }
 
     setLoading(true);
+    isManualLoginInProgress.current = true;
     try {
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -205,6 +208,7 @@ const Login = () => {
         variant: 'destructive',
       });
     } finally {
+      isManualLoginInProgress.current = false;
       setLoading(false);
     }
   };
