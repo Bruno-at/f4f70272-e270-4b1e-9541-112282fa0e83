@@ -13,6 +13,7 @@ import FinancePortal from "./pages/FinancePortal";
 import Login from "./pages/Login";
 import ResetPassword from "./pages/ResetPassword";
 import RegisterSchool from "./pages/RegisterSchool";
+import SetupSchool from "./pages/SetupSchool";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/register-school" element={<RegisterSchool />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/setup-school" element={<AuthGuard><SetupSchool /></AuthGuard>} />
               <Route path="/" element={<AuthGuard><Index /></AuthGuard>} />
               <Route path="/report-cards" element={<AuthGuard><ReportCardManagement /></AuthGuard>} />
               <Route path="/finance" element={<AuthGuard><FinancePortal /></AuthGuard>} />

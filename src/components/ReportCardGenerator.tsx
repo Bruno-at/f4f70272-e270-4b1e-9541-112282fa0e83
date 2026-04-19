@@ -17,6 +17,7 @@ const StudentMarksManager = lazy(() => import('./StudentMarksManager'));
 const GradingSystemManager = lazy(() => import('./GradingSystemManager'));
 const CommentTemplatesManager = lazy(() => import('./CommentTemplatesManager'));
 const SignaturesManager = lazy(() => import('./SignaturesManager'));
+const TeachersManager = lazy(() => import('./TeachersManager'));
 
 const SectionLoader = () => (
   <div className="space-y-4">
@@ -37,6 +38,7 @@ const sectionConfig = [
   { id: 'grading', title: 'Grading System Management', desc: 'Configure the school\'s grading system and grade boundaries', icon: Settings, Component: GradingSystemManager },
   { id: 'comments', title: 'Comment Templates Management', desc: 'Configure automatic comments based on student performance', icon: MessageSquare, Component: CommentTemplatesManager },
   { id: 'signatures', title: 'Digital Signatures Management', desc: 'Manage class teacher and head teacher signatures for report cards', icon: Pencil, Component: SignaturesManager },
+  { id: 'teachers', title: 'Teachers Management', desc: 'Add and manage teachers for your school', icon: Pencil, Component: TeachersManager },
   { id: 'reports', title: 'Report Card Generation', desc: 'Generate individual or bulk PDF report cards', icon: Download, Component: ReportGenerator },
 ];
 
