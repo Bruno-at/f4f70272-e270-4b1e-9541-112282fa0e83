@@ -250,6 +250,7 @@ const GradingSystemManager = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <Table>
