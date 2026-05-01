@@ -256,6 +256,7 @@ const CommentTemplatesManager = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <Tabs defaultValue="class_teacher" className="w-full">
