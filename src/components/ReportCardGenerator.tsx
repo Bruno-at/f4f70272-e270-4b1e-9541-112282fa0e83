@@ -6,7 +6,6 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { ThemeToggle } from './ThemeToggle';
 import { Skeleton } from '@/components/ui/skeleton';
-import SeedDefaultsButton from './SeedDefaultsButton';
 
 // Lazy load all section components
 const SchoolInfoTable = lazy(() => import('./SchoolInfoTable'));
@@ -82,7 +81,6 @@ const ReportCardGenerator = () => {
                 Professional student report card generation system
               </p>
             </div>
-            <SeedDefaultsButton />
             <ThemeToggle />
           </header>
           
