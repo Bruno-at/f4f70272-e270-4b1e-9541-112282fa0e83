@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSchool } from '@/contexts/SchoolContext';
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Edit, Plus } from "lucide-react";
+import SeedDefaultsButton from './SeedDefaultsButton';
 interface CommentTemplate {
   id: string;
   comment_type: 'class_teacher' | 'headteacher';
@@ -189,6 +190,8 @@ const CommentTemplatesManager = () => {
       <CardContent>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">Comment Templates</h3>
+          <div className="flex gap-2">
+          <SeedDefaultsButton section="comments" onSeeded={fetchCommentTemplates} />
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => handleDialogClose()}>
