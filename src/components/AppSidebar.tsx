@@ -1,5 +1,5 @@
 import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare, FolderOpen, Pencil, DollarSign, UserCog } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -38,12 +38,16 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
   const { setOpenMobile } = useSidebar();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleItemClick = (sectionId: string, isRoute?: boolean) => {
     if (isRoute && sectionId === 'manage-reports') {
       navigate('/report-cards');
     } else if (isRoute && sectionId === 'finance') {
       navigate('/finance');
+    } else if (location.pathname !== '/') {
+      // Section items only work on the generator page — navigate there with state
+      navigate('/', { state: { section: sectionId } });
     } else {
       onSectionChange(sectionId);
     }
