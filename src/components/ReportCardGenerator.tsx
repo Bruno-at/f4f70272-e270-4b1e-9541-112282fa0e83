@@ -1,10 +1,12 @@
-import { useState, Suspense, lazy } from 'react';
+import { useState, Suspense, lazy, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare, Pencil } from 'lucide-react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { ThemeToggle } from './ThemeToggle';
 import { Skeleton } from '@/components/ui/skeleton';
+import SeedDefaultsButton from './SeedDefaultsButton';
 
 // Lazy load all section components
 const SchoolInfoTable = lazy(() => import('./SchoolInfoTable'));
@@ -43,9 +45,23 @@ const sectionConfig = [
 ];
 
 const ReportCardGenerator = () => {
-  const [activeSection, setActiveSection] = useState('school');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialSection = (location.state as any)?.section || 'school';
+  const [activeSection, setActiveSection] = useState(initialSection);
   // Track which sections have been visited to keep them mounted
-  const [visitedSections, setVisitedSections] = useState<Set<string>>(new Set(['school']));
+  const [visitedSections, setVisitedSections] = useState<Set<string>>(new Set([initialSection]));
+
+  useEffect(() => {
+    const s = (location.state as any)?.section;
+    if (s && s !== activeSection) {
+      setActiveSection(s);
+      setVisitedSections(prev => new Set(prev).add(s));
+      // Clear router state so back/forward doesn't re-trigger
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   const handleSectionChange = (section: string) => {
     setActiveSection(section);
@@ -66,6 +82,7 @@ const ReportCardGenerator = () => {
                 Professional student report card generation system
               </p>
             </div>
+            <SeedDefaultsButton />
             <ThemeToggle />
           </header>
           
