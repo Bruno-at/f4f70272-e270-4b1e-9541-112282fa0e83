@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSchool } from '@/contexts/SchoolContext';
 import { Subject, Class } from '@/types/database';
 import { Plus, Edit, Trash2, BookOpen } from 'lucide-react';
+import SeedDefaultsButton from './SeedDefaultsButton';
 
 const SubjectsManager = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
@@ -172,13 +173,18 @@ const SubjectsManager = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <BookOpen className="w-5 h-5" />
-            {editingId ? 'Edit Subject' : 'Add New Subject'}
-          </CardTitle>
-          <CardDescription>
-            {editingId ? 'Update subject information' : 'Create a new subject for a class'}
-          </CardDescription>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5" />
+                {editingId ? 'Edit Subject' : 'Add New Subject'}
+              </CardTitle>
+              <CardDescription>
+                {editingId ? 'Update subject information' : 'Create a new subject for a class'}
+              </CardDescription>
+            </div>
+            <SeedDefaultsButton section="subjects" onSeeded={fetchData} />
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

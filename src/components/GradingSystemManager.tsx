@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSchool } from '@/contexts/SchoolContext';
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Edit, Plus } from "lucide-react";
+import SeedDefaultsButton from './SeedDefaultsButton';
 
 interface GradingSystem {
   id: string;
@@ -176,6 +177,8 @@ const GradingSystemManager = () => {
       <CardContent>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold">Current Grading System</h3>
+          <div className="flex gap-2">
+          <SeedDefaultsButton section="grades" onSeeded={fetchGradingSystems} />
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={() => handleDialogClose()}>
@@ -247,6 +250,7 @@ const GradingSystemManager = () => {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <Table>

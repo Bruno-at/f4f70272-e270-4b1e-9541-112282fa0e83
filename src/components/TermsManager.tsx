@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSchool } from '@/contexts/SchoolContext';
 import { Term } from '@/types/database';
 import { Plus, Calendar, Edit, Trash2 } from 'lucide-react';
+import SeedDefaultsButton from './SeedDefaultsButton';
 
 const TermsManager = () => {
   const [terms, setTerms] = useState<Term[]>([]);
@@ -204,13 +205,18 @@ const TermsManager = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            {editingId ? 'Edit Term' : 'Add New Term'}
-          </CardTitle>
-          <CardDescription>
-            {editingId ? 'Update term information' : 'Create a new academic term'}
-          </CardDescription>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                {editingId ? 'Edit Term' : 'Add New Term'}
+              </CardTitle>
+              <CardDescription>
+                {editingId ? 'Update term information' : 'Create a new academic term'}
+              </CardDescription>
+            </div>
+            <SeedDefaultsButton section="terms" onSeeded={fetchTerms} />
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

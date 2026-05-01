@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useSchool } from '@/contexts/SchoolContext';
 import { Class } from '@/types/database';
 import { Plus, Edit, Trash2, Users, UserCheck } from 'lucide-react';
+import SeedDefaultsButton from './SeedDefaultsButton';
 
 interface Teacher {
   id: string;
@@ -189,13 +190,18 @@ const ClassesManager = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            {editingId ? 'Edit Class' : 'Add New Class'}
-          </CardTitle>
-          <CardDescription>
-            {editingId ? 'Update class information' : 'Create a new class for students'}
-          </CardDescription>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                {editingId ? 'Edit Class' : 'Add New Class'}
+              </CardTitle>
+              <CardDescription>
+                {editingId ? 'Update class information' : 'Create a new class for students'}
+              </CardDescription>
+            </div>
+            <SeedDefaultsButton section="classes" onSeeded={fetchClasses} />
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
