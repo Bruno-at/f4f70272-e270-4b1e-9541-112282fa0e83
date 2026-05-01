@@ -268,19 +268,25 @@ export const generateClassicTemplate = (data: TemplateData) => {
   
   yPosition += 6;
   
-  // Table rows
-  marks.forEach((mark) => {
-    const rowHeight = 5.5;
-    
+  // Table rows — dynamic: always render at least 10 rows, shrink if more
+  const MIN_ROWS = 10;
+  const TABLE_TARGET_HEIGHT = 55; // mm — ~10 rows * 5.5mm
+  const totalRows = Math.max(marks.length, MIN_ROWS);
+  const rowHeight = Math.min(5.5, TABLE_TARGET_HEIGHT / totalRows);
+  const rowFontSize = rowHeight < 4 ? 6 : 7;
+
+  for (let i = 0; i < totalRows; i++) {
+    const mark = marks[i];
+
     pdf.setFillColor(255, 255, 255);
     pdf.setDrawColor(120, 120, 120);
     pdf.setLineWidth(0.1);
-    
+
     pdf.setTextColor(0, 0, 0);
-    pdf.setFontSize(7);
+    pdf.setFontSize(rowFontSize);
     pdf.setFont('helvetica', 'normal');
-    
-    const rowData = [
+
+    const rowData = mark ? [
       mark.subject_code || '',
       mark.subjects?.subject_name || 'Unknown',
       mark.a1_score?.toFixed(0) || '',
@@ -294,19 +300,19 @@ export const generateClassicTemplate = (data: TemplateData) => {
       mark.final_grade || '',
       mark.achievement_level || '',
       mark.teacher_initials || ''
-    ];
-    
+    ] : ['', '', '', '', '', '', '', '', '', '', '', '', ''];
+
     rowData.forEach((data, colIndex) => {
       if (colIndex === 10) {
         pdf.setFont('helvetica', 'bold');
       }
-      pdf.text(data, colX[colIndex], yPosition + 4);
+      pdf.text(data, colX[colIndex], yPosition + rowHeight * 0.72);
       pdf.setFont('helvetica', 'normal');
     });
-    
+
     pdf.line(10, yPosition + rowHeight, pageWidth - 10, yPosition + rowHeight);
     yPosition += rowHeight;
-  });
+  }
   
   // Draw table border and vertical lines
   pdf.setDrawColor(120, 120, 120);
