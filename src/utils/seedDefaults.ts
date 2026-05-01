@@ -1,11 +1,10 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export interface SeedResult {
-  classes: number;
-  terms: number;
-  subjects: number;
-  grades: number;
-  comments: number;
+export type SeedSection = 'classes' | 'terms' | 'subjects' | 'grades' | 'comments';
+
+export interface SeedSectionResult {
+  inserted: number;
+  alreadyComplete: boolean;
 }
 
 const DEFAULT_CLASSES = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'];
@@ -38,114 +37,190 @@ const DEFAULT_HEAD_COMMENTS = [
   { min: 0, max: 49, text: 'Performance is below expectation. Extra support recommended.' },
 ];
 
-export const seedSchoolDefaults = async (schoolId: string): Promise<SeedResult> => {
+const requireSchool = (schoolId: string | null | undefined) => {
   if (!schoolId) throw new Error('No school selected');
+};
 
-  const result: SeedResult = { classes: 0, terms: 0, subjects: 0, grades: 0, comments: 0 };
-
-  // CLASSES
-  const { data: existingClasses } = await supabase
+// ---------- CLASSES ----------
+export const seedClasses = async (schoolId: string): Promise<SeedSectionResult> => {
+  requireSchool(schoolId);
+  const { data: existing } = await supabase
     .from('classes').select('class_name').eq('school_id', schoolId);
-  const existingClassNames = new Set((existingClasses || []).map((c: any) => c.class_name));
-  const classesToInsert = DEFAULT_CLASSES
-    .filter(name => !existingClassNames.has(name))
+  const existingNames = new Set((existing || []).map((c: any) => c.class_name));
+  const toInsert = DEFAULT_CLASSES
+    .filter(n => !existingNames.has(n))
     .map(class_name => ({ class_name, school_id: schoolId }));
-  if (classesToInsert.length) {
-    const { error } = await supabase.from('classes').insert(classesToInsert);
-    if (error) throw error;
-    result.classes = classesToInsert.length;
-  }
+  if (!toInsert.length) return { inserted: 0, alreadyComplete: true };
+  const { error } = await supabase.from('classes').insert(toInsert);
+  if (error) throw error;
+  return { inserted: toInsert.length, alreadyComplete: false };
+};
 
-  // TERMS
+export const checkClassesComplete = async (schoolId: string): Promise<boolean> => {
+  if (!schoolId) return false;
+  const { data } = await supabase
+    .from('classes').select('class_name').eq('school_id', schoolId);
+  const names = new Set((data || []).map((c: any) => c.class_name));
+  return DEFAULT_CLASSES.every(n => names.has(n));
+};
+
+// ---------- TERMS ----------
+export const seedTerms = async (schoolId: string): Promise<SeedSectionResult> => {
+  requireSchool(schoolId);
   const year = new Date().getFullYear();
-  const { data: existingTerms } = await supabase
-    .from('terms').select('term_name, year').eq('school_id', schoolId).eq('year', year);
-  const existingTermNames = new Set((existingTerms || []).map((t: any) => t.term_name));
-  const defaultTerms = [
+  const { data: existing } = await supabase
+    .from('terms').select('term_name').eq('school_id', schoolId).eq('year', year);
+  const existingNames = new Set((existing || []).map((t: any) => t.term_name));
+  const defaults = [
     { term_name: 'Term 1', start_date: `${year}-02-01`, end_date: `${year}-04-30` },
     { term_name: 'Term 2', start_date: `${year}-05-15`, end_date: `${year}-08-15` },
     { term_name: 'Term 3', start_date: `${year}-09-01`, end_date: `${year}-12-05` },
   ];
-  const termsToInsert = defaultTerms
-    .filter(t => !existingTermNames.has(t.term_name))
+  const toInsert = defaults
+    .filter(t => !existingNames.has(t.term_name))
     .map(t => ({ ...t, year, school_id: schoolId, is_active: false }));
-  if (termsToInsert.length) {
-    const { error } = await supabase.from('terms').insert(termsToInsert);
-    if (error) throw error;
-    result.terms = termsToInsert.length;
-  }
+  if (!toInsert.length) return { inserted: 0, alreadyComplete: true };
+  const { error } = await supabase.from('terms').insert(toInsert);
+  if (error) throw error;
+  return { inserted: toInsert.length, alreadyComplete: false };
+};
 
-  // SUBJECTS — one set per class
+export const checkTermsComplete = async (schoolId: string): Promise<boolean> => {
+  if (!schoolId) return false;
+  const year = new Date().getFullYear();
+  const { data } = await supabase
+    .from('terms').select('term_name').eq('school_id', schoolId).eq('year', year);
+  const names = new Set((data || []).map((t: any) => t.term_name));
+  return ['Term 1', 'Term 2', 'Term 3'].every(n => names.has(n));
+};
+
+// ---------- SUBJECTS ----------
+export const seedSubjects = async (schoolId: string): Promise<SeedSectionResult> => {
+  requireSchool(schoolId);
   const { data: allClasses } = await supabase
     .from('classes').select('id, class_name').eq('school_id', schoolId);
-  const { data: existingSubjects } = await supabase
+  if (!allClasses || allClasses.length === 0) {
+    throw new Error('Add classes first before seeding subjects.');
+  }
+  const { data: existing } = await supabase
     .from('subjects').select('subject_name, class_id').eq('school_id', schoolId);
-  const existingSubjKey = new Set(
-    (existingSubjects || []).map((s: any) => `${s.class_id}:${s.subject_name}`)
-  );
-  const subjectsToInsert: any[] = [];
-  for (const cls of allClasses || []) {
+  const existingKey = new Set((existing || []).map((s: any) => `${s.class_id}:${s.subject_name}`));
+  const toInsert: any[] = [];
+  for (const cls of allClasses) {
     for (const subject_name of DEFAULT_SUBJECTS) {
       const key = `${cls.id}:${subject_name}`;
-      if (!existingSubjKey.has(key)) {
-        subjectsToInsert.push({
-          subject_name,
-          class_id: cls.id,
-          school_id: schoolId,
-          max_marks: 100,
-        });
+      if (!existingKey.has(key)) {
+        toInsert.push({ subject_name, class_id: cls.id, school_id: schoolId, max_marks: 100 });
       }
     }
   }
-  if (subjectsToInsert.length) {
-    const { error } = await supabase.from('subjects').insert(subjectsToInsert);
-    if (error) throw error;
-    result.subjects = subjectsToInsert.length;
-  }
+  if (!toInsert.length) return { inserted: 0, alreadyComplete: true };
+  const { error } = await supabase.from('subjects').insert(toInsert);
+  if (error) throw error;
+  return { inserted: toInsert.length, alreadyComplete: false };
+};
 
-  // GRADES
-  const { data: existingGrades } = await supabase
+export const checkSubjectsComplete = async (schoolId: string): Promise<boolean> => {
+  if (!schoolId) return false;
+  const { data: allClasses } = await supabase
+    .from('classes').select('id').eq('school_id', schoolId);
+  if (!allClasses || allClasses.length === 0) return false;
+  const { data: existing } = await supabase
+    .from('subjects').select('subject_name, class_id').eq('school_id', schoolId);
+  const existingKey = new Set((existing || []).map((s: any) => `${s.class_id}:${s.subject_name}`));
+  for (const cls of allClasses) {
+    for (const s of DEFAULT_SUBJECTS) {
+      if (!existingKey.has(`${cls.id}:${s}`)) return false;
+    }
+  }
+  return true;
+};
+
+// ---------- GRADES ----------
+export const seedGrades = async (schoolId: string): Promise<SeedSectionResult> => {
+  requireSchool(schoolId);
+  const { data: existing } = await supabase
     .from('grading_systems').select('grade_name').eq('school_id', schoolId);
-  const existingGradeNames = new Set((existingGrades || []).map((g: any) => g.grade_name));
-  const gradesToInsert = DEFAULT_GRADES
-    .filter(g => !existingGradeNames.has(g.grade_name))
+  const existingNames = new Set((existing || []).map((g: any) => g.grade_name));
+  const toInsert = DEFAULT_GRADES
+    .filter(g => !existingNames.has(g.grade_name))
     .map(g => ({ ...g, school_id: schoolId, is_active: true }));
-  if (gradesToInsert.length) {
-    const { error } = await supabase.from('grading_systems').insert(gradesToInsert);
-    if (error) throw error;
-    result.grades = gradesToInsert.length;
-  }
+  if (!toInsert.length) return { inserted: 0, alreadyComplete: true };
+  const { error } = await supabase.from('grading_systems').insert(toInsert);
+  if (error) throw error;
+  return { inserted: toInsert.length, alreadyComplete: false };
+};
 
-  // COMMENTS
-  const { data: existingComments } = await supabase
-    .from('comment_templates').select('comment_type, min_average, max_average').eq('school_id', schoolId);
-  const existingCommentKey = new Set(
-    (existingComments || []).map((c: any) => `${c.comment_type}:${c.min_average}:${c.max_average}`)
+export const checkGradesComplete = async (schoolId: string): Promise<boolean> => {
+  if (!schoolId) return false;
+  const { data } = await supabase
+    .from('grading_systems').select('grade_name').eq('school_id', schoolId);
+  const names = new Set((data || []).map((g: any) => g.grade_name));
+  return DEFAULT_GRADES.every(g => names.has(g.grade_name));
+};
+
+// ---------- COMMENTS ----------
+export const seedComments = async (schoolId: string): Promise<SeedSectionResult> => {
+  requireSchool(schoolId);
+  const { data: existing } = await supabase
+    .from('comment_templates')
+    .select('comment_type, min_average, max_average')
+    .eq('school_id', schoolId);
+  const existingKey = new Set(
+    (existing || []).map((c: any) => `${c.comment_type}:${c.min_average}:${c.max_average}`)
   );
-  const commentsToInsert: any[] = [];
+  const toInsert: any[] = [];
   for (const c of DEFAULT_TEACHER_COMMENTS) {
-    const key = `teacher:${c.min}:${c.max}`;
-    if (!existingCommentKey.has(key)) {
-      commentsToInsert.push({
-        comment_type: 'teacher', min_average: c.min, max_average: c.max,
+    const key = `class_teacher:${c.min}:${c.max}`;
+    if (!existingKey.has(key)) {
+      toInsert.push({
+        comment_type: 'class_teacher', min_average: c.min, max_average: c.max,
         comment_text: c.text, school_id: schoolId, is_active: true,
       });
     }
   }
   for (const c of DEFAULT_HEAD_COMMENTS) {
     const key = `headteacher:${c.min}:${c.max}`;
-    if (!existingCommentKey.has(key)) {
-      commentsToInsert.push({
+    if (!existingKey.has(key)) {
+      toInsert.push({
         comment_type: 'headteacher', min_average: c.min, max_average: c.max,
         comment_text: c.text, school_id: schoolId, is_active: true,
       });
     }
   }
-  if (commentsToInsert.length) {
-    const { error } = await supabase.from('comment_templates').insert(commentsToInsert);
-    if (error) throw error;
-    result.comments = commentsToInsert.length;
-  }
+  if (!toInsert.length) return { inserted: 0, alreadyComplete: true };
+  const { error } = await supabase.from('comment_templates').insert(toInsert);
+  if (error) throw error;
+  return { inserted: toInsert.length, alreadyComplete: false };
+};
 
-  return result;
+export const checkCommentsComplete = async (schoolId: string): Promise<boolean> => {
+  if (!schoolId) return false;
+  const { data } = await supabase
+    .from('comment_templates')
+    .select('comment_type, min_average, max_average')
+    .eq('school_id', schoolId);
+  const existingKey = new Set(
+    (data || []).map((c: any) => `${c.comment_type}:${c.min_average}:${c.max_average}`)
+  );
+  for (const c of DEFAULT_TEACHER_COMMENTS) {
+    if (!existingKey.has(`class_teacher:${c.min}:${c.max}`)) return false;
+  }
+  for (const c of DEFAULT_HEAD_COMMENTS) {
+    if (!existingKey.has(`headteacher:${c.min}:${c.max}`)) return false;
+  }
+  return true;
+};
+
+// Generic dispatcher
+export const SECTION_RUNNERS: Record<SeedSection, {
+  seed: (schoolId: string) => Promise<SeedSectionResult>;
+  check: (schoolId: string) => Promise<boolean>;
+  label: string;
+}> = {
+  classes: { seed: seedClasses, check: checkClassesComplete, label: 'classes' },
+  terms: { seed: seedTerms, check: checkTermsComplete, label: 'terms' },
+  subjects: { seed: seedSubjects, check: checkSubjectsComplete, label: 'subjects' },
+  grades: { seed: seedGrades, check: checkGradesComplete, label: 'grades' },
+  comments: { seed: seedComments, check: checkCommentsComplete, label: 'comment templates' },
 };

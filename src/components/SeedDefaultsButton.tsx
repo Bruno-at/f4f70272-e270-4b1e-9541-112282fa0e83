@@ -1,73 +1,73 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles, Loader2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSchool } from '@/contexts/SchoolContext';
-import { seedSchoolDefaults } from '@/utils/seedDefaults';
+import { SECTION_RUNNERS, SeedSection } from '@/utils/seedDefaults';
 
-export const SeedDefaultsButton = () => {
+interface Props {
+  section: SeedSection;
+  onSeeded?: () => void;
+}
+
+export const SeedDefaultsButton = ({ section, onSeeded }: Props) => {
   const { schoolId } = useSchool();
-  const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [complete, setComplete] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  const runner = SECTION_RUNNERS[section];
+
+  const recheck = async () => {
+    if (!schoolId) { setChecking(false); return; }
+    setChecking(true);
+    try {
+      const done = await runner.check(schoolId);
+      setComplete(done);
+    } catch (e) {
+      console.error('Seed check error:', e);
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  useEffect(() => { recheck(); }, [schoolId, section]);
 
   const handleSeed = async () => {
-    if (!schoolId) {
-      toast.error('No school context found');
-      return;
-    }
+    if (!schoolId) { toast.error('No school context found'); return; }
     setLoading(true);
     try {
-      const result = await seedSchoolDefaults(schoolId);
-      const total = result.classes + result.terms + result.subjects + result.grades + result.comments;
-      if (total === 0) {
-        toast.success('All defaults already present — nothing to add.');
+      const res = await runner.seed(schoolId);
+      if (res.alreadyComplete) {
+        toast.info(`All default ${runner.label} already present.`);
       } else {
-        toast.success(
-          `Seeded: ${result.classes} classes, ${result.terms} terms, ${result.subjects} subjects, ${result.grades} grades, ${result.comments} comments.`
-        );
+        toast.success(`Added ${res.inserted} default ${runner.label}.`);
       }
-      setOpen(false);
-      // Reload to refresh all manager lists
-      setTimeout(() => window.location.reload(), 600);
+      await recheck();
+      onSeeded?.();
     } catch (e: any) {
       console.error('Seed error:', e);
-      toast.error(e?.message || 'Failed to seed defaults');
+      toast.error(e?.message || `Failed to seed ${runner.label}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild>
-        <Button variant="secondary" size="sm" className="gap-2">
-          <Sparkles className="w-4 h-4" />
-          Seed Defaults
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Seed default school data?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This will add common classes (S1–S6), 3 terms for {new Date().getFullYear()},
-            standard subjects per class, a default A–F grading system, and teacher/headteacher
-            comment templates. Existing entries are kept — duplicates will not be created.
-            You can edit or remove anything afterwards.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={(e) => { e.preventDefault(); handleSeed(); }} disabled={loading}>
-            {loading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Seeding…</> : 'Seed Defaults'}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <Button
+      type="button"
+      variant="secondary"
+      size="sm"
+      className="gap-2"
+      onClick={handleSeed}
+      disabled={loading || checking || complete}
+      title={complete ? 'Defaults already added' : `Add default ${runner.label}`}
+    >
+      {loading ? <Loader2 className="w-4 h-4 animate-spin" />
+        : complete ? <Check className="w-4 h-4" />
+        : <Sparkles className="w-4 h-4" />}
+      {complete ? 'Defaults Added' : 'Seed Defaults'}
+    </Button>
   );
 };
 
