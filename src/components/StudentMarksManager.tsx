@@ -331,7 +331,7 @@ const StudentMarksManager = () => {
     // Editing still uses single form mode for simplicity
     setEditingMark(mark);
     setBatchStudentId(mark.student_id);
-    setBatchTermId(mark.term_id);
+    setBatchClassId(mark.students?.classes?.id || '');
     setSubjectForms([{
       id: crypto.randomUUID(),
       subject_id: mark.subject_id,
@@ -378,7 +378,7 @@ const StudentMarksManager = () => {
 
   const resetBatchForm = () => {
     setBatchStudentId('');
-    setBatchTermId('');
+    setBatchClassId('');
     setStudentSearch('');
     setSubjectForms([{
       id: crypto.randomUUID(),
@@ -424,11 +424,11 @@ const StudentMarksManager = () => {
             </DialogHeader>
             
             <form onSubmit={handleBatchSubmit} className="flex flex-col gap-6 flex-1 min-h-0 touch-pan-y touch-pan-x">
-              {/* Class and Term Selection */}
+              {/* Class selector + Active term banner */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-shrink-0">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Class</Label>
-                  <Select value={selectedClass} onValueChange={setSelectedClass}>
+                  <Select value={batchClassId} onValueChange={(v) => { setBatchClassId(v); setBatchStudentId(''); }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select class" />
                     </SelectTrigger>
@@ -441,21 +441,11 @@ const StudentMarksManager = () => {
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Term</Label>
-                  <Select value={batchTermId} onValueChange={setBatchTermId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select term" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {terms.map((term) => (
-                        <SelectItem key={term.id} value={term.id}>
-                          {term.term_name} {term.year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="h-10 flex items-center px-3 rounded-md border bg-muted text-sm">
+                    {activeTerm ? `${activeTerm.term_name} ${activeTerm.year} (active)` : 'No active term — set one in Terms'}
+                  </div>
                 </div>
               </div>
 
@@ -560,7 +550,9 @@ const StudentMarksManager = () => {
                                     <SelectValue placeholder="Select class first" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {subjects.map((subject) => (
+                                    {subjects
+                                      .filter(s => !batchClassId || s.class_id === batchClassId)
+                                      .map((subject) => (
                                       <SelectItem key={subject.id} value={subject.id}>
                                         {subject.subject_name}
                                       </SelectItem>
@@ -774,19 +766,9 @@ const StudentMarksManager = () => {
 
             <div>
               <Label>Term</Label>
-              <Select value={selectedTerm} onValueChange={setSelectedTerm}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All terms" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all-terms">All terms</SelectItem>
-                  {terms.map((term) => (
-                    <SelectItem key={term.id} value={term.id}>
-                      {term.term_name} {term.year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="h-10 flex items-center px-3 rounded-md border bg-muted text-sm">
+                {activeTerm ? `${activeTerm.term_name} ${activeTerm.year}` : 'No active term'}
+              </div>
             </div>
 
             <div>
