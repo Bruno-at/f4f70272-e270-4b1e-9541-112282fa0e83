@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Student, Subject, Term, StudentMark, Class } from '@/types/database';
 import { Plus, Edit, Trash2, X, Search, ArrowUpDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useActiveTerm } from '@/hooks/useActiveTerm';
 
 
 interface SubjectFormData {
@@ -41,14 +42,14 @@ const StudentMarksManager = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const { schoolId } = useSchool();
+  const { activeTerm, activeTermId } = useActiveTerm();
   const [selectedClass, setSelectedClass] = useState<string>('all-classes');
-  const [selectedTerm, setSelectedTerm] = useState<string>('all-terms');
   const [selectedSubject, setSelectedSubject] = useState<string>('all-subjects');
   const [editingMark, setEditingMark] = useState<StudentMark | null>(null);
   
   // Batch form fields
   const [batchStudentId, setBatchStudentId] = useState('');
-  const [batchTermId, setBatchTermId] = useState('');
+  const [batchClassId, setBatchClassId] = useState<string>('');
   const [studentSearch, setStudentSearch] = useState('');
   const [studentSort, setStudentSort] = useState<'a-z' | 'z-a' | 'new-old' | 'old-new'>('a-z');
   const [subjectForms, setSubjectForms] = useState<SubjectFormData[]>([{
@@ -76,7 +77,7 @@ const StudentMarksManager = () => {
 
   useEffect(() => {
     filterMarks();
-  }, [marks, selectedClass, selectedTerm, selectedSubject]);
+  }, [marks, selectedClass, activeTermId, selectedSubject]);
 
   const fetchData = async () => {
     try {
@@ -120,8 +121,9 @@ const StudentMarksManager = () => {
       );
     }
 
-    if (selectedTerm && selectedTerm !== 'all-terms') {
-      filtered = filtered.filter(mark => mark.term_id === selectedTerm);
+    // Always scope to active term — manual term selection removed
+    if (activeTermId) {
+      filtered = filtered.filter(mark => mark.term_id === activeTermId);
     }
 
     if (selectedSubject && selectedSubject !== 'all-subjects') {
@@ -133,6 +135,11 @@ const StudentMarksManager = () => {
 
   const getFilteredAndSortedStudents = () => {
     let filtered = students;
+
+    // Restrict to selected class in the entry form
+    if (batchClassId) {
+      filtered = filtered.filter(s => s.class_id === batchClassId);
+    }
 
     // Apply search filter
     if (studentSearch.trim()) {
@@ -258,10 +265,12 @@ const StudentMarksManager = () => {
     e.preventDefault();
 
     // Validation
-    if (!batchStudentId || !batchTermId) {
+    if (!batchStudentId || !activeTermId) {
       toast({
         title: 'Validation Error',
-        description: 'Please select a student and term',
+        description: !activeTermId
+          ? 'No active term set. Open Terms and mark one as Active.'
+          : 'Please select a student',
         variant: 'destructive',
       });
       return;
@@ -284,7 +293,7 @@ const StudentMarksManager = () => {
       const marksData = subjectForms.map(form => ({
         student_id: batchStudentId,
         subject_id: form.subject_id,
-        term_id: batchTermId,
+        term_id: activeTermId,
         subject_code: form.subject_code || null,
         a1_score: parseFloat(form.a1_score) || null,
         a2_score: parseFloat(form.a2_score) || null,
@@ -327,7 +336,7 @@ const StudentMarksManager = () => {
     // Editing still uses single form mode for simplicity
     setEditingMark(mark);
     setBatchStudentId(mark.student_id);
-    setBatchTermId(mark.term_id);
+    setBatchClassId(mark.students?.classes?.id || '');
     setSubjectForms([{
       id: crypto.randomUUID(),
       subject_id: mark.subject_id,
@@ -374,7 +383,7 @@ const StudentMarksManager = () => {
 
   const resetBatchForm = () => {
     setBatchStudentId('');
-    setBatchTermId('');
+    setBatchClassId('');
     setStudentSearch('');
     setSubjectForms([{
       id: crypto.randomUUID(),
@@ -420,11 +429,11 @@ const StudentMarksManager = () => {
             </DialogHeader>
             
             <form onSubmit={handleBatchSubmit} className="flex flex-col gap-6 flex-1 min-h-0 touch-pan-y touch-pan-x">
-              {/* Class and Term Selection */}
+              {/* Class selector + Active term banner */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-shrink-0">
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Class</Label>
-                  <Select value={selectedClass} onValueChange={setSelectedClass}>
+                  <Select value={batchClassId} onValueChange={(v) => { setBatchClassId(v); setBatchStudentId(''); }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select class" />
                     </SelectTrigger>
@@ -437,21 +446,11 @@ const StudentMarksManager = () => {
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Term</Label>
-                  <Select value={batchTermId} onValueChange={setBatchTermId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select term" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {terms.map((term) => (
-                        <SelectItem key={term.id} value={term.id}>
-                          {term.term_name} {term.year}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="h-10 flex items-center px-3 rounded-md border bg-muted text-sm">
+                    {activeTerm ? `${activeTerm.term_name} ${activeTerm.year} (active)` : 'No active term — set one in Terms'}
+                  </div>
                 </div>
               </div>
 
@@ -556,7 +555,9 @@ const StudentMarksManager = () => {
                                     <SelectValue placeholder="Select class first" />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    {subjects.map((subject) => (
+                                    {subjects
+                                      .filter(s => !batchClassId || s.class_id === batchClassId)
+                                      .map((subject) => (
                                       <SelectItem key={subject.id} value={subject.id}>
                                         {subject.subject_name}
                                       </SelectItem>
@@ -770,19 +771,9 @@ const StudentMarksManager = () => {
 
             <div>
               <Label>Term</Label>
-              <Select value={selectedTerm} onValueChange={setSelectedTerm}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All terms" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all-terms">All terms</SelectItem>
-                  {terms.map((term) => (
-                    <SelectItem key={term.id} value={term.id}>
-                      {term.term_name} {term.year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="h-10 flex items-center px-3 rounded-md border bg-muted text-sm">
+                {activeTerm ? `${activeTerm.term_name} ${activeTerm.year}` : 'No active term'}
+              </div>
             </div>
 
             <div>
