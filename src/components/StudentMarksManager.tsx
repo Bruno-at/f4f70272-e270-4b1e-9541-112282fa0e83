@@ -136,6 +136,11 @@ const StudentMarksManager = () => {
   const getFilteredAndSortedStudents = () => {
     let filtered = students;
 
+    // Restrict to selected class in the entry form
+    if (batchClassId) {
+      filtered = filtered.filter(s => s.class_id === batchClassId);
+    }
+
     // Apply search filter
     if (studentSearch.trim()) {
       const searchLower = studentSearch.toLowerCase();
