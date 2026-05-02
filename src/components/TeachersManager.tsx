@@ -8,7 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, Users } from 'lucide-react';
+import { UserPlus, Users, Edit, Trash2, Link2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Teacher {
   id: string;
@@ -16,6 +18,9 @@ interface Teacher {
   role: 'admin' | 'teacher' | 'student' | 'headteacher';
   created_at: string | null;
 }
+
+interface ClassRow { id: string; class_name: string; section?: string | null; class_teacher_id?: string | null; }
+interface SubjectRow { id: string; subject_name: string; subject_code?: string | null; class_id: string; }
 
 const TeachersManager = () => {
   const { schoolId, school } = useSchool();
@@ -28,6 +33,21 @@ const TeachersManager = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // Edit
+  const [editOpen, setEditOpen] = useState(false);
+  const [editing, setEditing] = useState<Teacher | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editRole, setEditRole] = useState<Teacher['role']>('teacher');
+
+  // Assign
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [assigning, setAssigning] = useState<Teacher | null>(null);
+  const [classes, setClasses] = useState<ClassRow[]>([]);
+  const [subjects, setSubjects] = useState<SubjectRow[]>([]);
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<Set<string>>(new Set());
+  const [selectedClassId, setSelectedClassId] = useState<string>('none');
+  const [savingAssign, setSavingAssign] = useState(false);
 
   const load = async () => {
     if (!schoolId) return;
@@ -100,6 +120,108 @@ const TeachersManager = () => {
     }
   };
 
+  const openEdit = (t: Teacher) => {
+    setEditing(t);
+    setEditName(t.full_name);
+    setEditRole(t.role);
+    setEditOpen(true);
+  };
+
+  const saveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editing) return;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ full_name: editName.trim(), role: editRole })
+      .eq('id', editing.id);
+    if (error) {
+      toast({ title: 'Update failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Teacher updated' });
+    setEditOpen(false);
+    setEditing(null);
+    await load();
+  };
+
+  const removeTeacher = async (t: Teacher) => {
+    if (!confirm(`Remove ${t.full_name} from this school? Their assignments will be cleared.`)) return;
+    // Detach assignments first
+    await supabase.from('teacher_subjects').delete().eq('teacher_id', t.id);
+    await supabase.from('classes').update({ class_teacher_id: null }).eq('class_teacher_id', t.id);
+    // Detach from school (cannot delete auth user from client)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ school_id: null })
+      .eq('id', t.id);
+    if (error) {
+      toast({ title: 'Remove failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Teacher removed' });
+    await load();
+  };
+
+  const openAssign = async (t: Teacher) => {
+    if (!schoolId) return;
+    setAssigning(t);
+    setAssignOpen(true);
+    setSavingAssign(false);
+
+    const [classesRes, subjectsRes, tsRes, classTeacherRes] = await Promise.all([
+      supabase.from('classes').select('id, class_name, section, class_teacher_id').eq('school_id', schoolId).order('class_name'),
+      supabase.from('subjects').select('id, subject_name, subject_code, class_id').eq('school_id', schoolId).order('subject_name'),
+      supabase.from('teacher_subjects').select('subject_id').eq('teacher_id', t.id),
+      supabase.from('classes').select('id').eq('class_teacher_id', t.id).maybeSingle(),
+    ]);
+    setClasses((classesRes.data || []) as ClassRow[]);
+    setSubjects((subjectsRes.data || []) as SubjectRow[]);
+    setSelectedSubjectIds(new Set((tsRes.data || []).map((r: any) => r.subject_id)));
+    setSelectedClassId(classTeacherRes.data?.id || 'none');
+  };
+
+  const toggleSubject = (id: string) => {
+    setSelectedSubjectIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const saveAssignments = async () => {
+    if (!assigning || !schoolId) return;
+    setSavingAssign(true);
+    try {
+      // Replace teacher_subjects rows
+      await supabase.from('teacher_subjects').delete().eq('teacher_id', assigning.id);
+      const rows = Array.from(selectedSubjectIds).map(subject_id => ({
+        teacher_id: assigning.id,
+        subject_id,
+        school_id: schoolId,
+      }));
+      if (rows.length) {
+        const { error } = await supabase.from('teacher_subjects').insert(rows);
+        if (error) throw error;
+      }
+      // Class teacher: clear any class previously held by this teacher, then assign new one
+      await supabase.from('classes').update({ class_teacher_id: null }).eq('class_teacher_id', assigning.id);
+      if (selectedClassId && selectedClassId !== 'none') {
+        const { error: cErr } = await supabase
+          .from('classes')
+          .update({ class_teacher_id: assigning.id })
+          .eq('id', selectedClassId);
+        if (cErr) throw cErr;
+      }
+      toast({ title: 'Assignments saved' });
+      setAssignOpen(false);
+      setAssigning(null);
+    } catch (err: any) {
+      toast({ title: 'Save failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setSavingAssign(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -147,25 +269,132 @@ const TeachersManager = () => {
               <TableHead>Name</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Joined</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
-              <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">Loading...</TableCell></TableRow>
             ) : teachers.length === 0 ? (
-              <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground">No teachers yet. Add your first one.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground">No teachers yet. Add your first one.</TableCell></TableRow>
             ) : (
               teachers.map((t) => (
                 <TableRow key={t.id}>
                   <TableCell className="font-medium">{t.full_name}</TableCell>
                   <TableCell><Badge variant="secondary">{t.role}</Badge></TableCell>
                   <TableCell>{t.created_at ? new Date(t.created_at).toLocaleDateString() : '-'}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="outline" onClick={() => openAssign(t)}>
+                        <Link2 className="w-4 h-4 mr-1" /> Assign
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => openEdit(t)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="destructive" onClick={() => removeTeacher(t)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </div>
+
+      {/* Edit dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Teacher</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={saveEdit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Full Name</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select value={editRole} onValueChange={(v) => setEditRole(v as Teacher['role'])}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="teacher">Teacher</SelectItem>
+                  <SelectItem value="headteacher">Headteacher</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="submit" className="w-full">Save Changes</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign dialog */}
+      <Dialog open={assignOpen} onOpenChange={setAssignOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Assign Subjects & Class — {assigning?.full_name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label>Class teacher of</Label>
+              <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— None —</SelectItem>
+                  {classes.map(c => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.class_name}{c.section ? ` - ${c.section}` : ''}
+                      {c.class_teacher_id && c.class_teacher_id !== assigning?.id ? ' (currently assigned)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">A teacher can be class teacher of one class. Re-assigning will move them.</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Subjects taught</Label>
+              {classes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No classes yet.</p>
+              ) : (
+                <div className="space-y-4 max-h-72 overflow-y-auto pr-2">
+                  {classes.map(cls => {
+                    const classSubjects = subjects.filter(s => s.class_id === cls.id);
+                    if (classSubjects.length === 0) return null;
+                    return (
+                      <div key={cls.id} className="border rounded-md p-3">
+                        <div className="text-sm font-medium mb-2">
+                          {cls.class_name}{cls.section ? ` - ${cls.section}` : ''}
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {classSubjects.map(s => (
+                            <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                              <Checkbox
+                                checked={selectedSubjectIds.has(s.id)}
+                                onCheckedChange={() => toggleSubject(s.id)}
+                              />
+                              <span>{s.subject_code ? `${s.subject_code} — ` : ''}{s.subject_name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setAssignOpen(false)}>Cancel</Button>
+              <Button onClick={saveAssignments} disabled={savingAssign}>
+                {savingAssign ? 'Saving...' : 'Save Assignments'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
