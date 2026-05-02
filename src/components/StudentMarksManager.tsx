@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Student, Subject, Term, StudentMark, Class } from '@/types/database';
 import { Plus, Edit, Trash2, X, Search, ArrowUpDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useActiveTerm } from '@/hooks/useActiveTerm';
 
 
 interface SubjectFormData {
@@ -41,14 +42,14 @@ const StudentMarksManager = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const { schoolId } = useSchool();
+  const { activeTerm, activeTermId } = useActiveTerm();
   const [selectedClass, setSelectedClass] = useState<string>('all-classes');
-  const [selectedTerm, setSelectedTerm] = useState<string>('all-terms');
   const [selectedSubject, setSelectedSubject] = useState<string>('all-subjects');
   const [editingMark, setEditingMark] = useState<StudentMark | null>(null);
   
   // Batch form fields
   const [batchStudentId, setBatchStudentId] = useState('');
-  const [batchTermId, setBatchTermId] = useState('');
+  const [batchClassId, setBatchClassId] = useState<string>('');
   const [studentSearch, setStudentSearch] = useState('');
   const [studentSort, setStudentSort] = useState<'a-z' | 'z-a' | 'new-old' | 'old-new'>('a-z');
   const [subjectForms, setSubjectForms] = useState<SubjectFormData[]>([{
@@ -76,7 +77,7 @@ const StudentMarksManager = () => {
 
   useEffect(() => {
     filterMarks();
-  }, [marks, selectedClass, selectedTerm, selectedSubject]);
+  }, [marks, selectedClass, activeTermId, selectedSubject]);
 
   const fetchData = async () => {
     try {
@@ -120,8 +121,9 @@ const StudentMarksManager = () => {
       );
     }
 
-    if (selectedTerm && selectedTerm !== 'all-terms') {
-      filtered = filtered.filter(mark => mark.term_id === selectedTerm);
+    // Always scope to active term — manual term selection removed
+    if (activeTermId) {
+      filtered = filtered.filter(mark => mark.term_id === activeTermId);
     }
 
     if (selectedSubject && selectedSubject !== 'all-subjects') {
@@ -258,10 +260,12 @@ const StudentMarksManager = () => {
     e.preventDefault();
 
     // Validation
-    if (!batchStudentId || !batchTermId) {
+    if (!batchStudentId || !activeTermId) {
       toast({
         title: 'Validation Error',
-        description: 'Please select a student and term',
+        description: !activeTermId
+          ? 'No active term set. Open Terms and mark one as Active.'
+          : 'Please select a student',
         variant: 'destructive',
       });
       return;
@@ -284,7 +288,7 @@ const StudentMarksManager = () => {
       const marksData = subjectForms.map(form => ({
         student_id: batchStudentId,
         subject_id: form.subject_id,
-        term_id: batchTermId,
+        term_id: activeTermId,
         subject_code: form.subject_code || null,
         a1_score: parseFloat(form.a1_score) || null,
         a2_score: parseFloat(form.a2_score) || null,
