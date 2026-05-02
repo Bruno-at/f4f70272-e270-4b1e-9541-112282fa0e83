@@ -434,20 +434,15 @@ const ReportGenerator = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
-          <Label htmlFor="term">Select Term *</Label>
-          <Select value={selectedTerm} onValueChange={setSelectedTerm}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select term" />
-            </SelectTrigger>
-            <SelectContent>
-              {terms.map((term) => (
-                <SelectItem key={term.id} value={term.id}>
-                  {term.term_name} {term.year}
-                  {term.is_active && ' (Active)'}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label>Active Term</Label>
+          {(() => {
+            const t = terms.find(tt => tt.id === selectedTerm) || terms.find(tt => tt.is_active);
+            return (
+              <div className="h-10 flex items-center px-3 rounded-md border bg-muted text-sm">
+                {t ? `${t.term_name} ${t.year}` : 'No active term — set one in Terms'}
+              </div>
+            );
+          })()}
         </div>
 
         <div>

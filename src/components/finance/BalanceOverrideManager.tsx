@@ -133,14 +133,14 @@ const BalanceOverrideManager = () => {
         </div>
         <div>
           <Label>Term *</Label>
-          <Select value={selectedTerm} onValueChange={setSelectedTerm}>
-            <SelectTrigger><SelectValue placeholder="Select term" /></SelectTrigger>
-            <SelectContent>
-              {terms.map(t => (
-                <SelectItem key={t.id} value={t.id}>{t.term_name} {t.year}{t.is_active ? ' (Active)' : ''}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {(() => {
+            const t = terms.find(tt => tt.id === selectedTerm) || terms.find(tt => tt.is_active);
+            return (
+              <div className="h-10 flex items-center px-3 rounded-md border bg-muted text-sm">
+                {t ? `${t.term_name} ${t.year}` : 'No active term'}
+              </div>
+            );
+          })()}
         </div>
         <div>
           <Label>Override Balance (UGX) *</Label>
