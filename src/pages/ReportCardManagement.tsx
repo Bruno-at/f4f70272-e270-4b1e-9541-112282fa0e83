@@ -629,13 +629,22 @@ const ReportCardManagement = () => {
 
       if (marksError) throw marksError;
 
-      // Fetch all subjects for the class
-      const { data: subjectsData, error: subjectsError } = await supabase
-        .from('subjects')
-        .select('*')
+      // Fetch subjects assigned to the student's class via class_subjects
+      const { data: csLinks, error: csError } = await supabase
+        .from('class_subjects')
+        .select('subject_id')
         .eq('class_id', studentData.class_id);
-
-      if (subjectsError) throw subjectsError;
+      if (csError) throw csError;
+      const subjectIds = (csLinks || []).map((l: any) => l.subject_id);
+      let subjectsData: any[] = [];
+      if (subjectIds.length) {
+        const { data: subs, error: subjectsError } = await supabase
+          .from('subjects')
+          .select('*')
+          .in('id', subjectIds);
+        if (subjectsError) throw subjectsError;
+        subjectsData = subs || [];
+      }
 
       // Convert student photo to base64 for PDF
       const studentWithBase64 = { ...studentData };
