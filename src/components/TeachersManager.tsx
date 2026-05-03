@@ -20,7 +20,7 @@ interface Teacher {
 }
 
 interface ClassRow { id: string; class_name: string; section?: string | null; class_teacher_id?: string | null; }
-interface SubjectRow { id: string; subject_name: string; subject_code?: string | null; class_id: string; }
+interface SubjectRow { id: string; subject_name: string; subject_code?: string | null; }
 
 const TeachersManager = () => {
   const { schoolId, school } = useSchool();
@@ -45,6 +45,7 @@ const TeachersManager = () => {
   const [assigning, setAssigning] = useState<Teacher | null>(null);
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
+  const [classSubjectLinks, setClassSubjectLinks] = useState<{ class_id: string; subject_id: string }[]>([]);
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<Set<string>>(new Set());
   const [selectedClassId, setSelectedClassId] = useState<string>('none');
   const [savingAssign, setSavingAssign] = useState(false);
@@ -168,14 +169,16 @@ const TeachersManager = () => {
     setAssignOpen(true);
     setSavingAssign(false);
 
-    const [classesRes, subjectsRes, tsRes, classTeacherRes] = await Promise.all([
+    const [classesRes, subjectsRes, tsRes, classTeacherRes, csRes] = await Promise.all([
       supabase.from('classes').select('id, class_name, section, class_teacher_id').eq('school_id', schoolId).order('class_name'),
-      supabase.from('subjects').select('id, subject_name, subject_code, class_id').eq('school_id', schoolId).order('subject_name'),
+      supabase.from('subjects').select('id, subject_name, subject_code').eq('school_id', schoolId).order('subject_name'),
       supabase.from('teacher_subjects').select('subject_id').eq('teacher_id', t.id),
       supabase.from('classes').select('id').eq('class_teacher_id', t.id).maybeSingle(),
+      supabase.from('class_subjects').select('class_id, subject_id').eq('school_id', schoolId),
     ]);
     setClasses((classesRes.data || []) as ClassRow[]);
     setSubjects((subjectsRes.data || []) as SubjectRow[]);
+    setClassSubjectLinks((csRes.data || []) as any);
     setSelectedSubjectIds(new Set((tsRes.data || []).map((r: any) => r.subject_id)));
     setSelectedClassId(classTeacherRes.data?.id || 'none');
   };
@@ -361,7 +364,10 @@ const TeachersManager = () => {
               ) : (
                 <div className="space-y-4 max-h-72 overflow-y-auto pr-2">
                   {classes.map(cls => {
-                    const classSubjects = subjects.filter(s => s.class_id === cls.id);
+                    const classSubjectIds = new Set(
+                      classSubjectLinks.filter(l => l.class_id === cls.id).map(l => l.subject_id)
+                    );
+                    const classSubjects = subjects.filter(s => classSubjectIds.has(s.id));
                     if (classSubjects.length === 0) return null;
                     return (
                       <div key={cls.id} className="border rounded-md p-3">
