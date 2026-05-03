@@ -373,7 +373,7 @@ const ReportGenerator = () => {
         class_teacher_comment: reportData.class_teacher_comment,
         headteacher_comment: reportData.headteacher_comment,
       },
-      subjects,
+      subjects: classSubjects,
       template: selectedTemplate,
       reportColor: selectedColor,
       classTeacherSignature,
