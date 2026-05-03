@@ -102,22 +102,46 @@ export const seedSubjects = async (schoolId: string): Promise<SeedSectionResult>
   if (!allClasses || allClasses.length === 0) {
     throw new Error('Add classes first before seeding subjects.');
   }
+  // Ensure each subject exists exactly once for this school
   const { data: existing } = await supabase
-    .from('subjects').select('subject_name, class_id').eq('school_id', schoolId);
-  const existingKey = new Set((existing || []).map((s: any) => `${s.class_id}:${s.subject_name}`));
-  const toInsert: any[] = [];
+    .from('subjects').select('id, subject_name').eq('school_id', schoolId);
+  const existingMap = new Map<string, string>(
+    (existing || []).map((s: any) => [s.subject_name, s.id])
+  );
+  const toInsertSubjects = DEFAULT_SUBJECTS
+    .filter(n => !existingMap.has(n))
+    .map(subject_name => ({ subject_name, school_id: schoolId, max_marks: 100 }));
+  let insertedCount = 0;
+  if (toInsertSubjects.length) {
+    const { data: inserted, error } = await supabase
+      .from('subjects').insert(toInsertSubjects).select('id, subject_name');
+    if (error) throw error;
+    (inserted || []).forEach((s: any) => existingMap.set(s.subject_name, s.id));
+    insertedCount = inserted?.length || 0;
+  }
+  // Link every default subject to every class via class_subjects
+  const { data: existingLinks } = await supabase
+    .from('class_subjects').select('class_id, subject_id').eq('school_id', schoolId);
+  const linkSet = new Set((existingLinks || []).map((l: any) => `${l.class_id}:${l.subject_id}`));
+  const linksToInsert: any[] = [];
   for (const cls of allClasses) {
     for (const subject_name of DEFAULT_SUBJECTS) {
-      const key = `${cls.id}:${subject_name}`;
-      if (!existingKey.has(key)) {
-        toInsert.push({ subject_name, class_id: cls.id, school_id: schoolId, max_marks: 100 });
+      const subject_id = existingMap.get(subject_name);
+      if (!subject_id) continue;
+      const key = `${cls.id}:${subject_id}`;
+      if (!linkSet.has(key)) {
+        linksToInsert.push({ class_id: cls.id, subject_id, school_id: schoolId });
       }
     }
   }
-  if (!toInsert.length) return { inserted: 0, alreadyComplete: true };
-  const { error } = await supabase.from('subjects').insert(toInsert);
-  if (error) throw error;
-  return { inserted: toInsert.length, alreadyComplete: false };
+  if (linksToInsert.length) {
+    const { error: linkErr } = await supabase.from('class_subjects').insert(linksToInsert);
+    if (linkErr) throw linkErr;
+  }
+  if (!insertedCount && !linksToInsert.length) {
+    return { inserted: 0, alreadyComplete: true };
+  }
+  return { inserted: insertedCount + linksToInsert.length, alreadyComplete: false };
 };
 
 export const checkSubjectsComplete = async (schoolId: string): Promise<boolean> => {
@@ -125,12 +149,17 @@ export const checkSubjectsComplete = async (schoolId: string): Promise<boolean> 
   const { data: allClasses } = await supabase
     .from('classes').select('id').eq('school_id', schoolId);
   if (!allClasses || allClasses.length === 0) return false;
-  const { data: existing } = await supabase
-    .from('subjects').select('subject_name, class_id').eq('school_id', schoolId);
-  const existingKey = new Set((existing || []).map((s: any) => `${s.class_id}:${s.subject_name}`));
+  const { data: subs } = await supabase
+    .from('subjects').select('id, subject_name').eq('school_id', schoolId);
+  const subMap = new Map<string, string>((subs || []).map((s: any) => [s.subject_name, s.id]));
+  for (const n of DEFAULT_SUBJECTS) if (!subMap.has(n)) return false;
+  const { data: links } = await supabase
+    .from('class_subjects').select('class_id, subject_id').eq('school_id', schoolId);
+  const linkSet = new Set((links || []).map((l: any) => `${l.class_id}:${l.subject_id}`));
   for (const cls of allClasses) {
-    for (const s of DEFAULT_SUBJECTS) {
-      if (!existingKey.has(`${cls.id}:${s}`)) return false;
+    for (const n of DEFAULT_SUBJECTS) {
+      const sid = subMap.get(n)!;
+      if (!linkSet.has(`${cls.id}:${sid}`)) return false;
     }
   }
   return true;

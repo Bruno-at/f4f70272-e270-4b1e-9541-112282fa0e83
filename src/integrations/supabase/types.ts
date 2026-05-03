@@ -49,6 +49,30 @@ export type Database = {
           },
         ]
       }
+      class_subjects: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          school_id: string | null
+          subject_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          school_id?: string | null
+          subject_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          school_id?: string | null
+          subject_id?: string
+        }
+        Relationships: []
+      }
       classes: {
         Row: {
           class_name: string
@@ -994,7 +1018,6 @@ export type Database = {
       }
       subjects: {
         Row: {
-          class_id: string
           created_at: string
           id: string
           max_marks: number | null
@@ -1003,7 +1026,6 @@ export type Database = {
           subject_name: string
         }
         Insert: {
-          class_id: string
           created_at?: string
           id?: string
           max_marks?: number | null
@@ -1012,7 +1034,6 @@ export type Database = {
           subject_name: string
         }
         Update: {
-          class_id?: string
           created_at?: string
           id?: string
           max_marks?: number | null
@@ -1021,20 +1042,6 @@ export type Database = {
           subject_name?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "fk_subjects_class_id"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "classes"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "subjects_class_id_fkey"
-            columns: ["class_id"]
-            isOneToOne: false
-            referencedRelation: "classes"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "subjects_school_id_fkey"
             columns: ["school_id"]

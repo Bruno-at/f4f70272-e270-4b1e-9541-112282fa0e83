@@ -198,6 +198,14 @@ const ReportGenerator = () => {
 
     const headteacherSignature = schoolData?.headteacher_signature_url || null;
 
+    // Fetch subjects assigned to this student's class via class_subjects
+    const { data: csLinks } = await supabase
+      .from('class_subjects')
+      .select('subject_id')
+      .eq('class_id', student.class_id);
+    const classSubjectIds = new Set((csLinks || []).map((l: any) => l.subject_id));
+    const classSubjects = subjects.filter(s => classSubjectIds.has(s.id));
+
     // Generate or update report card record
     const { data: existingReport } = await supabase
       .from('report_cards')
@@ -365,7 +373,7 @@ const ReportGenerator = () => {
         class_teacher_comment: reportData.class_teacher_comment,
         headteacher_comment: reportData.headteacher_comment,
       },
-      subjects,
+      subjects: classSubjects,
       template: selectedTemplate,
       reportColor: selectedColor,
       classTeacherSignature,

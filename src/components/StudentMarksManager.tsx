@@ -39,6 +39,7 @@ const StudentMarksManager = () => {
   const [classes, setClasses] = useState<Class[]>([]);
   const [marks, setMarks] = useState<StudentMark[]>([]);
   const [filteredMarks, setFilteredMarks] = useState<StudentMark[]>([]);
+  const [classSubjects, setClassSubjects] = useState<{ class_id: string; subject_id: string }[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const { schoolId } = useSchool();
@@ -81,12 +82,13 @@ const StudentMarksManager = () => {
 
   const fetchData = async () => {
     try {
-      const [studentsRes, subjectsRes, termsRes, classesRes, marksRes] = await Promise.all([
+      const [studentsRes, subjectsRes, termsRes, classesRes, marksRes, classSubjectsRes] = await Promise.all([
         supabase.from('students').select('*, classes!students_class_id_fkey(*)').order('name'),
         supabase.from('subjects').select('*').order('subject_name'),
         supabase.from('terms').select('*').order('year', { ascending: false }),
         supabase.from('classes').select('*').order('class_name'),
-        supabase.from('student_marks').select('*, subjects!student_marks_subject_id_fkey(*), students!student_marks_student_id_fkey(name, classes!students_class_id_fkey(id, class_name, section))').order('created_at', { ascending: false })
+        supabase.from('student_marks').select('*, subjects!student_marks_subject_id_fkey(*), students!student_marks_student_id_fkey(name, classes!students_class_id_fkey(id, class_name, section))').order('created_at', { ascending: false }),
+        supabase.from('class_subjects').select('class_id, subject_id'),
       ]);
 
       if (studentsRes.error) throw studentsRes.error;
@@ -100,6 +102,7 @@ const StudentMarksManager = () => {
       setTerms(termsRes.data || []);
       setClasses(classesRes.data || []);
       setMarks(marksRes.data || []);
+      setClassSubjects(classSubjectsRes.data || []);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -556,7 +559,10 @@ const StudentMarksManager = () => {
                                   </SelectTrigger>
                                   <SelectContent>
                                     {subjects
-                                      .filter(s => !batchClassId || s.class_id === batchClassId)
+                                      .filter(s => {
+                                        if (!batchClassId) return true;
+                                        return classSubjects.some(cs => cs.class_id === batchClassId && cs.subject_id === s.id);
+                                      })
                                       .map((subject) => (
                                       <SelectItem key={subject.id} value={subject.id}>
                                         {subject.subject_name}
