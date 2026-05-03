@@ -559,7 +559,10 @@ const StudentMarksManager = () => {
                                   </SelectTrigger>
                                   <SelectContent>
                                     {subjects
-                                      .filter(s => !batchClassId || s.class_id === batchClassId)
+                                      .filter(s => {
+                                        if (!batchClassId) return true;
+                                        return classSubjects.some(cs => cs.class_id === batchClassId && cs.subject_id === s.id);
+                                      })
                                       .map((subject) => (
                                       <SelectItem key={subject.id} value={subject.id}>
                                         {subject.subject_name}
