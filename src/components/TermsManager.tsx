@@ -86,7 +86,8 @@ const TermsManager = () => {
           await supabase
             .from('terms')
             .update({ is_active: false })
-            .neq('id', '');
+            .eq('school_id', schoolId!)
+            .eq('is_active', true);
         }
 
         const { error } = await supabase
@@ -140,14 +141,22 @@ const TermsManager = () => {
       // Delete related records first to avoid foreign key constraint violations
       await supabase.from('student_marks').delete().eq('term_id', id);
       await supabase.from('report_cards').delete().eq('term_id', id);
-      
+      await supabase.from('fee_structures').delete().eq('term_id', id);
+      await supabase.from('fee_balance_overrides').delete().eq('term_id', id);
+      await supabase.from('student_payments').delete().eq('term_id', id);
+      await supabase.from('pending_submissions').delete().eq('term_id', id);
+
       // Now delete the term
-      const { error } = await supabase
+      const { error, count } = await supabase
         .from('terms')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .select('id');
 
       if (error) throw error;
+      if (!count && (await supabase.from('terms').select('id').eq('id', id).maybeSingle()).data) {
+        throw new Error('Term was not deleted (permission or constraint).');
+      }
 
       toast({
         title: "Success",
@@ -159,7 +168,7 @@ const TermsManager = () => {
       console.error('Error deleting term:', error);
       toast({
         title: "Error",
-        description: "Failed to delete term",
+        description: (error as Error).message || "Failed to delete term",
         variant: "destructive"
       });
     }
@@ -168,10 +177,12 @@ const TermsManager = () => {
   const handleSetActive = async (id: string) => {
     try {
       // Deactivate all terms first
-      await supabase
+      const { error: deactErr } = await supabase
         .from('terms')
         .update({ is_active: false })
-        .neq('id', '');
+        .eq('school_id', schoolId!)
+        .neq('id', id);
+      if (deactErr) throw deactErr;
 
       // Activate the selected term
       const { error } = await supabase
@@ -191,7 +202,7 @@ const TermsManager = () => {
       console.error('Error setting active term:', error);
       toast({
         title: "Error",
-        description: "Failed to set active term",
+        description: (error as Error).message || "Failed to set active term",
         variant: "destructive"
       });
     }
@@ -343,15 +354,14 @@ const TermsManager = () => {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    {!term.is_active && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleSetActive(term.id)}
-                      >
-                        Set Active
-                      </Button>
-                    )}
+                    <Button
+                      size="sm"
+                      variant={term.is_active ? 'default' : 'outline'}
+                      disabled={term.is_active}
+                      onClick={() => handleSetActive(term.id)}
+                    >
+                      {term.is_active ? 'Active' : 'Set Active'}
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
