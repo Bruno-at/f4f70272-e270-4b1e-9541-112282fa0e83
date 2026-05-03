@@ -48,7 +48,6 @@ export interface Subject {
   id: string;
   subject_name: string;
   subject_code?: string;
-  class_id: string;
   max_marks: number;
   created_at: string;
 }
