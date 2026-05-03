@@ -354,15 +354,14 @@ const TermsManager = () => {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    {!term.is_active && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleSetActive(term.id)}
-                      >
-                        Set Active
-                      </Button>
-                    )}
+                    <Button
+                      size="sm"
+                      variant={term.is_active ? 'default' : 'outline'}
+                      disabled={term.is_active}
+                      onClick={() => handleSetActive(term.id)}
+                    >
+                      {term.is_active ? 'Active' : 'Set Active'}
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
