@@ -952,6 +952,30 @@ export type Database = {
           },
         ]
       }
+      student_subjects: {
+        Row: {
+          created_at: string
+          id: string
+          school_id: string | null
+          student_id: string
+          subject_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          school_id?: string | null
+          student_id: string
+          subject_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          school_id?: string | null
+          student_id?: string
+          subject_id?: string
+        }
+        Relationships: []
+      }
       students: {
         Row: {
           age: number | null
