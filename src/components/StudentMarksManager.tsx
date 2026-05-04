@@ -1,890 +1,447 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSchool } from '@/contexts/SchoolContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { Student, Subject, Term, StudentMark, Class } from '@/types/database';
-import { Plus, Edit, Trash2, X, Search, ArrowUpDown } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { useActiveTerm } from '@/hooks/useActiveTerm';
+import { getSubjectShortCode } from '@/utils/subjectCode';
+import { Settings2, Loader2 } from 'lucide-react';
 
+interface ClassRow { id: string; class_name: string; section?: string | null }
+interface SubjectRow { id: string; subject_name: string; subject_code?: string | null }
+interface StudentRow { id: string; name: string; student_id?: string | null; class_id: string }
 
-interface SubjectFormData {
-  id: string;
-  subject_id: string;
-  subject_code: string;
-  a1_score: string;
-  a2_score: string;
-  a3_score: string;
-  average_score: string;
-  twenty_percent: string;
-  eighty_percent: string;
-  hundred_percent: string;
-  identifier: string;
-  final_grade: string;
-  achievement_level: string;
-  teacher_initials: string;
+// One mark per (student, subject) — auto term
+interface MarkCell {
+  id?: string;
+  hundred_percent: string; // string for input control
+  saving?: boolean;
+  dirty?: boolean;
 }
 
 const StudentMarksManager = () => {
-  const [students, setStudents] = useState<Student[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [terms, setTerms] = useState<Term[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [marks, setMarks] = useState<StudentMark[]>([]);
-  const [filteredMarks, setFilteredMarks] = useState<StudentMark[]>([]);
-  const [classSubjects, setClassSubjects] = useState<{ class_id: string; subject_id: string }[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
   const { schoolId } = useSchool();
-  const { activeTerm, activeTermId } = useActiveTerm();
-  const [selectedClass, setSelectedClass] = useState<string>('all-classes');
-  const [selectedSubject, setSelectedSubject] = useState<string>('all-subjects');
-  const [editingMark, setEditingMark] = useState<StudentMark | null>(null);
-  
-  // Batch form fields
-  const [batchStudentId, setBatchStudentId] = useState('');
-  const [batchClassId, setBatchClassId] = useState<string>('');
-  const [studentSearch, setStudentSearch] = useState('');
-  const [studentSort, setStudentSort] = useState<'a-z' | 'z-a' | 'new-old' | 'old-new'>('a-z');
-  const [subjectForms, setSubjectForms] = useState<SubjectFormData[]>([{
-    id: crypto.randomUUID(),
-    subject_id: '',
-    subject_code: '',
-    a1_score: '',
-    a2_score: '',
-    a3_score: '',
-    average_score: '',
-    twenty_percent: '',
-    eighty_percent: '',
-    hundred_percent: '',
-    identifier: '',
-    final_grade: '',
-    achievement_level: '',
-    teacher_initials: ''
-  }]);
-
+  const { activeTerm, activeTermId, loading: termLoading } = useActiveTerm();
   const { toast } = useToast();
-  
-  useEffect(() => {
-    fetchData();
-  }, []);
 
-  useEffect(() => {
-    filterMarks();
-  }, [marks, selectedClass, activeTermId, selectedSubject]);
+  const [classes, setClasses] = useState<ClassRow[]>([]);
+  const [selectedClass, setSelectedClass] = useState<string>('');
+  const [students, setStudents] = useState<StudentRow[]>([]);
+  const [subjects, setSubjects] = useState<SubjectRow[]>([]); // subjects assigned to selected class
+  const [studentSubjects, setStudentSubjects] = useState<Record<string, Set<string>>>({}); // student_id -> set(subject_id)
+  // marks keyed by `${studentId}:${subjectId}`
+  const [marks, setMarks] = useState<Record<string, MarkCell>>({});
+  const [loading, setLoading] = useState(false);
+  const [assignSavingFor, setAssignSavingFor] = useState<string | null>(null);
 
-  const fetchData = async () => {
+  // Load classes once
+  useEffect(() => {
+    if (!schoolId) return;
+    (async () => {
+      const { data } = await supabase
+        .from('classes')
+        .select('id, class_name, section')
+        .eq('school_id', schoolId)
+        .order('class_name');
+      setClasses(data || []);
+    })();
+  }, [schoolId]);
+
+  // Load grid data when class or term changes
+  const loadGrid = useCallback(async () => {
+    if (!schoolId || !selectedClass) {
+      setStudents([]);
+      setSubjects([]);
+      setStudentSubjects({});
+      setMarks({});
+      return;
+    }
+    setLoading(true);
     try {
-      const [studentsRes, subjectsRes, termsRes, classesRes, marksRes, classSubjectsRes] = await Promise.all([
-        supabase.from('students').select('*, classes!students_class_id_fkey(*)').order('name'),
-        supabase.from('subjects').select('*').order('subject_name'),
-        supabase.from('terms').select('*').order('year', { ascending: false }),
-        supabase.from('classes').select('*').order('class_name'),
-        supabase.from('student_marks').select('*, subjects!student_marks_subject_id_fkey(*), students!student_marks_student_id_fkey(name, classes!students_class_id_fkey(id, class_name, section))').order('created_at', { ascending: false }),
-        supabase.from('class_subjects').select('class_id, subject_id'),
-      ]);
+      // Students in class
+      const { data: studs } = await supabase
+        .from('students')
+        .select('id, name, student_id, class_id')
+        .eq('school_id', schoolId)
+        .eq('class_id', selectedClass)
+        .order('name');
 
-      if (studentsRes.error) throw studentsRes.error;
-      if (subjectsRes.error) throw subjectsRes.error;
-      if (termsRes.error) throw termsRes.error;
-      if (classesRes.error) throw classesRes.error;
-      if (marksRes.error) throw marksRes.error;
+      // Subjects assigned to this class via class_subjects
+      const { data: csLinks } = await supabase
+        .from('class_subjects')
+        .select('subject_id, subjects:subject_id(id, subject_name, subject_code)')
+        .eq('school_id', schoolId)
+        .eq('class_id', selectedClass);
+      const subs: SubjectRow[] = (csLinks || [])
+        .map((r: any) => r.subjects)
+        .filter(Boolean)
+        .sort((a: SubjectRow, b: SubjectRow) => a.subject_name.localeCompare(b.subject_name));
 
-      setStudents(studentsRes.data || []);
-      setSubjects(subjectsRes.data || []);
-      setTerms(termsRes.data || []);
-      setClasses(classesRes.data || []);
-      setMarks(marksRes.data || []);
-      setClassSubjects(classSubjectsRes.data || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch data',
-        variant: 'destructive',
-      });
+      const studentList = studs || [];
+      const subjectIds = subs.map((s) => s.id);
+
+      // Per-student subject assignments
+      let assignMap: Record<string, Set<string>> = {};
+      if (studentList.length) {
+        const { data: ss } = await supabase
+          .from('student_subjects')
+          .select('student_id, subject_id')
+          .in('student_id', studentList.map((s) => s.id));
+        (ss || []).forEach((r: any) => {
+          if (!assignMap[r.student_id]) assignMap[r.student_id] = new Set();
+          assignMap[r.student_id].add(r.subject_id);
+        });
+
+        // Default behavior: students with NO assignments get all class subjects (auto-seed)
+        const needSeed = studentList.filter((s) => !assignMap[s.id] || assignMap[s.id].size === 0);
+        if (needSeed.length && subjectIds.length) {
+          const rows = needSeed.flatMap((s) =>
+            subjectIds.map((subject_id) => ({
+              student_id: s.id,
+              subject_id,
+              school_id: schoolId,
+            })),
+          );
+          const { error } = await supabase
+            .from('student_subjects')
+            .upsert(rows, { onConflict: 'student_id,subject_id', ignoreDuplicates: true });
+          if (!error) {
+            needSeed.forEach((s) => {
+              assignMap[s.id] = new Set(subjectIds);
+            });
+          }
+        }
+      }
+
+      // Existing marks for active term
+      let marksMap: Record<string, MarkCell> = {};
+      if (activeTermId && studentList.length && subjectIds.length) {
+        const { data: ms } = await supabase
+          .from('student_marks')
+          .select('id, student_id, subject_id, hundred_percent')
+          .eq('term_id', activeTermId)
+          .in('student_id', studentList.map((s) => s.id))
+          .in('subject_id', subjectIds);
+        (ms || []).forEach((m: any) => {
+          marksMap[`${m.student_id}:${m.subject_id}`] = {
+            id: m.id,
+            hundred_percent: m.hundred_percent != null ? String(m.hundred_percent) : '',
+          };
+        });
+      }
+
+      setStudents(studentList);
+      setSubjects(subs);
+      setStudentSubjects(assignMap);
+      setMarks(marksMap);
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Error', description: 'Failed to load marks grid', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
-  };
-
-  const filterMarks = () => {
-    let filtered = marks;
-
-    if (selectedClass && selectedClass !== 'all-classes') {
-      filtered = filtered.filter(mark => 
-        mark.students?.classes?.id === selectedClass
-      );
-    }
-
-    // Always scope to active term — manual term selection removed
-    if (activeTermId) {
-      filtered = filtered.filter(mark => mark.term_id === activeTermId);
-    }
-
-    if (selectedSubject && selectedSubject !== 'all-subjects') {
-      filtered = filtered.filter(mark => mark.subject_id === selectedSubject);
-    }
-
-    setFilteredMarks(filtered);
-  };
-
-  const getFilteredAndSortedStudents = () => {
-    let filtered = students;
-
-    // Restrict to selected class in the entry form
-    if (batchClassId) {
-      filtered = filtered.filter(s => s.class_id === batchClassId);
-    }
-
-    // Apply search filter
-    if (studentSearch.trim()) {
-      const searchLower = studentSearch.toLowerCase();
-      filtered = filtered.filter(student =>
-        student.name.toLowerCase().includes(searchLower) ||
-        student.student_id?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    // Apply sorting
-    const sorted = [...filtered];
-    switch (studentSort) {
-      case 'a-z':
-        sorted.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case 'z-a':
-        sorted.sort((a, b) => b.name.localeCompare(a.name));
-        break;
-      case 'new-old':
-        sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        break;
-      case 'old-new':
-        sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-        break;
-    }
-
-    return sorted;
-  };
-
-  const calculateAverageForForm = (formId: string, a1: string, a2: string, a3: string) => {
-    const avg = ((parseFloat(a1) || 0) + (parseFloat(a2) || 0) + (parseFloat(a3) || 0)) / 3;
-    updateSubjectForm(formId, 'average_score', avg.toFixed(1));
-  };
-
-  const [gradingSystems, setGradingSystems] = useState<any[]>([]);
+  }, [schoolId, selectedClass, activeTermId, toast]);
 
   useEffect(() => {
-    fetchGradingSystems();
-  }, []);
+    loadGrid();
+  }, [loadGrid]);
 
-  const fetchGradingSystems = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('grading_systems')
-        .select('*')
-        .eq('is_active', true)
-        .order('min_percentage', { ascending: false });
+  const cellKey = (sid: string, subid: string) => `${sid}:${subid}`;
 
-      if (error) throw error;
-      setGradingSystems(data || []);
-    } catch (error) {
-      console.error('Error fetching grading systems:', error);
-    }
-  };
+  // Debounced save per cell
+  const saveTimers = useRef<Record<string, any>>({});
 
-  const calculateGradeAndLevelForForm = (formId: string, hundredPercent: string, identifier: string) => {
-    const grade = calculateGrade(parseFloat(hundredPercent) || 0);
-    const achievementLevel = calculateAchievementLevel(parseInt(identifier) || 1);
-    
-    setSubjectForms(prev => prev.map(form =>
-      form.id === formId
-        ? { ...form, final_grade: grade, achievement_level: achievementLevel }
-        : form
-    ));
-  };
+  const saveCell = useCallback(
+    async (studentId: string, subjectId: string, value: string) => {
+      if (!activeTermId || !schoolId) return;
+      const key = cellKey(studentId, subjectId);
+      setMarks((prev) => ({ ...prev, [key]: { ...prev[key], hundred_percent: value, saving: true, dirty: false } }));
 
-  const calculateGrade = (percentage: number): string => {
-    // Use configurable grading system if available
-    if (gradingSystems.length > 0) {
-      const grade = gradingSystems.find(g => 
-        percentage >= g.min_percentage && percentage <= g.max_percentage
-      );
-      return grade ? grade.grade_name : 'E';
-    }
-    
-    // Fallback to default grading system
-    if (percentage >= 80) return 'A';
-    if (percentage >= 70) return 'B';
-    if (percentage >= 60) return 'C';
-    if (percentage >= 40) return 'D';
-    return 'E';
-  };
+      const numeric = value.trim() === '' ? null : Number(value);
+      if (numeric != null && (isNaN(numeric) || numeric < 0 || numeric > 100)) {
+        setMarks((prev) => ({ ...prev, [key]: { ...prev[key], saving: false } }));
+        toast({ title: 'Invalid mark', description: 'Enter a number between 0 and 100', variant: 'destructive' });
+        return;
+      }
 
-  const calculateAchievementLevel = (identifier: number): string => {
-    if (identifier >= 2.5) return 'Outstanding';
-    if (identifier >= 1.5) return 'Moderate';
-    return 'Basic';
-  };
-
-  const updateSubjectForm = (formId: string, field: keyof SubjectFormData, value: string) => {
-    setSubjectForms(prev => prev.map(form =>
-      form.id === formId ? { ...form, [field]: value } : form
-    ));
-  };
-
-  const addSubjectForm = () => {
-    setSubjectForms(prev => [...prev, {
-      id: crypto.randomUUID(),
-      subject_id: '',
-      subject_code: '',
-      a1_score: '',
-      a2_score: '',
-      a3_score: '',
-      average_score: '',
-      twenty_percent: '',
-      eighty_percent: '',
-      hundred_percent: '',
-      identifier: '',
-      final_grade: '',
-      achievement_level: '',
-      teacher_initials: ''
-    }]);
-  };
-
-  const removeSubjectForm = (formId: string) => {
-    if (subjectForms.length > 1) {
-      setSubjectForms(prev => prev.filter(form => form.id !== formId));
-    }
-  };
-
-  const handleBatchSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validation
-    if (!batchStudentId || !activeTermId) {
-      toast({
-        title: 'Validation Error',
-        description: !activeTermId
-          ? 'No active term set. Open Terms and mark one as Active.'
-          : 'Please select a student',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const invalidForms = subjectForms.filter(form => 
-      !form.subject_id || !form.a1_score || !form.a2_score || !form.a3_score
-    );
-
-    if (invalidForms.length > 0) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please fill in all required fields for each subject',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    try {
-      const marksData = subjectForms.map(form => ({
-        student_id: batchStudentId,
-        subject_id: form.subject_id,
+      const payload: any = {
+        student_id: studentId,
+        subject_id: subjectId,
         term_id: activeTermId,
-        subject_code: form.subject_code || null,
-        a1_score: parseFloat(form.a1_score) || null,
-        a2_score: parseFloat(form.a2_score) || null,
-        a3_score: parseFloat(form.a3_score) || null,
-        average_score: parseFloat(form.average_score) || null,
-        twenty_percent: parseFloat(form.twenty_percent) || null,
-        eighty_percent: parseFloat(form.eighty_percent) || null,
-        hundred_percent: parseFloat(form.hundred_percent) || null,
-        identifier: parseInt(form.identifier) || null,
-        final_grade: form.final_grade || null,
-        achievement_level: form.achievement_level || null,
-        teacher_initials: form.teacher_initials || null
+        school_id: schoolId,
+        hundred_percent: numeric,
+      };
+
+      const { data, error } = await supabase
+        .from('student_marks')
+        .upsert(payload, { onConflict: 'student_id,subject_id,term_id' })
+        .select('id')
+        .maybeSingle();
+
+      if (error) {
+        console.error(error);
+        toast({ title: 'Save failed', description: error.message, variant: 'destructive' });
+        setMarks((prev) => ({ ...prev, [key]: { ...prev[key], saving: false } }));
+        return;
+      }
+
+      setMarks((prev) => ({
+        ...prev,
+        [key]: { id: data?.id || prev[key]?.id, hundred_percent: value, saving: false },
       }));
+    },
+    [activeTermId, schoolId, toast],
+  );
 
-      const { error } = await supabase
-        .from('student_marks')
-        .insert(marksData.map(m => ({ ...m, school_id: schoolId })));
+  const onCellChange = (studentId: string, subjectId: string, value: string) => {
+    const key = cellKey(studentId, subjectId);
+    setMarks((prev) => ({ ...prev, [key]: { ...prev[key], hundred_percent: value, dirty: true } }));
+    if (saveTimers.current[key]) clearTimeout(saveTimers.current[key]);
+    saveTimers.current[key] = setTimeout(() => saveCell(studentId, subjectId, value), 500);
+  };
 
-      if (error) throw error;
-
-      toast({
-        title: 'Success',
-        description: `Successfully added ${marksData.length} subject mark(s)`,
-      });
-
-      setIsDialogOpen(false);
-      resetBatchForm();
-      fetchData();
-    } catch (error) {
-      console.error('Error saving marks:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to save student marks',
-        variant: 'destructive',
-      });
+  const onCellBlur = (studentId: string, subjectId: string, value: string) => {
+    const key = cellKey(studentId, subjectId);
+    if (saveTimers.current[key]) {
+      clearTimeout(saveTimers.current[key]);
+      saveTimers.current[key] = null;
     }
+    if (marks[key]?.dirty) saveCell(studentId, subjectId, value);
   };
 
-  const handleEdit = (mark: StudentMark) => {
-    // Editing still uses single form mode for simplicity
-    setEditingMark(mark);
-    setBatchStudentId(mark.student_id);
-    setBatchClassId(mark.students?.classes?.id || '');
-    setSubjectForms([{
-      id: crypto.randomUUID(),
-      subject_id: mark.subject_id,
-      subject_code: mark.subject_code || '',
-      a1_score: mark.a1_score?.toString() || '',
-      a2_score: mark.a2_score?.toString() || '',
-      a3_score: mark.a3_score?.toString() || '',
-      average_score: mark.average_score?.toString() || '',
-      twenty_percent: mark.twenty_percent?.toString() || '',
-      eighty_percent: mark.eighty_percent?.toString() || '',
-      hundred_percent: mark.hundred_percent?.toString() || '',
-      identifier: mark.identifier?.toString() || '',
-      final_grade: mark.final_grade || '',
-      achievement_level: mark.achievement_level || '',
-      teacher_initials: mark.teacher_initials || ''
-    }]);
-    setIsDialogOpen(true);
-  };
-
-  const handleDelete = async (id: string) => {
+  // Toggle assignment for one student/subject
+  const toggleAssignment = async (studentId: string, subjectId: string, assign: boolean) => {
+    if (!schoolId) return;
+    setAssignSavingFor(studentId);
     try {
-      const { error } = await supabase
-        .from('student_marks')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Success',
-        description: 'Student mark deleted successfully',
-      });
-
-      fetchData();
-    } catch (error) {
-      console.error('Error deleting mark:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete student mark',
-        variant: 'destructive',
-      });
+      if (assign) {
+        const { error } = await supabase
+          .from('student_subjects')
+          .upsert({ student_id: studentId, subject_id: subjectId, school_id: schoolId }, {
+            onConflict: 'student_id,subject_id',
+            ignoreDuplicates: true,
+          });
+        if (error) throw error;
+        setStudentSubjects((prev) => {
+          const next = { ...prev };
+          const set = new Set(next[studentId] || []);
+          set.add(subjectId);
+          next[studentId] = set;
+          return next;
+        });
+      } else {
+        const { error } = await supabase
+          .from('student_subjects')
+          .delete()
+          .eq('student_id', studentId)
+          .eq('subject_id', subjectId);
+        if (error) throw error;
+        setStudentSubjects((prev) => {
+          const next = { ...prev };
+          const set = new Set(next[studentId] || []);
+          set.delete(subjectId);
+          next[studentId] = set;
+          return next;
+        });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Could not update assignment', variant: 'destructive' });
+    } finally {
+      setAssignSavingFor(null);
     }
   };
 
-  const resetBatchForm = () => {
-    setBatchStudentId('');
-    setBatchClassId('');
-    setStudentSearch('');
-    setSubjectForms([{
-      id: crypto.randomUUID(),
-      subject_id: '',
-      subject_code: '',
-      a1_score: '',
-      a2_score: '',
-      a3_score: '',
-      average_score: '',
-      twenty_percent: '',
-      eighty_percent: '',
-      hundred_percent: '',
-      identifier: '',
-      final_grade: '',
-      achievement_level: '',
-      teacher_initials: ''
-    }]);
-    setEditingMark(null);
-  };
-
-  if (loading) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
-  }
+  const hasClass = !!selectedClass;
+  const hasStudents = students.length > 0;
+  const hasSubjects = subjects.length > 0;
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Student Marks Management</h2>
-          <p className="text-muted-foreground">Record and manage O-level student assessment marks</p>
-        </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={resetBatchForm}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Student Mark
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col overflow-y-auto themed-scrollbar">
-            <DialogHeader className="flex-shrink-0">
-              <DialogTitle className="text-2xl font-bold tracking-wide">Add Student Marks</DialogTitle>
-            </DialogHeader>
-            
-            <form onSubmit={handleBatchSubmit} className="flex flex-col gap-6 flex-1 min-h-0 touch-pan-y touch-pan-x">
-              {/* Class selector + Active term banner */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-shrink-0">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Class</Label>
-                  <Select value={batchClassId} onValueChange={(v) => { setBatchClassId(v); setBatchStudentId(''); }}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select class" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {classes.map((classItem) => (
-                        <SelectItem key={classItem.id} value={classItem.id}>
-                          {classItem.class_name} {classItem.section}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Term</Label>
-                  <div className="h-10 flex items-center px-3 rounded-md border bg-muted text-sm">
-                    {activeTerm ? `${activeTerm.term_name} ${activeTerm.year} (active)` : 'No active term — set one in Terms'}
-                  </div>
-                </div>
-              </div>
-
-              {/* Student Selection */}
-              <div className="space-y-2 flex-shrink-0">
-                <div className="flex justify-between items-center gap-2">
-                  <Label className="text-sm font-medium">Student</Label>
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        const sortOrder: Array<'a-z' | 'z-a' | 'new-old' | 'old-new'> = ['a-z', 'z-a', 'new-old', 'old-new'];
-                        const currentIndex = sortOrder.indexOf(studentSort);
-                        const nextIndex = (currentIndex + 1) % sortOrder.length;
-                        setStudentSort(sortOrder[nextIndex]);
-                      }}
-                      className="h-8 px-3"
-                    >
-                      {studentSort === 'a-z' && '↑ → Z'}
-                      {studentSort === 'z-a' && '↓ → A'}
-                      {studentSort === 'new-old' && 'New → Old'}
-                      {studentSort === 'old-new' && 'Old → New'}
-                    </Button>
-                    <Button 
-                      type="button" 
-                      onClick={addSubjectForm} 
-                      size="sm"
-                      className="h-8"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      New Subject
-                    </Button>
-                  </div>
-                </div>
-                
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search students..."
-                    value={studentSearch}
-                    onChange={(e) => setStudentSearch(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-
-                <Select value={batchStudentId} onValueChange={setBatchStudentId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a student" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getFilteredAndSortedStudents().map((student) => (
-                      <SelectItem key={student.id} value={student.id}>
-                        {student.name} - {student.classes?.class_name} {student.classes?.section}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Subject Forms Container */}
-              <div className="flex flex-col gap-3 flex-1 min-h-0">
-                <h3 className="text-base font-semibold flex-shrink-0">Subject Marks</h3>
-                
-                <div className="flex-1 pr-2">
-                  <div className="space-y-4 pb-4 pr-2">
-                    {subjectForms.map((form, index) => (
-                      <Card key={form.id} className="animate-in fade-in slide-in-from-top-2 duration-200 border-border/50">
-                        <CardContent className="pt-4">
-                          <div className="flex justify-between items-start mb-4">
-                            <h4 className="text-sm font-semibold text-primary">Subject {index + 1}</h4>
-                            {subjectForms.length > 1 && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeSubjectForm(form.id)}
-                                className="h-8 w-8 p-0"
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </div>
-
-                          <div className="space-y-4">
-                            {/* Row 1: Subject + Subject Code */}
-                            <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-4">
-                              <div className="min-w-0">
-                                <Label className="text-xs font-medium">Subject (Only Your Assigned Subjects for This Class)</Label>
-                                <Select 
-                                  value={form.subject_id} 
-                                  onValueChange={(value) => {
-                                    updateSubjectForm(form.id, 'subject_id', value);
-                                    const selectedSubject = subjects.find(s => s.id === value);
-                                    if (selectedSubject) {
-                                      updateSubjectForm(form.id, 'subject_code', selectedSubject.subject_code || '');
-                                    }
-                                  }}
-                                >
-                                  <SelectTrigger className="h-10 mt-1">
-                                    <SelectValue placeholder="Select class first" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {subjects
-                                      .filter(s => {
-                                        if (!batchClassId) return true;
-                                        return classSubjects.some(cs => cs.class_id === batchClassId && cs.subject_id === s.id);
-                                      })
-                                      .map((subject) => (
-                                      <SelectItem key={subject.id} value={subject.id}>
-                                        {subject.subject_name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="min-w-0">
-                                <Label className="text-xs font-medium">Subject Code</Label>
-                                <Input
-                                  value={form.subject_code}
-                                  placeholder="Auto-filled"
-                                  readOnly
-                                  className="h-10 mt-1 bg-muted"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Row 2: A1, A2, A3, AVG */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                              <div className="min-w-0">
-                                <Label className="text-xs font-medium">A1 Score (must include decimal)</Label>
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={form.a1_score}
-                                  onChange={(e) => updateSubjectForm(form.id, 'a1_score', e.target.value)}
-                                  onBlur={() => calculateAverageForForm(form.id, form.a1_score, form.a2_score, form.a3_score)}
-                                  placeholder="e.g., 12.5"
-                                  className="h-10 mt-1"
-                                />
-                              </div>
-                              <div className="min-w-0">
-                                <Label className="text-xs font-medium">A2 Score (must include decimal)</Label>
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={form.a2_score}
-                                  onChange={(e) => updateSubjectForm(form.id, 'a2_score', e.target.value)}
-                                  onBlur={() => calculateAverageForForm(form.id, form.a1_score, form.a2_score, form.a3_score)}
-                                  placeholder="e.g., 8.0"
-                                  className="h-10 mt-1"
-                                />
-                              </div>
-                              <div className="min-w-0">
-                                <Label className="text-xs font-medium">A3 Score (must include decimal)</Label>
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={form.a3_score}
-                                  onChange={(e) => updateSubjectForm(form.id, 'a3_score', e.target.value)}
-                                  onBlur={() => calculateAverageForForm(form.id, form.a1_score, form.a2_score, form.a3_score)}
-                                  placeholder="e.g., 0.5"
-                                  className="h-10 mt-1"
-                                />
-                              </div>
-                              <div className="min-w-0">
-                                <Label className="text-xs font-medium">AVG</Label>
-                                <Input
-                                  value={form.average_score || '0.00'}
-                                  placeholder="0.00"
-                                  readOnly
-                                  className="h-10 mt-1 bg-muted"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Row 3: 20%, 80%, 100%, Teacher Initials */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                              <div className="min-w-0">
-                                <Label className="text-xs font-medium">20% Score</Label>
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={form.twenty_percent}
-                                  onChange={(e) => {
-                                    const newTwenty = e.target.value;
-                                    updateSubjectForm(form.id, 'twenty_percent', newTwenty);
-                                    const hundredPercent = (parseFloat(newTwenty) || 0) + (parseFloat(form.eighty_percent) || 0);
-                                    updateSubjectForm(form.id, 'hundred_percent', hundredPercent.toFixed(1));
-                                    setTimeout(() => calculateGradeAndLevelForForm(form.id, hundredPercent.toFixed(1), form.identifier), 0);
-                                  }}
-                                  placeholder="0-100"
-                                  className="h-10 mt-1"
-                                />
-                              </div>
-                              <div className="min-w-0">
-                                <Label className="text-xs font-medium">80% Score</Label>
-                                <Input
-                                  type="number"
-                                  step="0.1"
-                                  value={form.eighty_percent}
-                                  onChange={(e) => {
-                                    const newEighty = e.target.value;
-                                    updateSubjectForm(form.id, 'eighty_percent', newEighty);
-                                    const hundredPercent = (parseFloat(form.twenty_percent) || 0) + (parseFloat(newEighty) || 0);
-                                    updateSubjectForm(form.id, 'hundred_percent', hundredPercent.toFixed(1));
-                                    setTimeout(() => calculateGradeAndLevelForForm(form.id, hundredPercent.toFixed(1), form.identifier), 0);
-                                  }}
-                                  placeholder="0-100"
-                                  className="h-10 mt-1"
-                                />
-                              </div>
-                              <div className="min-w-0">
-                                <Label className="text-xs font-medium">100% Score</Label>
-                                <Input
-                                  value={form.hundred_percent || '0-100'}
-                                  placeholder="0-100"
-                                  readOnly
-                                  className="h-10 mt-1 bg-muted"
-                                />
-                              </div>
-                              <div className="min-w-0">
-                                <Label className="text-xs font-medium">Teacher Initials</Label>
-                                <Input
-                                  value={form.teacher_initials}
-                                  onChange={(e) => updateSubjectForm(form.id, 'teacher_initials', e.target.value)}
-                                  placeholder="N.L"
-                                  maxLength={5}
-                                  className="h-10 mt-1"
-                                />
-                              </div>
-                            </div>
-
-                            {/* Row 4: Identifier, Grade, Achievement Level */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div className="min-w-0">
-                                <Label className="text-xs font-medium">Identifier</Label>
-                                <Select 
-                                  value={form.identifier} 
-                                  onValueChange={(value) => {
-                                    updateSubjectForm(form.id, 'identifier', value);
-                                    setTimeout(() => calculateGradeAndLevelForForm(form.id, form.hundred_percent, value), 0);
-                                  }}
-                                >
-                                  <SelectTrigger className="h-10 mt-1">
-                                    <SelectValue placeholder="Select" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="1">1 - Basic</SelectItem>
-                                    <SelectItem value="2">2 - Moderate</SelectItem>
-                                    <SelectItem value="3">3 - Outstanding</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="min-w-0">
-                                <Label className="text-xs font-medium">Grade (Auto-calculated)</Label>
-                                <Input
-                                  value={form.final_grade || 'Auto'}
-                                  placeholder="Auto"
-                                  readOnly
-                                  className="h-10 mt-1 bg-muted"
-                                />
-                              </div>
-                              <div className="min-w-0">
-                                <Label className="text-xs font-medium">Achievement Level (Auto-calculated)</Label>
-                                <Input
-                                  value={form.achievement_level || 'Auto'}
-                                  placeholder="Auto"
-                                  readOnly
-                                  className="h-10 mt-1 bg-muted"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Submit Button at bottom right */}
-              <div className="flex justify-end pt-4 border-t border-border/50">
-                <Button 
-                  type="submit"
-                  size="lg"
-                  className="min-w-[180px]"
-                >
-                  Submit All Marks
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
+    <TooltipProvider delayDuration={150}>
+      <div className="space-y-6">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold">Student Marks Entry</h2>
+            <p className="text-sm text-muted-foreground">
+              Spreadsheet-style entry. Active term is used automatically.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
+            <div className="space-y-1 min-w-[220px]">
               <Label>Class</Label>
               <Select value={selectedClass} onValueChange={setSelectedClass}>
                 <SelectTrigger>
-                  <SelectValue placeholder="All classes" />
+                  <SelectValue placeholder="Select a class" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all-classes">All classes</SelectItem>
-                  {classes.map((classItem) => (
-                    <SelectItem key={classItem.id} value={classItem.id}>
-                      {classItem.class_name} {classItem.section}
+                  {classes.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.class_name}{c.section ? ` ${c.section}` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-
-            <div>
-              <Label>Term</Label>
+            <div className="space-y-1 min-w-[220px]">
+              <Label>Term (active)</Label>
               <div className="h-10 flex items-center px-3 rounded-md border bg-muted text-sm">
-                {activeTerm ? `${activeTerm.term_name} ${activeTerm.year}` : 'No active term'}
+                {termLoading
+                  ? 'Loading…'
+                  : activeTerm
+                    ? `${activeTerm.term_name} ${activeTerm.year}`
+                    : 'No active term — set one in Terms'}
               </div>
             </div>
+          </div>
+        </div>
 
-            <div>
-              <Label>Subject</Label>
-              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All subjects" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all-subjects">All subjects</SelectItem>
-                  {subjects.map((subject) => (
-                    <SelectItem key={subject.id} value={subject.id}>
-                      {subject.subject_code} {subject.subject_name}
-                    </SelectItem>
+        {!hasClass && (
+          <div className="rounded-md border border-dashed p-10 text-center text-muted-foreground">
+            Select a class to begin entering marks.
+          </div>
+        )}
+
+        {hasClass && loading && (
+          <div className="flex items-center justify-center p-10 text-muted-foreground">
+            <Loader2 className="w-5 h-5 mr-2 animate-spin" /> Loading grid…
+          </div>
+        )}
+
+        {hasClass && !loading && !hasStudents && (
+          <div className="rounded-md border border-dashed p-10 text-center text-muted-foreground">
+            No students in this class.
+          </div>
+        )}
+
+        {hasClass && !loading && hasStudents && !hasSubjects && (
+          <div className="rounded-md border border-dashed p-10 text-center text-muted-foreground">
+            No subjects assigned to this class.
+          </div>
+        )}
+
+        {hasClass && !loading && hasStudents && hasSubjects && !activeTermId && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+            No active term set. Open Terms and mark one as Active to enable mark entry.
+          </div>
+        )}
+
+        {hasClass && !loading && hasStudents && hasSubjects && (
+          <div className="border rounded-md overflow-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead className="bg-muted/50 sticky top-0 z-10">
+                <tr>
+                  <th className="text-left font-medium px-3 py-2 border-b border-r min-w-[220px] sticky left-0 bg-muted/50 z-20">
+                    Student
+                  </th>
+                  {subjects.map((s) => (
+                    <Tooltip key={s.id}>
+                      <TooltipTrigger asChild>
+                        <th className="font-medium px-2 py-2 border-b border-r text-center whitespace-nowrap">
+                          {getSubjectShortCode(s.subject_name, s.subject_code)}
+                        </th>
+                      </TooltipTrigger>
+                      <TooltipContent>{s.subject_name}</TooltipContent>
+                    </Tooltip>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
+                  <th className="px-2 py-2 border-b text-center w-12"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.map((stu, rowIdx) => {
+                  const assigned = studentSubjects[stu.id] || new Set<string>();
+                  return (
+                    <tr key={stu.id} className={rowIdx % 2 ? 'bg-background' : 'bg-muted/20'}>
+                      <td className="px-3 py-2 border-b border-r sticky left-0 bg-inherit z-10">
+                        <div className="font-medium">{stu.name}</div>
+                        {stu.student_id && (
+                          <div className="text-xs text-muted-foreground">{stu.student_id}</div>
+                        )}
+                      </td>
+                      {subjects.map((sub) => {
+                        const key = cellKey(stu.id, sub.id);
+                        const cell = marks[key];
+                        const isAssigned = assigned.has(sub.id);
+                        const disabled = !isAssigned || !activeTermId;
+                        const cellEl = (
+                          <td
+                            key={sub.id}
+                            className={`p-1 border-b border-r text-center ${
+                              !isAssigned ? 'bg-muted/60' : ''
+                            }`}
+                          >
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step="0.1"
+                              disabled={disabled}
+                              value={cell?.hundred_percent ?? ''}
+                              onChange={(e) => onCellChange(stu.id, sub.id, e.target.value)}
+                              onBlur={(e) => onCellBlur(stu.id, sub.id, e.target.value)}
+                              className={`h-9 w-20 text-center tabular-nums mx-auto ${
+                                cell?.saving ? 'opacity-60' : ''
+                              } ${disabled ? 'cursor-not-allowed' : ''}`}
+                              placeholder={isAssigned ? '—' : ''}
+                            />
+                          </td>
+                        );
+                        if (!isAssigned) {
+                          return (
+                            <Tooltip key={sub.id}>
+                              <TooltipTrigger asChild>{cellEl}</TooltipTrigger>
+                              <TooltipContent>Subject not assigned to this student</TooltipContent>
+                            </Tooltip>
+                          );
+                        }
+                        return cellEl;
+                      })}
+                      <td className="border-b text-center px-1">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="Assign subjects">
+                              {assignSavingFor === stu.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Settings2 className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent align="end" className="w-64 p-3">
+                            <div className="font-medium text-sm mb-2">Subjects for {stu.name}</div>
+                            <div className="max-h-64 overflow-auto space-y-2 pr-1">
+                              {subjects.map((sub) => {
+                                const checked = (studentSubjects[stu.id] || new Set()).has(sub.id);
+                                return (
+                                  <label key={sub.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                                    <Checkbox
+                                      checked={checked}
+                                      onCheckedChange={(v) => toggleAssignment(stu.id, sub.id, !!v)}
+                                    />
+                                    <span className="font-mono text-xs w-12 text-muted-foreground">
+                                      {getSubjectShortCode(sub.subject_name, sub.subject_code)}
+                                    </span>
+                                    <span>{sub.subject_name}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Marks Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Student Marks ({filteredMarks.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Student</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>A1</TableHead>
-                  <TableHead>A2</TableHead>
-                  <TableHead>A3</TableHead>
-                  <TableHead>AVG</TableHead>
-                  <TableHead>20%</TableHead>
-                  <TableHead>80%</TableHead>
-                  <TableHead>100%</TableHead>
-                  <TableHead>Grade</TableHead>
-                  <TableHead>Achievement</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredMarks.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={12} className="text-center text-muted-foreground">
-                      No marks found
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredMarks.map((mark) => (
-                    <TableRow key={mark.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{mark.students?.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {mark.students?.classes?.class_name} {mark.students?.classes?.section}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{mark.subject_code} {mark.subjects?.subject_name}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{mark.a1_score?.toFixed(1) || '-'}</TableCell>
-                      <TableCell>{mark.a2_score?.toFixed(1) || '-'}</TableCell>
-                      <TableCell>{mark.a3_score?.toFixed(1) || '-'}</TableCell>
-                      <TableCell>{mark.average_score?.toFixed(1) || '-'}</TableCell>
-                      <TableCell>{mark.twenty_percent?.toFixed(1) || '-'}</TableCell>
-                      <TableCell>{mark.eighty_percent?.toFixed(1) || '-'}</TableCell>
-                      <TableCell>{mark.hundred_percent?.toFixed(1) || '-'}</TableCell>
-                      <TableCell>
-                        <Badge variant={mark.final_grade === 'A' ? 'default' : mark.final_grade === 'B' ? 'secondary' : 'outline'}>
-                          {mark.final_grade || '-'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={mark.achievement_level === 'Outstanding' ? 'default' : mark.achievement_level === 'Exceptional' ? 'secondary' : 'outline'}>
-                          {mark.achievement_level || '-'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => handleEdit(mark)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDelete(mark.id)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        )}
+      </div>
+    </TooltipProvider>
   );
 };
 
