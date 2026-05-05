@@ -32,14 +32,20 @@ const StudentSubjectsDialog = ({ student, open, onOpenChange }: Props) => {
         // Subjects assigned to the student's class via class_subjects
         const { data: cs, error: csErr } = await supabase
           .from('class_subjects')
-          .select('subject_id, subjects:subject_id(id, subject_name, subject_code)')
+          .select('subject_id')
           .eq('school_id', schoolId)
           .eq('class_id', student.class_id);
         if (csErr) throw csErr;
-        const subs: SubjectRow[] = (cs || [])
-          .map((r: any) => r.subjects)
-          .filter(Boolean)
-          .sort((a: SubjectRow, b: SubjectRow) => a.subject_name.localeCompare(b.subject_name));
+        const subjectIds = (cs || []).map((r: any) => r.subject_id);
+        let subs: SubjectRow[] = [];
+        if (subjectIds.length) {
+          const { data: subjData, error: subjErr } = await supabase
+            .from('subjects')
+            .select('id, subject_name, subject_code')
+            .in('id', subjectIds);
+          if (subjErr) throw subjErr;
+          subs = (subjData || []).sort((a, b) => a.subject_name.localeCompare(b.subject_name));
+        }
         setSubjects(subs);
 
         // Existing student_subjects assignments
