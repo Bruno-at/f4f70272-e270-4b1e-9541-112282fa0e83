@@ -1175,6 +1175,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      lookup_school_id_by_slug: { Args: { p_slug: string }; Returns: string }
       register_school: {
         Args: {
           p_address?: string
