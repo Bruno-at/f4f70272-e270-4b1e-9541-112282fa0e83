@@ -7,7 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Student } from '@/types/database';
-import { Trash2, Search, Users, Pencil } from 'lucide-react';
+import { Trash2, Search, Users, Pencil, BookOpen } from 'lucide-react';
+import StudentSubjectsDialog from './StudentSubjectsDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,7 @@ interface StudentListProps {
 const StudentList = ({ students, onRefresh, onEdit }: StudentListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [assignFor, setAssignFor] = useState<Student | null>(null);
   const { toast } = useToast();
 
   const filteredStudents = students.filter(student =>
@@ -129,6 +131,14 @@ const StudentList = ({ students, onRefresh, onEdit }: StudentListProps) => {
                       <Button
                         variant="ghost"
                         size="sm"
+                        title="Assign subjects"
+                        onClick={() => setAssignFor(student)}
+                      >
+                        <BookOpen className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => onEdit(student)}
                       >
                         <Pencil className="w-4 h-4" />
@@ -175,6 +185,11 @@ const StudentList = ({ students, onRefresh, onEdit }: StudentListProps) => {
           </TableBody>
         </Table>
       </div>
+      <StudentSubjectsDialog
+        student={assignFor}
+        open={!!assignFor}
+        onOpenChange={(o) => !o && setAssignFor(null)}
+      />
     </div>
   );
 };
