@@ -175,15 +175,12 @@ const Login = () => {
         return;
       }
 
-      const { data: school, error: schoolError } = await supabase
-        .from('schools')
-        .select('id')
-        .eq('slug', normalizedSchoolCode)
-        .maybeSingle();
+      const { data: schoolIdLookup, error: schoolError } = await supabase
+        .rpc('lookup_school_id_by_slug', { p_slug: normalizedSchoolCode });
 
       if (schoolError) throw schoolError;
 
-      if (!school || school.id !== profile.school_id) {
+      if (!schoolIdLookup || schoolIdLookup !== profile.school_id) {
         await supabase.auth.signOut();
         toast({
           title: 'Invalid school code',
