@@ -72,16 +72,22 @@ const StudentMarksManager = () => {
         .eq('class_id', selectedClass)
         .order('name');
 
-      // Subjects assigned to this class via class_subjects
+      // Subjects assigned to this class via class_subjects (two-step fetch to avoid join issues)
       const { data: csLinks } = await supabase
         .from('class_subjects')
-        .select('subject_id, subjects:subject_id(id, subject_name, subject_code)')
-        .eq('school_id', schoolId)
+        .select('subject_id')
         .eq('class_id', selectedClass);
-      const subs: SubjectRow[] = (csLinks || [])
-        .map((r: any) => r.subjects)
-        .filter(Boolean)
-        .sort((a: SubjectRow, b: SubjectRow) => a.subject_name.localeCompare(b.subject_name));
+      const subjectIdList = (csLinks || []).map((r: any) => r.subject_id);
+      let subs: SubjectRow[] = [];
+      if (subjectIdList.length) {
+        const { data: subjData } = await supabase
+          .from('subjects')
+          .select('id, subject_name, subject_code')
+          .in('id', subjectIdList);
+        subs = (subjData || []).sort((a: SubjectRow, b: SubjectRow) =>
+          a.subject_name.localeCompare(b.subject_name),
+        );
+      }
 
       const studentList = studs || [];
       const subjectIds = subs.map((s) => s.id);
