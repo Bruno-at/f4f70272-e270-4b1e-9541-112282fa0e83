@@ -20,6 +20,7 @@ interface MarkRow {
   a1: string;
   a2: string;
   a3: string;
+  avg: string; // computed
   twenty: string;
   eighty: string;
   hundred: string; // computed
@@ -28,10 +29,16 @@ interface MarkRow {
   dirty?: boolean;
 }
 
-const computeIdentifier = (hundred: number | null): string => {
-  if (hundred == null || isNaN(hundred)) return '';
-  if (hundred <= 50) return 'Basic';
-  if (hundred <= 80) return 'Moderate';
+const computeAvg = (a1: number | null, a2: number | null, a3: number | null): number | null => {
+  if (a1 == null && a2 == null && a3 == null) return null;
+  const v = ((a1 || 0) + (a2 || 0) + (a3 || 0)) / 3;
+  return Math.round(v * 100) / 100;
+};
+
+const computeIdentifier = (avg: number | null): string => {
+  if (avg == null || isNaN(avg)) return '';
+  if (avg < 1.5) return 'Basic';
+  if (avg < 2.5) return 'Moderate';
   return 'Outstanding';
 };
 
@@ -43,7 +50,7 @@ const identifierCode = (label: string): number | null => {
 };
 
 const emptyRow = (): MarkRow => ({
-  a1: '', a2: '', a3: '', twenty: '', eighty: '', hundred: '', identifier: '',
+  a1: '', a2: '', a3: '', avg: '', twenty: '', eighty: '', hundred: '', identifier: '',
 });
 
 const StudentMarksManager = () => {
@@ -118,8 +125,25 @@ const StudentMarksManager = () => {
         .from('class_subjects')
         .select('subject_id')
         .eq('class_id', selectedClassId);
-      const ids = (cs || []).map((r: any) => r.subject_id);
+      let ids = (cs || []).map((r: any) => r.subject_id);
       if (!ids.length) { setSubjects([]); return; }
+
+      // If current user is a teacher, restrict to subjects assigned to them
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: prof } = await supabase
+          .from('profiles').select('role').eq('id', user.id).maybeSingle();
+        if (prof?.role === 'teacher') {
+          const { data: ts } = await supabase
+            .from('teacher_subjects')
+            .select('subject_id')
+            .eq('teacher_id', user.id);
+          const teacherIds = new Set((ts || []).map((r: any) => r.subject_id));
+          ids = ids.filter((id: string) => teacherIds.has(id));
+          if (!ids.length) { setSubjects([]); return; }
+        }
+      }
+
       const { data: subjData } = await supabase
         .from('subjects')
         .select('id, subject_name, subject_code')
@@ -162,21 +186,25 @@ const StudentMarksManager = () => {
       if (activeTermId && studentList.length) {
         const { data: ms } = await supabase
           .from('student_marks')
-          .select('id, student_id, a1_score, a2_score, a3_score, twenty_percent, eighty_percent, hundred_percent, achievement_level')
+          .select('id, student_id, a1_score, a2_score, a3_score, average_score, twenty_percent, eighty_percent, hundred_percent, achievement_level')
           .eq('term_id', activeTermId)
           .eq('subject_id', selectedSubject)
           .in('student_id', studentList.map((s) => s.id));
         (ms || []).forEach((m: any) => {
           const hundred = m.hundred_percent;
+          const avg = m.average_score != null
+            ? m.average_score
+            : computeAvg(m.a1_score, m.a2_score, m.a3_score);
           marksMap[m.student_id] = {
             id: m.id,
             a1: m.a1_score != null ? String(m.a1_score) : '',
             a2: m.a2_score != null ? String(m.a2_score) : '',
             a3: m.a3_score != null ? String(m.a3_score) : '',
+            avg: avg != null ? String(avg) : '',
             twenty: m.twenty_percent != null ? String(m.twenty_percent) : '',
             eighty: m.eighty_percent != null ? String(m.eighty_percent) : '',
             hundred: hundred != null ? String(hundred) : '',
-            identifier: m.achievement_level || computeIdentifier(hundred),
+            identifier: m.achievement_level || computeIdentifier(avg),
           };
         });
       }
@@ -205,7 +233,14 @@ const StudentMarksManager = () => {
       const num = (v: string) => (v.trim() === '' ? null : Number(v));
       const a1 = num(row.a1), a2 = num(row.a2), a3 = num(row.a3);
       const twenty = num(row.twenty), eighty = num(row.eighty);
-      for (const [label, v] of [['A1', a1], ['A2', a2], ['A3', a3], ['20%', twenty], ['80%', eighty]] as const) {
+      for (const [label, v] of [['A1', a1], ['A2', a2], ['A3', a3]] as const) {
+        if (v != null && (isNaN(v) || v < 0 || v > 3)) {
+          toast({ title: 'Invalid mark', description: `${label} must be between 0 and 3`, variant: 'destructive' });
+          setMarks((prev) => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
+          return;
+        }
+      }
+      for (const [label, v] of [['20%', twenty], ['80%', eighty]] as const) {
         if (v != null && (isNaN(v) || v < 0 || v > 100)) {
           toast({ title: 'Invalid mark', description: `${label} must be between 0 and 100`, variant: 'destructive' });
           setMarks((prev) => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
@@ -213,7 +248,8 @@ const StudentMarksManager = () => {
         }
       }
       const hundred = (twenty != null || eighty != null) ? (twenty || 0) + (eighty || 0) : null;
-      const identifier = computeIdentifier(hundred);
+      const avg = computeAvg(a1, a2, a3);
+      const identifier = computeIdentifier(avg);
 
       const payload: any = {
         student_id: studentId,
@@ -223,6 +259,7 @@ const StudentMarksManager = () => {
         a1_score: a1,
         a2_score: a2,
         a3_score: a3,
+        average_score: avg,
         twenty_percent: twenty,
         eighty_percent: eighty,
         hundred_percent: hundred,
@@ -247,6 +284,7 @@ const StudentMarksManager = () => {
         [studentId]: {
           ...prev[studentId],
           id: data?.id || prev[studentId]?.id,
+          avg: avg != null ? String(avg) : '',
           hundred: hundred != null ? String(hundred) : '',
           identifier,
           saving: false,
@@ -260,12 +298,16 @@ const StudentMarksManager = () => {
     setMarks((prev) => {
       const cur = prev[studentId] || emptyRow();
       const next: MarkRow = { ...cur, [field]: value, dirty: true };
-      // Auto-compute 100% & identifier
-      const t = next.twenty.trim() === '' ? null : Number(next.twenty);
-      const e = next.eighty.trim() === '' ? null : Number(next.eighty);
+      const num = (v: string) => (v.trim() === '' ? null : Number(v));
+      // Auto-compute AVG from A1/A2/A3
+      const a1 = num(next.a1), a2 = num(next.a2), a3 = num(next.a3);
+      const avg = computeAvg(a1, a2, a3);
+      next.avg = avg != null && !isNaN(avg) ? String(avg) : '';
+      next.identifier = computeIdentifier(avg);
+      // Auto-compute 100%
+      const t = num(next.twenty), e = num(next.eighty);
       const h = (t != null || e != null) ? (t || 0) + (e || 0) : null;
       next.hundred = h != null && !isNaN(h) ? String(h) : '';
-      next.identifier = computeIdentifier(h);
       const updated = { ...prev, [studentId]: next };
       if (saveTimers.current[studentId]) clearTimeout(saveTimers.current[studentId]);
       saveTimers.current[studentId] = setTimeout(() => saveRow(studentId, next), 600);
@@ -398,7 +440,7 @@ const StudentMarksManager = () => {
               <thead className="bg-muted/50 sticky top-0 z-10">
                 <tr>
                   <th className="text-left font-medium px-3 py-2 border-b border-r min-w-[220px]">Student</th>
-                  {['A1', 'A2', 'A3', '20%', '80%', '100%', 'Identifier'].map((h) => (
+                  {['A1', 'A2', 'A3', 'AVG', '20%', '80%', '100%', 'Identifier'].map((h) => (
                     <th key={h} className="font-medium px-2 py-2 border-b border-r text-center whitespace-nowrap">
                       {h}
                     </th>
@@ -410,13 +452,17 @@ const StudentMarksManager = () => {
                   const row = marks[stu.id] || emptyRow();
                   const isAssigned = assignedStudentIds.has(stu.id);
                   const disabled = !isAssigned || !activeTermId;
-                  const inputCell = (field: keyof MarkRow, readOnly = false) => {
+                  const inputCell = (
+                    field: keyof MarkRow,
+                    opts: { readOnly?: boolean; min?: number; max?: number; step?: string } = {},
+                  ) => {
+                    const { readOnly = false, min = 0, max = 100, step = '0.1' } = opts;
                     const el = (
                       <Input
                         type="number"
-                        min={0}
-                        max={100}
-                        step="0.1"
+                        min={min}
+                        max={max}
+                        step={step}
                         disabled={disabled || readOnly}
                         readOnly={readOnly}
                         value={(row as any)[field] ?? ''}
@@ -445,12 +491,13 @@ const StudentMarksManager = () => {
                           <div className="text-xs text-muted-foreground">{stu.student_id}</div>
                         )}
                       </td>
-                      <td className="p-1 border-b border-r text-center">{inputCell('a1')}</td>
-                      <td className="p-1 border-b border-r text-center">{inputCell('a2')}</td>
-                      <td className="p-1 border-b border-r text-center">{inputCell('a3')}</td>
+                      <td className="p-1 border-b border-r text-center">{inputCell('a1', { min: 0, max: 3, step: '0.01' })}</td>
+                      <td className="p-1 border-b border-r text-center">{inputCell('a2', { min: 0, max: 3, step: '0.01' })}</td>
+                      <td className="p-1 border-b border-r text-center">{inputCell('a3', { min: 0, max: 3, step: '0.01' })}</td>
+                      <td className="p-1 border-b border-r text-center">{inputCell('avg', { readOnly: true, min: 0, max: 3, step: '0.01' })}</td>
                       <td className="p-1 border-b border-r text-center">{inputCell('twenty')}</td>
                       <td className="p-1 border-b border-r text-center">{inputCell('eighty')}</td>
-                      <td className="p-1 border-b border-r text-center">{inputCell('hundred', true)}</td>
+                      <td className="p-1 border-b border-r text-center">{inputCell('hundred', { readOnly: true })}</td>
                       <td className="p-1 border-b text-center text-sm font-medium">
                         {isAssigned ? (row.identifier || '—') : (
                           <Tooltip>
