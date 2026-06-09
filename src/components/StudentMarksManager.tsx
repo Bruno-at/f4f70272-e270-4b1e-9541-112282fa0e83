@@ -242,7 +242,8 @@ const StudentMarksManager = () => {
 
       const num = (v: string) => (v.trim() === '' ? null : Number(v));
       const a1 = num(row.a1), a2 = num(row.a2), a3 = num(row.a3);
-      const twenty = num(row.twenty), eighty = num(row.eighty);
+      const eighty = num(row.eighty);
+      const twenty = computeTwenty(a1, a2, a3);
       for (const [label, v] of [['A1', a1], ['A2', a2], ['A3', a3]] as const) {
         if (v != null && (isNaN(v) || v < 0 || v > 3)) {
           toast({ title: 'Invalid mark', description: `${label} must be between 0 and 3`, variant: 'destructive' });
@@ -250,7 +251,7 @@ const StudentMarksManager = () => {
           return;
         }
       }
-      for (const [label, v] of [['20%', twenty], ['80%', eighty]] as const) {
+      for (const [label, v] of [['80%', eighty]] as const) {
         if (v != null && (isNaN(v) || v < 0 || v > 100)) {
           toast({ title: 'Invalid mark', description: `${label} must be between 0 and 100`, variant: 'destructive' });
           setMarks((prev) => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
@@ -295,6 +296,7 @@ const StudentMarksManager = () => {
           ...prev[studentId],
           id: data?.id || prev[studentId]?.id,
           avg: avg != null ? String(avg) : '',
+          twenty: twenty != null ? String(twenty) : '',
           hundred: hundred != null ? String(hundred) : '',
           identifier,
           saving: false,
