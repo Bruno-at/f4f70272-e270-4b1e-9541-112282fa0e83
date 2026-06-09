@@ -217,9 +217,6 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.text('CLASS:', 85, yPosition + 9);
   pdf.text(student.classes?.class_name || 'S.1', 101, yPosition + 9);
   
-  pdf.setFont('helvetica', 'normal');
-  pdf.text(`Printed on ${new Date().toLocaleDateString('en-GB')}`, 150, yPosition + 9);
-  
   // Row 3
   pdf.setFont('helvetica', 'bold');
   pdf.text('House:', 12, yPosition + 14);
@@ -277,15 +274,11 @@ export const generateClassicTemplate = (data: TemplateData) => {
   //   + motto (6) + bottom safety margin (6)
   const BELOW_TABLE_HEIGHT = 7 + 9 + 15 + 39 + 21 + 13 + 6 + 6;
   const availableTableHeight = pageHeight - BELOW_TABLE_HEIGHT - yPosition;
-  const totalRows = Math.max(marks.length, 1);
+  const totalRows = Math.max(marks.length, 10);
   let rowHeight = availableTableHeight / totalRows;
   // Clamp so rows never get too tall or unreadable
   rowHeight = Math.max(4, Math.min(10, rowHeight));
   const rowFontSize = rowHeight < 4.5 ? 6 : rowHeight < 6 ? 7 : 8;
-  // Any unused vertical space gets pushed into the comments block
-  // so we never leave a blank bottom area.
-  const usedTableHeight = rowHeight * totalRows;
-  const extraSpace = Math.max(0, availableTableHeight - usedTableHeight);
 
   for (let i = 0; i < totalRows; i++) {
     const mark = marks[i];
@@ -299,7 +292,7 @@ export const generateClassicTemplate = (data: TemplateData) => {
     pdf.setFont('helvetica', 'normal');
 
     const rowData = mark ? [
-      mark.subject_code || '',
+      (mark.subjects?.subject_code || mark.subject_code || ''),
       mark.subjects?.subject_name || 'Unknown',
       mark.a1_score?.toFixed(0) || '',
       mark.a2_score?.toFixed(0) || '',
@@ -448,8 +441,8 @@ export const generateClassicTemplate = (data: TemplateData) => {
   
   // Comments + Signatures Section - single outer border, no internal lines
   const commentsColor = hexToRgb(fieldColors.comments);
-  // Absorb any leftover vertical space so the page is always filled.
-  const commentRowH = 18 + extraSpace / 2;
+  // Fixed comment row height — table absorbs extra space, not comments.
+  const commentRowH = 18;
   const totalCommentsH = commentRowH * 2;
   const sigColX = 145;
   
