@@ -478,7 +478,7 @@ export const generateClassicTemplate = (data: TemplateData) => {
     } catch (error) { console.log('Could not add class teacher signature'); }
   } else {
     pdf.setDrawColor(80, 80, 80);
-    pdf.line(sigColX + 5, yPosition + 15, pageWidth - 15, yPosition + 15);
+    pdf.line(sigColX + 5, yPosition + commentRowH - 3, pageWidth - 15, yPosition + commentRowH - 3);
   }
   
   yPosition += commentRowH;
@@ -502,7 +502,7 @@ export const generateClassicTemplate = (data: TemplateData) => {
     } catch (error) { console.log('Could not add headteacher signature'); }
   } else {
     pdf.setDrawColor(80, 80, 80);
-    pdf.line(sigColX + 5, yPosition + 15, pageWidth - 15, yPosition + 15);
+    pdf.line(sigColX + 5, yPosition + commentRowH - 3, pageWidth - 15, yPosition + commentRowH - 3);
   }
   
   yPosition += commentRowH + 3;
