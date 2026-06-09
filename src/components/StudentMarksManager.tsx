@@ -510,7 +510,7 @@ const StudentMarksManager = () => {
                       <td className="p-1 border-b border-r text-center">{inputCell('a2', { min: 0, max: 3, step: '0.01' })}</td>
                       <td className="p-1 border-b border-r text-center">{inputCell('a3', { min: 0, max: 3, step: '0.01' })}</td>
                       <td className="p-1 border-b border-r text-center">{inputCell('avg', { readOnly: true, min: 0, max: 3, step: '0.01' })}</td>
-                      <td className="p-1 border-b border-r text-center">{inputCell('twenty')}</td>
+                      <td className="p-1 border-b border-r text-center">{inputCell('twenty', { readOnly: true })}</td>
                       <td className="p-1 border-b border-r text-center">{inputCell('eighty')}</td>
                       <td className="p-1 border-b border-r text-center">{inputCell('hundred', { readOnly: true })}</td>
                       <td className="p-1 border-b text-center text-sm font-medium">
