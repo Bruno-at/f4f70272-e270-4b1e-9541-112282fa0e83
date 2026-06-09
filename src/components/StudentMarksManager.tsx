@@ -37,16 +37,26 @@ const computeAvg = (a1: number | null, a2: number | null, a3: number | null): nu
 
 const computeIdentifier = (avg: number | null): string => {
   if (avg == null || isNaN(avg)) return '';
-  if (avg < 1.5) return 'Basic';
-  if (avg < 2.5) return 'Moderate';
-  return 'Outstanding';
+  if (avg >= 2.5) return 'Exceptional';
+  if (avg >= 2.0) return 'Outstanding';
+  if (avg >= 1.5) return 'Satisfactory';
+  if (avg >= 1.0) return 'Basic';
+  return 'Elementary';
 };
 
 const identifierCode = (label: string): number | null => {
-  if (label === 'Basic') return 1;
-  if (label === 'Moderate') return 2;
-  if (label === 'Outstanding') return 3;
+  if (label === 'Elementary') return 1;
+  if (label === 'Basic') return 2;
+  if (label === 'Satisfactory') return 3;
+  if (label === 'Outstanding') return 4;
+  if (label === 'Exceptional') return 5;
   return null;
+};
+
+const computeTwenty = (a1: number | null, a2: number | null, a3: number | null): number | null => {
+  if (a1 == null && a2 == null && a3 == null) return null;
+  const sum = (a1 || 0) + (a2 || 0) + (a3 || 0);
+  return Math.round(((sum / 9) * 20) * 10) / 10;
 };
 
 const emptyRow = (): MarkRow => ({
