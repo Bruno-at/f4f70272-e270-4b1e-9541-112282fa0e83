@@ -37,16 +37,26 @@ const computeAvg = (a1: number | null, a2: number | null, a3: number | null): nu
 
 const computeIdentifier = (avg: number | null): string => {
   if (avg == null || isNaN(avg)) return '';
-  if (avg < 1.5) return 'Basic';
-  if (avg < 2.5) return 'Moderate';
-  return 'Outstanding';
+  if (avg >= 2.5) return 'Exceptional';
+  if (avg >= 2.0) return 'Outstanding';
+  if (avg >= 1.5) return 'Satisfactory';
+  if (avg >= 1.0) return 'Basic';
+  return 'Elementary';
 };
 
 const identifierCode = (label: string): number | null => {
-  if (label === 'Basic') return 1;
-  if (label === 'Moderate') return 2;
-  if (label === 'Outstanding') return 3;
+  if (label === 'Elementary') return 1;
+  if (label === 'Basic') return 2;
+  if (label === 'Satisfactory') return 3;
+  if (label === 'Outstanding') return 4;
+  if (label === 'Exceptional') return 5;
   return null;
+};
+
+const computeTwenty = (a1: number | null, a2: number | null, a3: number | null): number | null => {
+  if (a1 == null && a2 == null && a3 == null) return null;
+  const sum = (a1 || 0) + (a2 || 0) + (a3 || 0);
+  return Math.round(((sum / 9) * 20) * 10) / 10;
 };
 
 const emptyRow = (): MarkRow => ({
@@ -232,7 +242,8 @@ const StudentMarksManager = () => {
 
       const num = (v: string) => (v.trim() === '' ? null : Number(v));
       const a1 = num(row.a1), a2 = num(row.a2), a3 = num(row.a3);
-      const twenty = num(row.twenty), eighty = num(row.eighty);
+      const eighty = num(row.eighty);
+      const twenty = computeTwenty(a1, a2, a3);
       for (const [label, v] of [['A1', a1], ['A2', a2], ['A3', a3]] as const) {
         if (v != null && (isNaN(v) || v < 0 || v > 3)) {
           toast({ title: 'Invalid mark', description: `${label} must be between 0 and 3`, variant: 'destructive' });
@@ -240,7 +251,7 @@ const StudentMarksManager = () => {
           return;
         }
       }
-      for (const [label, v] of [['20%', twenty], ['80%', eighty]] as const) {
+      for (const [label, v] of [['80%', eighty]] as const) {
         if (v != null && (isNaN(v) || v < 0 || v > 100)) {
           toast({ title: 'Invalid mark', description: `${label} must be between 0 and 100`, variant: 'destructive' });
           setMarks((prev) => ({ ...prev, [studentId]: { ...prev[studentId], saving: false } }));
@@ -285,6 +296,7 @@ const StudentMarksManager = () => {
           ...prev[studentId],
           id: data?.id || prev[studentId]?.id,
           avg: avg != null ? String(avg) : '',
+          twenty: twenty != null ? String(twenty) : '',
           hundred: hundred != null ? String(hundred) : '',
           identifier,
           saving: false,
@@ -304,8 +316,11 @@ const StudentMarksManager = () => {
       const avg = computeAvg(a1, a2, a3);
       next.avg = avg != null && !isNaN(avg) ? String(avg) : '';
       next.identifier = computeIdentifier(avg);
+      // Auto-compute 20% from A1/A2/A3
+      const t = computeTwenty(a1, a2, a3);
+      next.twenty = t != null ? String(t) : '';
       // Auto-compute 100%
-      const t = num(next.twenty), e = num(next.eighty);
+      const e = num(next.eighty);
       const h = (t != null || e != null) ? (t || 0) + (e || 0) : null;
       next.hundred = h != null && !isNaN(h) ? String(h) : '';
       const updated = { ...prev, [studentId]: next };
@@ -495,7 +510,7 @@ const StudentMarksManager = () => {
                       <td className="p-1 border-b border-r text-center">{inputCell('a2', { min: 0, max: 3, step: '0.01' })}</td>
                       <td className="p-1 border-b border-r text-center">{inputCell('a3', { min: 0, max: 3, step: '0.01' })}</td>
                       <td className="p-1 border-b border-r text-center">{inputCell('avg', { readOnly: true, min: 0, max: 3, step: '0.01' })}</td>
-                      <td className="p-1 border-b border-r text-center">{inputCell('twenty')}</td>
+                      <td className="p-1 border-b border-r text-center">{inputCell('twenty', { readOnly: true })}</td>
                       <td className="p-1 border-b border-r text-center">{inputCell('eighty')}</td>
                       <td className="p-1 border-b border-r text-center">{inputCell('hundred', { readOnly: true })}</td>
                       <td className="p-1 border-b text-center text-sm font-medium">
