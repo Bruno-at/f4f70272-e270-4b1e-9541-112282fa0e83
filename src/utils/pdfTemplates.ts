@@ -256,8 +256,9 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.setFont('helvetica', 'bold');
   
   const headers = ['Code', 'Subject', 'A1', 'A2', 'A3', 'AVG', '20%', '80%', '100%', 'Ident', 'Grade', 'Remarks', 'TR'];
-  const colX = [11, 24, 52, 60, 68, 76, 85, 94, 103, 113, 124, 138, 190];
-  const colW = [13, 28, 8, 8, 8, 9, 9, 9, 10, 11, 14, 52, 10];
+  // Uniform 9mm cells for A1..Ident and TR. Wider Code column, smaller Remarks.
+  const colX = [11, 29, 59, 68, 77, 86, 95, 104, 113, 122, 131, 143, 192];
+  const colW = [18, 30, 9,  9,  9,  9,  9,  9,   9,   9,   12,  49,  9];
   
   headers.forEach((header, index) => {
     pdf.text(header, colX[index], yPosition + 4.5);
@@ -324,7 +325,7 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.setLineWidth(0.2);
   pdf.rect(10, tableStartY, pageWidth - 20, yPosition - tableStartY);
   
-  const verticalX = [10, 23, 51, 59, 67, 75, 84, 93, 102, 112, 123, 137, 189, pageWidth - 10];
+  const verticalX = [10, 28, 58, 67, 76, 85, 94, 103, 112, 121, 130, 142, 191, pageWidth - 10];
   verticalX.forEach(x => {
     pdf.line(x, tableStartY, x, yPosition);
   });
