@@ -258,7 +258,7 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.setFontSize(7);
   pdf.setFont('helvetica', 'bold');
   
-  const headers = ['Code', 'Subject', 'A1', 'A2', 'A3', 'AVG', '20%', '80%', '100%', 'Ident', 'GRADE', 'Remarks/Descriptors', 'TR'];
+  const headers = ['Code', 'Subject', 'A1', 'A2', 'A3', 'AVG', '20%', '80%', '100%', 'Ident', 'Grade', 'Remarks', 'TR'];
   const colX = [11, 24, 52, 60, 68, 76, 85, 94, 103, 113, 124, 138, 190];
   const colW = [13, 28, 8, 8, 8, 9, 9, 9, 10, 11, 14, 52, 10];
   
@@ -268,12 +268,24 @@ export const generateClassicTemplate = (data: TemplateData) => {
   
   yPosition += 6;
   
-  // Table rows — dynamic: always render at least 10 rows, shrink if more
-  const MIN_ROWS = 10;
-  const TABLE_TARGET_HEIGHT = 55; // mm — ~10 rows * 5.5mm
-  const totalRows = Math.max(marks.length, MIN_ROWS);
-  const rowHeight = Math.min(5.5, TABLE_TARGET_HEIGHT / totalRows);
-  const rowFontSize = rowHeight < 4 ? 6 : 7;
+  // Dynamic table sizing: fill all available vertical space between
+  // the table header and the AVERAGE row so the report always
+  // occupies the full A4 page regardless of subject count.
+  // Fixed heights of everything BELOW the subject rows (mm):
+  //   AVERAGE row (7) + overall stats (9) + grade key table (15)
+  //   + comments block (39) + key-to-terms (21) + footer (13)
+  //   + motto (6) + bottom safety margin (6)
+  const BELOW_TABLE_HEIGHT = 7 + 9 + 15 + 39 + 21 + 13 + 6 + 6;
+  const availableTableHeight = pageHeight - BELOW_TABLE_HEIGHT - yPosition;
+  const totalRows = Math.max(marks.length, 1);
+  let rowHeight = availableTableHeight / totalRows;
+  // Clamp so rows never get too tall or unreadable
+  rowHeight = Math.max(4, Math.min(10, rowHeight));
+  const rowFontSize = rowHeight < 4.5 ? 6 : rowHeight < 6 ? 7 : 8;
+  // Any unused vertical space gets pushed into the comments block
+  // so we never leave a blank bottom area.
+  const usedTableHeight = rowHeight * totalRows;
+  const extraSpace = Math.max(0, availableTableHeight - usedTableHeight);
 
   for (let i = 0; i < totalRows; i++) {
     const mark = marks[i];
@@ -436,7 +448,8 @@ export const generateClassicTemplate = (data: TemplateData) => {
   
   // Comments + Signatures Section - single outer border, no internal lines
   const commentsColor = hexToRgb(fieldColors.comments);
-  const commentRowH = 18;
+  // Absorb any leftover vertical space so the page is always filled.
+  const commentRowH = 18 + extraSpace / 2;
   const totalCommentsH = commentRowH * 2;
   const sigColX = 145;
   
@@ -465,7 +478,7 @@ export const generateClassicTemplate = (data: TemplateData) => {
     } catch (error) { console.log('Could not add class teacher signature'); }
   } else {
     pdf.setDrawColor(80, 80, 80);
-    pdf.line(sigColX + 5, yPosition + 15, pageWidth - 15, yPosition + 15);
+    pdf.line(sigColX + 5, yPosition + commentRowH - 3, pageWidth - 15, yPosition + commentRowH - 3);
   }
   
   yPosition += commentRowH;
@@ -489,7 +502,7 @@ export const generateClassicTemplate = (data: TemplateData) => {
     } catch (error) { console.log('Could not add headteacher signature'); }
   } else {
     pdf.setDrawColor(80, 80, 80);
-    pdf.line(sigColX + 5, yPosition + 15, pageWidth - 15, yPosition + 15);
+    pdf.line(sigColX + 5, yPosition + commentRowH - 3, pageWidth - 15, yPosition + commentRowH - 3);
   }
   
   yPosition += commentRowH + 3;
