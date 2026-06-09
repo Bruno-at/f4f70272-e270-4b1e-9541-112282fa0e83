@@ -316,8 +316,11 @@ const StudentMarksManager = () => {
       const avg = computeAvg(a1, a2, a3);
       next.avg = avg != null && !isNaN(avg) ? String(avg) : '';
       next.identifier = computeIdentifier(avg);
+      // Auto-compute 20% from A1/A2/A3
+      const t = computeTwenty(a1, a2, a3);
+      next.twenty = t != null ? String(t) : '';
       // Auto-compute 100%
-      const t = num(next.twenty), e = num(next.eighty);
+      const e = num(next.eighty);
       const h = (t != null || e != null) ? (t || 0) + (e || 0) : null;
       next.hundred = h != null && !isNaN(h) ? String(h) : '';
       const updated = { ...prev, [studentId]: next };
