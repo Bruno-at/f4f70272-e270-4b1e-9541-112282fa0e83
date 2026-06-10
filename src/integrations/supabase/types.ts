@@ -463,30 +463,42 @@ export type Database = {
       }
       profiles: {
         Row: {
+          contact_phone: string | null
           created_at: string | null
+          email: string | null
           full_name: string
           id: string
+          photo_url: string | null
           role: Database["public"]["Enums"]["app_role"]
           school_id: string | null
           signature_url: string | null
+          teacher_code: string | null
           updated_at: string | null
         }
         Insert: {
+          contact_phone?: string | null
           created_at?: string | null
+          email?: string | null
           full_name: string
           id: string
+          photo_url?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           school_id?: string | null
           signature_url?: string | null
+          teacher_code?: string | null
           updated_at?: string | null
         }
         Update: {
+          contact_phone?: string | null
           created_at?: string | null
+          email?: string | null
           full_name?: string
           id?: string
+          photo_url?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           school_id?: string | null
           signature_url?: string | null
+          teacher_code?: string | null
           updated_at?: string | null
         }
         Relationships: [
