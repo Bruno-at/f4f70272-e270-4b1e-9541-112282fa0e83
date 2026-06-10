@@ -20,7 +20,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import {
-  UserPlus, Users, Edit, Trash2, Link2, Eye, Search, GraduationCap, BookOpen, UserCheck, UserX, Upload,
+  UserPlus, Users, Edit, Trash2, Link2, Eye, Search, GraduationCap, BookOpen, UserX,
 } from 'lucide-react';
 
 interface Teacher {
