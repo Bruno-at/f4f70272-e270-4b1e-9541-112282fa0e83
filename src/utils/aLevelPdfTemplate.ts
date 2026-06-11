@@ -147,9 +147,9 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   pdf.setFont('helvetica', template === 'modern' ? 'italic' : 'normal');
   pdf.setTextColor(0, 0, 0);
   if (template === 'minimal') {
-    pdf.text(`TEL: ${schoolInfo.telephone || ''} | EMAIL: ${schoolInfo.email || ''}`, pageWidth / 2, y + 12, { align: 'center' });
+    pdf.text(`${schoolInfo.location || ''} | ${schoolInfo.telephone || ''} | ${schoolInfo.email || ''}`, pageWidth / 2, y + 12, { align: 'center' });
   } else {
-    pdf.text(`PO BOX: ${schoolInfo.po_box || ''}`, pageWidth / 2, y + 11, { align: 'center' });
+    pdf.text(`P.O BOX ${schoolInfo.po_box || ''}, ${schoolInfo.location || ''}`, pageWidth / 2, y + 11, { align: 'center' });
     pdf.text(`EMAIL: ${schoolInfo.email || ''}`, pageWidth / 2, y + 15, { align: 'center' });
     pdf.text(`CONTACTS: ${schoolInfo.telephone || ''}`, pageWidth / 2, y + 19, { align: 'center' });
   }
