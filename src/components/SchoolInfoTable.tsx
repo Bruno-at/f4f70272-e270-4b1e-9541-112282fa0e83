@@ -94,8 +94,7 @@ const SchoolInfoTable = () => {
               <TableRow><TableCell className="font-medium">School Name</TableCell><TableCell>{schoolData.school_name}</TableCell></TableRow>
               <TableRow><TableCell className="font-medium">School Code</TableCell><TableCell>{schoolData.slug}</TableCell></TableRow>
               {schoolData.motto && <TableRow><TableCell className="font-medium">Motto</TableCell><TableCell>{schoolData.motto}</TableCell></TableRow>}
-              {schoolData.location && <TableRow><TableCell className="font-medium">Location</TableCell><TableCell>{schoolData.location}</TableCell></TableRow>}
-              {schoolData.po_box && <TableRow><TableCell className="font-medium">P.O. Box</TableCell><TableCell>{schoolData.po_box}</TableCell></TableRow>}
+              {schoolData.po_box && <TableRow><TableCell className="font-medium">PO BOX</TableCell><TableCell>{schoolData.po_box}</TableCell></TableRow>}
               {schoolData.telephone && <TableRow><TableCell className="font-medium">Telephone</TableCell><TableCell>{schoolData.telephone}</TableCell></TableRow>}
               {schoolData.email && <TableRow><TableCell className="font-medium">Email</TableCell><TableCell>{schoolData.email}</TableCell></TableRow>}
               {schoolData.website && <TableRow><TableCell className="font-medium">Website</TableCell><TableCell><a href={schoolData.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{schoolData.website}</a></TableCell></TableRow>}

@@ -170,13 +170,12 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(0, 0, 0);
   pdf.setFontSize(8);
-  pdf.text(`Location: ${schoolInfo.location || 'Kibizi'}`, pageWidth / 2, yPosition + 17, { align: 'center' });
-  pdf.text(`P.O BOX: ${schoolInfo.po_box || '104 Kampala'}`, pageWidth / 2, yPosition + 21, { align: 'center' });
-  pdf.text(`TEL: ${schoolInfo.telephone || '+256705746484'}`, pageWidth / 2, yPosition + 25, { align: 'center' });
-  
+  pdf.text(`PO BOX: ${schoolInfo.po_box || '104 Kampala'}`, pageWidth / 2, yPosition + 17, { align: 'center' });
+  pdf.text(`TEL: ${schoolInfo.telephone || '+256705746484'}`, pageWidth / 2, yPosition + 21, { align: 'center' });
+
   pdf.setTextColor(80, 80, 80);
   pdf.setFontSize(7);
-  pdf.text(`Email: ${schoolInfo.email || 'mugabifood@gmail.com'} | Website: ${schoolInfo.website || 'mugabifood@gmail.com'}`, pageWidth / 2, yPosition + 29, { align: 'center' });
+  pdf.text(`Email: ${schoolInfo.email || 'mugabifood@gmail.com'} | Website: ${schoolInfo.website || 'mugabifood@gmail.com'}`, pageWidth / 2, yPosition + 25, { align: 'center' });
   
   yPosition = 47;
   
