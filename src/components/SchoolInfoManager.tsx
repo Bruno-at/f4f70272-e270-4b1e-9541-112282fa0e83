@@ -159,12 +159,8 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
             <Input id="motto" value={formData.motto} onChange={(e) => handleInputChange('motto', e.target.value)} placeholder="Enter school motto" />
           </div>
           <div>
-            <Label htmlFor="location">Location</Label>
-            <Input id="location" value={formData.location} onChange={(e) => handleInputChange('location', e.target.value)} placeholder="Enter school location" />
-          </div>
-          <div>
-            <Label htmlFor="po_box">P.O. Box</Label>
-            <Input id="po_box" value={formData.po_box} onChange={(e) => handleInputChange('po_box', e.target.value)} placeholder="Enter P.O. Box" />
+            <Label htmlFor="po_box">PO BOX</Label>
+            <Input id="po_box" value={formData.po_box} onChange={(e) => handleInputChange('po_box', e.target.value)} placeholder="PO BOX, 253, Kampala" />
           </div>
         </div>
         <div className="space-y-4">
