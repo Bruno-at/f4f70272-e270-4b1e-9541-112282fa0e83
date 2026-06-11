@@ -117,82 +117,68 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.rect(0, 0, pageWidth, pageHeight, 'F');
   
   // Thin outer border
-  // Thin blue outer border
-  pdf.setDrawColor(30, 64, 175);
+  pdf.setDrawColor(120, 120, 120);
   pdf.setLineWidth(0.3);
   pdf.rect(5, 5, pageWidth - 10, pageHeight - 10);
-
-  // ===== HEADER (≈15% of A4 height ≈ 44mm) =====
-  const headerTop = 7;
-  const headerHeight = 38;
-  const headerBottom = headerTop + headerHeight;
-
-  // Thin blue header frame
-  pdf.setDrawColor(30, 64, 175);
+  
+  let yPosition = 12;
+  
+  // Header Section
+  // Left: School logo placeholder
+  const logoBoxSize = 22;
+  pdf.setDrawColor(120, 120, 120);
   pdf.setLineWidth(0.2);
-  pdf.rect(7, headerTop, pageWidth - 14, headerHeight);
-
-  // Left: School logo
-  const logoBoxSize = 26;
-  const logoX = 10;
-  const logoY = headerTop + (headerHeight - logoBoxSize) / 2;
-  pdf.setDrawColor(30, 64, 175);
-  pdf.setLineWidth(0.2);
-  pdf.rect(logoX, logoY, logoBoxSize, logoBoxSize);
+  pdf.rect(10, yPosition, logoBoxSize, logoBoxSize);
+  
   if (schoolInfo.logo_url && schoolInfo.logo_url.startsWith('data:image')) {
     try {
-      pdf.addImage(schoolInfo.logo_url, 'PNG', logoX + 0.5, logoY + 0.5, logoBoxSize - 1, logoBoxSize - 1);
-    } catch (e) { console.log('Could not add logo'); }
+      pdf.addImage(schoolInfo.logo_url, 'PNG', 10.5, yPosition + 0.5, logoBoxSize - 1, logoBoxSize - 1);
+    } catch (error) {
+      console.log('Could not add logo');
+    }
   }
-
-  // Right: Student photo
-  const photoBoxW = 24;
+  
+  // Right: Student photo demarcation box
+  const photoBoxX = pageWidth - 38;
+  const photoBoxY = yPosition;
+  const photoBoxW = 28;
   const photoBoxH = 30;
-  const photoBoxX = pageWidth - 10 - photoBoxW;
-  const photoBoxY = headerTop + (headerHeight - photoBoxH) / 2;
-  pdf.setDrawColor(30, 64, 175);
+  
+  pdf.setDrawColor(120, 120, 120);
   pdf.setLineWidth(0.2);
   pdf.rect(photoBoxX, photoBoxY, photoBoxW, photoBoxH);
+  
   if (student.photo_url && student.photo_url.startsWith('data:image')) {
     try {
       pdf.addImage(student.photo_url, 'PNG', photoBoxX + 0.5, photoBoxY + 0.5, photoBoxW - 1, photoBoxH - 1);
-    } catch (e) { console.log('Could not add photo'); }
+    } catch (error) {
+      console.log('Could not add photo');
+    }
   }
-
-  // Center block
-  const centerX = pageWidth / 2;
-
-  // School name — bold deep blue
-  pdf.setTextColor(30, 64, 175);
+  
+  // Center: School details
+  pdf.setTextColor(50, 50, 50);
+  pdf.setFontSize(18);
   pdf.setFont('helvetica', 'bold');
-  pdf.setFontSize(22);
-  pdf.text(schoolInfo.school_name.toUpperCase(), centerX, headerTop + 11, { align: 'center' });
-
-  // Motto — red italic
-  pdf.setTextColor(200, 30, 30);
+  pdf.text(schoolInfo.school_name.toUpperCase(), pageWidth / 2, yPosition + 7, { align: 'center' });
+  
+  pdf.setFontSize(9);
   pdf.setFont('helvetica', 'italic');
-  pdf.setFontSize(10);
-  pdf.text(`"${schoolInfo.motto || ''}"`, centerX, headerTop + 18, { align: 'center' });
-
-  // P.O. Box line — black
-  pdf.setTextColor(0, 0, 0);
+  pdf.setTextColor(80, 80, 80);
+  pdf.text(`"${schoolInfo.motto || 'Mbizi we are'}"`, pageWidth / 2, yPosition + 12, { align: 'center' });
+  
   pdf.setFont('helvetica', 'normal');
-  pdf.setFontSize(10);
-  pdf.text(`P.O. Box ${schoolInfo.po_box || ''}`, centerX, headerTop + 25, { align: 'center' });
-
-  // Contact line: Tel | Email | Website (single centered line)
-  pdf.setFontSize(8.5);
-  const tel = schoolInfo.telephone || '';
-  const email = schoolInfo.email || '';
-  const website = schoolInfo.website || '';
-  const contactParts = [
-    tel ? `Tel: ${tel}` : '',
-    email ? `Email: ${email}` : '',
-    website ? `Website: ${website}` : '',
-  ].filter(Boolean);
-  pdf.text(contactParts.join('   |   '), centerX, headerTop + 32, { align: 'center' });
-
-  let yPosition = headerBottom + 3;
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(8);
+  pdf.text(`Location: ${schoolInfo.location || 'Kibizi'}`, pageWidth / 2, yPosition + 17, { align: 'center' });
+  pdf.text(`P.O BOX: ${schoolInfo.po_box || '104 Kampala'}`, pageWidth / 2, yPosition + 21, { align: 'center' });
+  pdf.text(`TEL: ${schoolInfo.telephone || '+256705746484'}`, pageWidth / 2, yPosition + 25, { align: 'center' });
+  
+  pdf.setTextColor(80, 80, 80);
+  pdf.setFontSize(7);
+  pdf.text(`Email: ${schoolInfo.email || 'mugabifood@gmail.com'} | Website: ${schoolInfo.website || 'mugabifood@gmail.com'}`, pageWidth / 2, yPosition + 29, { align: 'center' });
+  
+  yPosition = 47;
   
   // Title Section
   pdf.setTextColor(50, 50, 50);
