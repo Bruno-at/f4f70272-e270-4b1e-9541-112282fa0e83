@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "School members can view their school's photos" ON storage.objects;

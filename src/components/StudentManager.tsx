@@ -89,13 +89,9 @@ const StudentManager = () => {
       throw uploadError;
     }
 
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-      .from('student-photos')
-      .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
-
-    if (signedUrlError) throw signedUrlError;
-
-    return signedUrlData.signedUrl;
+    // Store only the storage path. Short-lived signed URLs are generated on-demand
+    // at display time to avoid long-lived URLs that bypass RLS.
+    return filePath;
   };
 
   const handleEdit = (student: Student) => {
