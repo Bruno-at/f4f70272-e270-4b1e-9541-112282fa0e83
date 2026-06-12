@@ -1183,6 +1183,10 @@ export type Database = {
         Args: { p_full_name: string; p_user_id: string }
         Returns: undefined
       }
+      current_user_has_role: {
+        Args: { _role: Database["public"]["Enums"]["app_role"] }
+        Returns: boolean
+      }
       get_user_school_id: { Args: never; Returns: string }
       has_role: {
         Args: {
