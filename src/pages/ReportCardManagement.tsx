@@ -737,7 +737,7 @@ const ReportCardManagement = () => {
         } else {
           const { data: signedData } = await supabase.storage
             .from('student-photos')
-            .createSignedUrl(stampPath, 31536000);
+            .createSignedUrl(stampPath, 3600);
           stampPreviewUrl = signedData?.signedUrl || null;
         }
       }
@@ -812,7 +812,7 @@ const ReportCardManagement = () => {
         // Storage path - get signed URL first, then convert to base64
         const { data: signedData } = await supabase.storage
           .from('student-photos')
-          .createSignedUrl(stampPath, 31536000);
+          .createSignedUrl(stampPath, 3600);
         if (signedData?.signedUrl) {
           stampBase64 = await urlToBase64(signedData.signedUrl);
         }
