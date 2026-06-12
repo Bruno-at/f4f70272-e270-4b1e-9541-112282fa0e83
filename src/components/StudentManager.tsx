@@ -12,6 +12,7 @@ import { Upload, Plus, Download, FileSpreadsheet } from 'lucide-react';
 import Papa from 'papaparse';
 import { saveAs } from 'file-saver';
 import StudentList from './StudentList';
+import { resolvePhotoUrl } from '@/utils/photoUrl';
 
 const StudentManager = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -89,13 +90,9 @@ const StudentManager = () => {
       throw uploadError;
     }
 
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-      .from('student-photos')
-      .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
-
-    if (signedUrlError) throw signedUrlError;
-
-    return signedUrlData.signedUrl;
+    // Store only the storage path. Short-lived signed URLs are generated on-demand
+    // at display time to avoid long-lived URLs that bypass RLS.
+    return filePath;
   };
 
   const handleEdit = (student: Student) => {
@@ -109,7 +106,10 @@ const StudentManager = () => {
       age: student.age?.toString() || '',
       photo_url: student.photo_url || ''
     });
-    setPhotoPreview(student.photo_url || '');
+    setPhotoPreview('');
+    if (student.photo_url) {
+      resolvePhotoUrl(student.photo_url).then((u) => setPhotoPreview(u || ''));
+    }
     setActiveTab('add');
   };
 

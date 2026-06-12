@@ -68,7 +68,7 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
           if (path && !path.startsWith('data:') && !path.startsWith('http')) {
             const { data: signedData } = await supabase.storage
               .from('student-photos')
-              .createSignedUrl(path, 31536000);
+              .createSignedUrl(path, 3600);
             if (signedData?.signedUrl) previews[field] = signedData.signedUrl;
           } else if (path) {
             previews[field] = path;
