@@ -18,21 +18,13 @@ type ProfileRecord = {
 };
 
 const REMEMBERED_SCHOOL_CODE_KEY = 'remembered-school-code';
-const VALID_ROLES: AppRole[] = ['admin', 'teacher', 'student', 'headteacher'];
 
 const normalizeSchoolCode = (value: string) => value.trim().toLowerCase();
 
-const getProfileSeedData = (user: User) => {
-  const metadata = user.user_metadata ?? {};
-  const role = VALID_ROLES.includes(metadata.role as AppRole) ? (metadata.role as AppRole) : 'teacher';
-  const schoolId = typeof metadata.school_id === 'string' ? metadata.school_id : null;
-  const fullName = typeof metadata.full_name === 'string' && metadata.full_name.trim().length > 0
-    ? metadata.full_name.trim()
-    : user.email ?? 'User';
-
-  return { fullName, role, schoolId };
-};
-
+// Profiles are created server-side by the handle_new_user trigger with a safe
+// default (role='teacher', school_id=NULL). Role/school assignment happens via
+// the trusted register_school / assign_teacher_to_school RPCs — never from
+// client-supplied auth metadata. This helper only reads the existing profile.
 const ensureUserProfile = async (user: User): Promise<ProfileRecord | null> => {
   const { data: existingProfile, error: profileError } = await supabase
     .from('profiles')
@@ -41,36 +33,7 @@ const ensureUserProfile = async (user: User): Promise<ProfileRecord | null> => {
     .maybeSingle();
 
   if (profileError) throw profileError;
-  if (existingProfile?.school_id) return existingProfile;
-
-  const { fullName, role, schoolId } = getProfileSeedData(user);
-  if (!schoolId) {
-    return existingProfile ?? null;
-  }
-
-  if (existingProfile) {
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({ full_name: fullName, role, school_id: schoolId })
-      .eq('id', user.id);
-
-    if (updateError) throw updateError;
-  } else {
-    const { error: insertError } = await supabase
-      .from('profiles')
-      .insert({ id: user.id, full_name: fullName, role, school_id: schoolId });
-
-    if (insertError) throw insertError;
-  }
-
-  const { data: repairedProfile, error: repairedProfileError } = await supabase
-    .from('profiles')
-    .select('school_id, role')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (repairedProfileError) throw repairedProfileError;
-  return repairedProfile;
+  return existingProfile ?? null;
 };
 
 const Login = () => {
@@ -166,12 +129,17 @@ const Login = () => {
 
       const profile = await ensureUserProfile(authData.user);
       if (!profile?.school_id) {
-        await supabase.auth.signOut();
+        // No school yet — this user hasn't finished setup. Send them to the
+        // school setup screen instead of dropping the session.
         toast({
-          title: 'Account setup incomplete',
-          description: 'We could not load your school account. Please contact support.',
-          variant: 'destructive',
+          title: 'Finish school setup',
+          description: 'Your account is not linked to a school yet. Create one to continue.',
         });
+        if (rememberSchoolCode && normalizedSchoolCode) {
+          window.localStorage.setItem(REMEMBERED_SCHOOL_CODE_KEY, normalizedSchoolCode);
+        }
+        await refreshSchool();
+        navigate('/setup-school', { replace: true });
         return;
       }
 

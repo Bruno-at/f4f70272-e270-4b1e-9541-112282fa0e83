@@ -83,16 +83,15 @@ const TeachersManager = () => {
       // Preserve current admin session
       const { data: { session: currentSession } } = await supabase.auth.getSession();
 
-      const { error } = await supabase.auth.signUp({
+      // Sign the new user up without trusting client-supplied role/school
+      // metadata — the server-side trigger creates a safe default profile
+      // (role='teacher', school_id=NULL).
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/login`,
-          data: {
-            full_name: fullName.trim(),
-            role: 'teacher',
-            school_id: schoolId,
-          },
+          data: { full_name: fullName.trim() },
         },
       });
       if (error) throw error;
@@ -103,6 +102,22 @@ const TeachersManager = () => {
           access_token: currentSession.access_token,
           refresh_token: currentSession.refresh_token,
         });
+      }
+
+      // Attach the new user to this school via the trusted admin RPC.
+      const newUserId = signUpData.user?.id;
+      if (newUserId) {
+        const { error: assignError } = await supabase.rpc('assign_teacher_to_school', {
+          p_user_id: newUserId,
+          p_full_name: fullName.trim(),
+        });
+        if (assignError) {
+          toast({
+            title: 'Teacher created but not linked',
+            description: `${assignError.message}. They can finish setup after confirming their email.`,
+            variant: 'destructive',
+          });
+        }
       }
 
       toast({
@@ -131,10 +146,11 @@ const TeachersManager = () => {
   const saveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editing) return;
-    const { error } = await supabase
-      .from('profiles')
-      .update({ full_name: editName.trim(), role: editRole })
-      .eq('id', editing.id);
+    const { error } = await supabase.rpc('update_school_member_profile', {
+      p_user_id: editing.id,
+      p_full_name: editName.trim(),
+      p_role: editRole,
+    });
     if (error) {
       toast({ title: 'Update failed', description: error.message, variant: 'destructive' });
       return;
@@ -150,11 +166,8 @@ const TeachersManager = () => {
     // Detach assignments first
     await supabase.from('teacher_subjects').delete().eq('teacher_id', t.id);
     await supabase.from('classes').update({ class_teacher_id: null }).eq('class_teacher_id', t.id);
-    // Detach from school (cannot delete auth user from client)
-    const { error } = await supabase
-      .from('profiles')
-      .update({ school_id: null })
-      .eq('id', t.id);
+    // Detach from school via trusted admin RPC (cannot delete auth user from client)
+    const { error } = await supabase.rpc('remove_school_member', { p_user_id: t.id });
     if (error) {
       toast({ title: 'Remove failed', description: error.message, variant: 'destructive' });
       return;

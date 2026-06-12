@@ -52,7 +52,10 @@ const SetupSchool = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('Not authenticated');
 
-      const { data: newSchoolId, error: schoolError } = await supabase.rpc('register_school', {
+      // register_school creates the school AND assigns the caller as admin in a
+      // single trusted transaction — no client-side profile update is needed (or
+      // allowed by RLS).
+      const { error: schoolError } = await supabase.rpc('register_school', {
         p_school_name: schoolName,
         p_slug: slug,
         p_email: schoolEmail || null,
@@ -65,13 +68,6 @@ const SetupSchool = () => {
         }
         throw schoolError;
       }
-
-      // Attach this user as admin of the new school
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ school_id: newSchoolId, role: 'admin' })
-        .eq('id', session.user.id);
-      if (profileError) throw profileError;
 
       toast({ title: 'School created', description: `Your school code is "${slug}".` });
       await refreshSchool();

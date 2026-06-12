@@ -37,15 +37,39 @@ const RegisterSchool = () => {
     }
     setLoading(true);
     try {
-      // 1. Register school
-      const { data: newSchoolId, error: schoolError } = await supabase
-        .rpc('register_school', {
-          p_school_name: schoolName,
-          p_slug: slug,
-          p_email: schoolEmail || null,
-          p_address: address || null,
-        });
+      // 1. Create the admin user account first. Role/school assignment is NEVER
+      //    taken from client-supplied signup metadata — it is performed server-side
+      //    by the register_school RPC once the user is authenticated.
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: adminEmail,
+        password: adminPassword,
+        options: {
+          emailRedirectTo: `${window.location.origin}/setup-school`,
+          data: { full_name: adminName },
+        },
+      });
+      if (signUpError) throw signUpError;
 
+      // 2. If email confirmation is required there is no session yet, so we cannot
+      //    finish school creation now. Ask the user to confirm and finish setup
+      //    after they sign in.
+      if (!signUpData.session) {
+        toast({
+          title: 'Confirm your email',
+          description: `Check ${adminEmail} for a verification link, then sign in to finish creating "${schoolName}".`,
+        });
+        navigate('/login');
+        return;
+      }
+
+      // 3. We have a session — create the school and let the database link this
+      //    account as the admin in a single trusted transaction.
+      const { error: schoolError } = await supabase.rpc('register_school', {
+        p_school_name: schoolName,
+        p_slug: slug,
+        p_email: schoolEmail || null,
+        p_address: address || null,
+      });
       if (schoolError) {
         if (schoolError.message.includes('duplicate key')) {
           toast({ title: 'Error', description: 'This school code is already taken. Please choose a different one.', variant: 'destructive' });
@@ -54,26 +78,11 @@ const RegisterSchool = () => {
         throw schoolError;
       }
 
-      // 2. Create admin user
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: adminEmail,
-        password: adminPassword,
-        options: {
-          data: {
-            full_name: adminName,
-            role: 'admin',
-            school_id: newSchoolId,
-          },
-        },
-      });
-
-      if (signUpError) throw signUpError;
-
       toast({
         title: 'School registered!',
-        description: `Your school code is "${slug}". Use it to log in. Check your email to verify your account.`,
+        description: `Your school code is "${slug}". Use it to log in.`,
       });
-
+      await supabase.auth.signOut();
       navigate('/login');
     } catch (error: any) {
       toast({ title: 'Registration failed', description: error.message, variant: 'destructive' });
