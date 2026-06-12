@@ -1179,6 +1179,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_teacher_to_school: {
+        Args: { p_full_name: string; p_user_id: string }
+        Returns: undefined
+      }
       get_user_school_id: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -1196,6 +1200,14 @@ export type Database = {
           p_slug: string
         }
         Returns: string
+      }
+      update_school_member_profile: {
+        Args: {
+          p_full_name: string
+          p_role: Database["public"]["Enums"]["app_role"]
+          p_user_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
