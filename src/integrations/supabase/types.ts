@@ -1201,6 +1201,7 @@ export type Database = {
         }
         Returns: string
       }
+      remove_school_member: { Args: { p_user_id: string }; Returns: undefined }
       update_school_member_profile: {
         Args: {
           p_full_name: string
