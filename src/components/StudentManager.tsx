@@ -12,6 +12,7 @@ import { Upload, Plus, Download, FileSpreadsheet } from 'lucide-react';
 import Papa from 'papaparse';
 import { saveAs } from 'file-saver';
 import StudentList from './StudentList';
+import { resolvePhotoUrl } from '@/utils/photoUrl';
 
 const StudentManager = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -105,7 +106,10 @@ const StudentManager = () => {
       age: student.age?.toString() || '',
       photo_url: student.photo_url || ''
     });
-    setPhotoPreview(student.photo_url || '');
+    setPhotoPreview('');
+    if (student.photo_url) {
+      resolvePhotoUrl(student.photo_url).then((u) => setPhotoPreview(u || ''));
+    }
     setActiveTab('add');
   };
 
