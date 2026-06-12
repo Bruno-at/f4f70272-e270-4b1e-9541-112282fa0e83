@@ -119,9 +119,10 @@ const SchoolInfoManager = ({ onSuccess }: SchoolInfoManagerProps) => {
 
     if (field === 'stamp_url' || field === 'logo_url') {
       try {
+        if (!schoolId) throw new Error('No school context for upload');
         const fileExt = file.name.split('.').pop();
         const fileName = `${field.replace('_url', '')}-${Date.now()}.${fileExt}`;
-        const filePath = `school/${fileName}`;
+        const filePath = `${schoolId}/school/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('student-photos')
