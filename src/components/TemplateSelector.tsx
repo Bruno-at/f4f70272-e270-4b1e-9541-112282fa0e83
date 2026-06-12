@@ -231,6 +231,14 @@ export const TemplateSelector = ({ value, onChange, colorValue, onColorChange }:
 
   return (
     <div className="space-y-6">
+      <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+        <p className="font-semibold mb-1">A-Level students (S5/S6)</p>
+        <p className="text-muted-foreground text-xs">
+          A-Level students automatically use the dedicated <strong>A-Level Standard</strong> report card
+          template. The template style selected below applies to O-Level (S1–S4) students. More A-Level
+          template styles will be added soon.
+        </p>
+      </div>
       <div className="space-y-4">
         <Label className="text-base">Select Report Card Template</Label>
         <RadioGroup value={value} onValueChange={(val) => onChange(val as TemplateType)}>
