@@ -129,12 +129,17 @@ const Login = () => {
 
       const profile = await ensureUserProfile(authData.user);
       if (!profile?.school_id) {
-        await supabase.auth.signOut();
+        // No school yet — this user hasn't finished setup. Send them to the
+        // school setup screen instead of dropping the session.
         toast({
-          title: 'Account setup incomplete',
-          description: 'We could not load your school account. Please contact support.',
-          variant: 'destructive',
+          title: 'Finish school setup',
+          description: 'Your account is not linked to a school yet. Create one to continue.',
         });
+        if (rememberSchoolCode && normalizedSchoolCode) {
+          window.localStorage.setItem(REMEMBERED_SCHOOL_CODE_KEY, normalizedSchoolCode);
+        }
+        await refreshSchool();
+        navigate('/setup-school', { replace: true });
         return;
       }
 
