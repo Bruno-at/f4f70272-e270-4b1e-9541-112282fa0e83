@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Student } from '@/types/database';
 import { Trash2, Search, Users, Pencil, BookOpen } from 'lucide-react';
 import StudentSubjectsDialog from './StudentSubjectsDialog';
+import { resolvePhotoUrl } from '@/utils/photoUrl';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,7 +32,26 @@ const StudentList = ({ students, onRefresh, onEdit }: StudentListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [deleting, setDeleting] = useState<string | null>(null);
   const [assignFor, setAssignFor] = useState<Student | null>(null);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const { toast } = useToast();
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(
+        students
+          .filter((s) => s.photo_url)
+          .map(async (s) => [s.id, await resolvePhotoUrl(s.photo_url)] as const),
+      );
+      if (cancelled) return;
+      const next: Record<string, string> = {};
+      for (const [id, url] of entries) if (url) next[id] = url;
+      setPhotoUrls(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [students]);
 
   const filteredStudents = students.filter(student =>
     student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -110,7 +130,7 @@ const StudentList = ({ students, onRefresh, onEdit }: StudentListProps) => {
                 <TableRow key={student.id}>
                   <TableCell>
                     <Avatar className="w-10 h-10 border-2 border-border">
-                      <AvatarImage src={student.photo_url || undefined} alt={student.name} />
+                      <AvatarImage src={photoUrls[student.id] || undefined} alt={student.name} />
                       <AvatarFallback>{student.name.charAt(0).toUpperCase()}</AvatarFallback>
                     </Avatar>
                   </TableCell>
