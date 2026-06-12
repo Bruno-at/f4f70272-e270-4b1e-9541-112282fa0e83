@@ -37,19 +37,16 @@ const computeAvg = (a1: number | null, a2: number | null, a3: number | null): nu
 
 const computeIdentifier = (avg: number | null): string => {
   if (avg == null || isNaN(avg)) return '';
-  if (avg >= 2.5) return 'Exceptional';
-  if (avg >= 2.0) return 'Outstanding';
-  if (avg >= 1.5) return 'Satisfactory';
-  if (avg >= 1.0) return 'Basic';
-  return 'Elementary';
+  if (avg >= 2.5) return 'Outstanding';
+  if (avg >= 1.5) return 'Moderate';
+  if (avg >= 0.9) return 'Basic';
+  return '';
 };
 
 const identifierCode = (label: string): number | null => {
-  if (label === 'Elementary') return 1;
-  if (label === 'Basic') return 2;
-  if (label === 'Satisfactory') return 3;
-  if (label === 'Outstanding') return 4;
-  if (label === 'Exceptional') return 5;
+  if (label === 'Basic') return 1;
+  if (label === 'Moderate') return 2;
+  if (label === 'Outstanding') return 3;
   return null;
 };
 
