@@ -46,7 +46,8 @@ const TeachersManager = () => {
   const [classes, setClasses] = useState<ClassRow[]>([]);
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
   const [classSubjectLinks, setClassSubjectLinks] = useState<{ class_id: string; subject_id: string }[]>([]);
-  const [selectedSubjectIds, setSelectedSubjectIds] = useState<Set<string>>(new Set());
+  // Keys are `${class_id}:${subject_id}` to keep assignments class-specific.
+  const [selectedAssignments, setSelectedAssignments] = useState<Set<string>>(new Set());
   const [selectedClassId, setSelectedClassId] = useState<string>('none');
   const [savingAssign, setSavingAssign] = useState(false);
 
@@ -185,21 +186,26 @@ const TeachersManager = () => {
     const [classesRes, subjectsRes, tsRes, classTeacherRes, csRes] = await Promise.all([
       supabase.from('classes').select('id, class_name, section, class_teacher_id').eq('school_id', schoolId).order('class_name'),
       supabase.from('subjects').select('id, subject_name, subject_code').eq('school_id', schoolId).order('subject_name'),
-      supabase.from('teacher_subjects').select('subject_id').eq('teacher_id', t.id),
+      supabase.from('teacher_subjects').select('subject_id, class_id').eq('teacher_id', t.id),
       supabase.from('classes').select('id').eq('class_teacher_id', t.id).maybeSingle(),
       supabase.from('class_subjects').select('class_id, subject_id').eq('school_id', schoolId),
     ]);
     setClasses((classesRes.data || []) as ClassRow[]);
     setSubjects((subjectsRes.data || []) as SubjectRow[]);
     setClassSubjectLinks((csRes.data || []) as any);
-    setSelectedSubjectIds(new Set((tsRes.data || []).map((r: any) => r.subject_id)));
+    setSelectedAssignments(new Set(
+      (tsRes.data || [])
+        .filter((r: any) => r.class_id) // ignore legacy rows without class_id
+        .map((r: any) => `${r.class_id}:${r.subject_id}`)
+    ));
     setSelectedClassId(classTeacherRes.data?.id || 'none');
   };
 
-  const toggleSubject = (id: string) => {
-    setSelectedSubjectIds(prev => {
+  const toggleAssignment = (classId: string, subjectId: string) => {
+    const key = `${classId}:${subjectId}`;
+    setSelectedAssignments(prev => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(key)) next.delete(key); else next.add(key);
       return next;
     });
   };
@@ -210,11 +216,15 @@ const TeachersManager = () => {
     try {
       // Replace teacher_subjects rows
       await supabase.from('teacher_subjects').delete().eq('teacher_id', assigning.id);
-      const rows = Array.from(selectedSubjectIds).map(subject_id => ({
-        teacher_id: assigning.id,
-        subject_id,
-        school_id: schoolId,
-      }));
+      const rows = Array.from(selectedAssignments).map(key => {
+        const [class_id, subject_id] = key.split(':');
+        return {
+          teacher_id: assigning.id,
+          subject_id,
+          class_id,
+          school_id: schoolId,
+        };
+      });
       if (rows.length) {
         const { error } = await supabase.from('teacher_subjects').insert(rows);
         if (error) throw error;
@@ -391,8 +401,8 @@ const TeachersManager = () => {
                           {classSubjects.map(s => (
                             <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer">
                               <Checkbox
-                                checked={selectedSubjectIds.has(s.id)}
-                                onCheckedChange={() => toggleSubject(s.id)}
+                                checked={selectedAssignments.has(`${cls.id}:${s.id}`)}
+                                onCheckedChange={() => toggleAssignment(cls.id, s.id)}
                               />
                               <span>{s.subject_code ? `${s.subject_code} — ` : ''}{s.subject_name}</span>
                             </label>
