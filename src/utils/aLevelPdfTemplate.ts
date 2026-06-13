@@ -47,7 +47,8 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
 
   // Color palette - matches reference image
   const NAVY = { r: 0, g: 32, b: 96 };
-  const RED = { r: 200, g: 30, b: 30 };
+  const RED = { r: 0, g: 0, b: 0 }; // borders now black per design requirement
+  const RED_TEXT = { r: 200, g: 30, b: 30 }; // kept for accent text labels
   const VAL_BLUE = { r: 30, g: 80, b: 170 };
   const RED_VAL = { r: 200, g: 30, b: 30 };
   const GREEN_VAL = { r: 0, g: 120, b: 0 };
@@ -138,7 +139,7 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
     cells.forEach((c, i) => {
       if (i > 0) pdf.line(x, y, x, y + infoRowH);
       // label
-      pdf.setTextColor(RED.r, RED.g, RED.b);
+      pdf.setTextColor(RED_TEXT.r, RED_TEXT.g, RED_TEXT.b);
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(8);
       pdf.text(c.label, x + 1.5, y + 4);
@@ -169,7 +170,7 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   y += 1;
 
   // ============ TERM PERFORMANCE RECORDS title ============
-  pdf.setTextColor(RED.r, RED.g, RED.b);
+  pdf.setTextColor(RED_TEXT.r, RED_TEXT.g, RED_TEXT.b);
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(10);
   pdf.text('TERM PERFORMANCE RECORDS', pageW / 2, y + 4, { align: 'center' });
@@ -253,11 +254,13 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   // Two rows per subject (Paper 1 / Paper 2)
   // Use remaining vertical space to size rows dynamically.
   // Reserve space for AverageScores + overall + grade scale + key + projects + comments + footer
-  const reservedBelow = 110; // mm reserved for everything below table
+  // Reserved space below the marks table: averages(6) + overall(8) + grade scale(12.5)
+  // + key(19.5) + projects(19.5) + comments(23.5) + footer(12) + motto(5) ~= 106
+  const reservedBelow = 118;
   const availableForBody = pageH - y - reservedBelow - M;
   const totalDataRows = subjectCount * 2;
-  const minRowH = 4.2;
-  const maxRowH = 7;
+  const minRowH = 3.8;
+  const maxRowH = 6.5;
   let rowH = availableForBody / totalDataRows;
   if (rowH < minRowH) rowH = minRowH;
   if (rowH > maxRowH) rowH = maxRowH;
@@ -269,8 +272,20 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
     pdf.setFont('helvetica', bold && italic ? 'bolditalic' : bold ? 'bold' : italic ? 'italic' : 'normal');
     pdf.setFontSize(size);
     pdf.setTextColor(color.r, color.g, color.b);
-    const tx = align === 'center' ? x + w / 2 : x + 1.2;
-    pdf.text(text || '', tx, h, { align: align === 'center' ? 'center' : 'left' });
+    // Fit text inside the cell: shrink font until it fits the available width,
+    // then truncate with an ellipsis if still overflowing.
+    let str = text || '';
+    const maxW = Math.max(0, w - 1.4);
+    let fs = size;
+    while (fs > 4 && pdf.getTextWidth(str) > maxW) {
+      fs -= 0.5;
+      pdf.setFontSize(fs);
+    }
+    while (str.length > 1 && pdf.getTextWidth(str) > maxW) {
+      str = str.slice(0, -1);
+    }
+    const tx = align === 'center' ? x + w / 2 : x + 0.8;
+    pdf.text(str, tx, h, { align: align === 'center' ? 'center' : 'left' });
   };
 
   const tableBodyStart = y;
@@ -463,7 +478,7 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   y += keyH + 1.5;
 
   // ============ STUDENT'S PROJECTS WORK ============
-  pdf.setTextColor(RED.r, RED.g, RED.b);
+  pdf.setTextColor(RED_TEXT.r, RED_TEXT.g, RED_TEXT.b);
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(9);
   pdf.text("STUDENT'S PROJECTS WORK", pageW / 2, y + 3.5, { align: 'center' });
