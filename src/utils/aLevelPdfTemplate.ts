@@ -139,7 +139,7 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
     cells.forEach((c, i) => {
       if (i > 0) pdf.line(x, y, x, y + infoRowH);
       // label
-      pdf.setTextColor(RED.r, RED.g, RED.b);
+      pdf.setTextColor(RED_TEXT.r, RED_TEXT.g, RED_TEXT.b);
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(8);
       pdf.text(c.label, x + 1.5, y + 4);
@@ -170,7 +170,7 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   y += 1;
 
   // ============ TERM PERFORMANCE RECORDS title ============
-  pdf.setTextColor(RED.r, RED.g, RED.b);
+  pdf.setTextColor(RED_TEXT.r, RED_TEXT.g, RED_TEXT.b);
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(10);
   pdf.text('TERM PERFORMANCE RECORDS', pageW / 2, y + 4, { align: 'center' });
@@ -464,7 +464,7 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   y += keyH + 1.5;
 
   // ============ STUDENT'S PROJECTS WORK ============
-  pdf.setTextColor(RED.r, RED.g, RED.b);
+  pdf.setTextColor(RED_TEXT.r, RED_TEXT.g, RED_TEXT.b);
   pdf.setFont('helvetica', 'bold');
   pdf.setFontSize(9);
   pdf.text("STUDENT'S PROJECTS WORK", pageW / 2, y + 3.5, { align: 'center' });
