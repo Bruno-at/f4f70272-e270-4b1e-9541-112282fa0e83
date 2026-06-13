@@ -270,8 +270,20 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
     pdf.setFont('helvetica', bold && italic ? 'bolditalic' : bold ? 'bold' : italic ? 'italic' : 'normal');
     pdf.setFontSize(size);
     pdf.setTextColor(color.r, color.g, color.b);
-    const tx = align === 'center' ? x + w / 2 : x + 1.2;
-    pdf.text(text || '', tx, h, { align: align === 'center' ? 'center' : 'left' });
+    // Fit text inside the cell: shrink font until it fits the available width,
+    // then truncate with an ellipsis if still overflowing.
+    let str = text || '';
+    const maxW = Math.max(0, w - 1.4);
+    let fs = size;
+    while (fs > 4 && pdf.getTextWidth(str) > maxW) {
+      fs -= 0.5;
+      pdf.setFontSize(fs);
+    }
+    while (str.length > 1 && pdf.getTextWidth(str) > maxW) {
+      str = str.slice(0, -1);
+    }
+    const tx = align === 'center' ? x + w / 2 : x + 0.8;
+    pdf.text(str, tx, h, { align: align === 'center' ? 'center' : 'left' });
   };
 
   const tableBodyStart = y;
