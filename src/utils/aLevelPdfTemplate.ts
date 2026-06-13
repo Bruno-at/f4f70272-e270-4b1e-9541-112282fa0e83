@@ -47,7 +47,8 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
 
   // Color palette - matches reference image
   const NAVY = { r: 0, g: 32, b: 96 };
-  const RED = { r: 200, g: 30, b: 30 };
+  const RED = { r: 0, g: 0, b: 0 }; // borders now black per design requirement
+  const RED_TEXT = { r: 200, g: 30, b: 30 }; // kept for accent text labels
   const VAL_BLUE = { r: 30, g: 80, b: 170 };
   const RED_VAL = { r: 200, g: 30, b: 30 };
   const GREEN_VAL = { r: 0, g: 120, b: 0 };
