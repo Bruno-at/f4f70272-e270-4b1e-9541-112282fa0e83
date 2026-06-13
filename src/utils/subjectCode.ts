@@ -25,7 +25,26 @@ export function getSubjectShortCode(name: string, code?: string | null): string 
   if (code && code.trim()) return code.trim().toUpperCase();
   const key = (name || '').trim().toLowerCase();
   if (SUBJECT_CODE_OVERRIDES[key]) return SUBJECT_CODE_OVERRIDES[key];
-  // Fallback: first 4 letters of first word, uppercased
-  const first = (name || '').trim().split(/\s+/)[0] || '';
-  return first.slice(0, 4).toUpperCase() || 'SUB';
+  // Fallback: initials of each word if 2+ words, else first 4 letters
+  const words = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) {
+    return words.map(w => w[0]).join('').toUpperCase().slice(0, 4);
+  }
+  return (words[0] || '').slice(0, 4).toUpperCase() || 'SUB';
+}
+
+// Returns the subject name to display: full name when it's short/common,
+// otherwise the abbreviation (manual subject_code preferred, then initials).
+// Threshold defaults to 14 characters or 3+ words.
+export function getDisplaySubjectName(
+  name: string,
+  code?: string | null,
+  opts: { maxChars?: number; maxWords?: number } = {}
+): string {
+  const { maxChars = 14, maxWords = 3 } = opts;
+  const n = (name || '').trim();
+  if (!n) return '';
+  const words = n.split(/\s+/);
+  if (words.length < maxWords && n.length <= maxChars) return n;
+  return getSubjectShortCode(n, code);
 }
