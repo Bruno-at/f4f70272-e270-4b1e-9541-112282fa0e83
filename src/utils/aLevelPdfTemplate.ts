@@ -254,11 +254,13 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   // Two rows per subject (Paper 1 / Paper 2)
   // Use remaining vertical space to size rows dynamically.
   // Reserve space for AverageScores + overall + grade scale + key + projects + comments + footer
-  const reservedBelow = 110; // mm reserved for everything below table
+  // Reserved space below the marks table: averages(6) + overall(8) + grade scale(12.5)
+  // + key(19.5) + projects(19.5) + comments(23.5) + footer(12) + motto(5) ~= 106
+  const reservedBelow = 118;
   const availableForBody = pageH - y - reservedBelow - M;
   const totalDataRows = subjectCount * 2;
-  const minRowH = 4.2;
-  const maxRowH = 7;
+  const minRowH = 3.8;
+  const maxRowH = 6.5;
   let rowH = availableForBody / totalDataRows;
   if (rowH < minRowH) rowH = minRowH;
   if (rowH > maxRowH) rowH = maxRowH;
