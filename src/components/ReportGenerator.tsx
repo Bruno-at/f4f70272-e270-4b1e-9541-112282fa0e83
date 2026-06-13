@@ -423,23 +423,6 @@ const ReportGenerator = () => {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Template Selection</CardTitle>
-          <CardDescription>
-            Choose a report card template design. Preview each template to see how it looks.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TemplateSelector 
-            value={selectedTemplate} 
-            onChange={setSelectedTemplate}
-            colorValue={selectedColor}
-            onColorChange={setSelectedColor}
-          />
-        </CardContent>
-      </Card>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
           <Label>Active Term</Label>
@@ -487,6 +470,23 @@ const ReportGenerator = () => {
           </Select>
         </div>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Select Report Card Template</CardTitle>
+          <CardDescription>
+            Choose a report card template design. Preview each template to see how it looks.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <TemplateSelector
+            value={selectedTemplate}
+            onChange={setSelectedTemplate}
+            colorValue={selectedColor}
+            onColorChange={setSelectedColor}
+          />
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>

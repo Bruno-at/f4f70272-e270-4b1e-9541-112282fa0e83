@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import { Student, Term, SchoolInfo, StudentMark } from '@/types/database';
 import { ReportColor, reportColorHex } from './pdfTemplates';
+import { getDisplaySubjectName } from './subjectCode';
 
 const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -180,7 +181,7 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   // Column layout (mm)
   const cols = [
     { key: 'code',    label: 'Code',    w: 14 },
-    { key: 'subject', label: 'Subject', w: 36 },
+    { key: 'subject', label: 'Subject', w: 44 },
     { key: 'paper',   label: 'P\nA\nP\nE\nR', w: 7 },
     { key: 'a1',      label: 'A1',      w: 10 },
     { key: 'a2',      label: 'A2',      w: 10 },
@@ -190,9 +191,9 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
     { key: 'eot',     label: 'EOT',     w: 10 },
     { key: 'p80',     label: '80%',     w: 10 },
     { key: 'p100',    label: '100%',    w: 11 },
-    { key: 'grade',   label: 'GRADE',   w: 12 },
-    { key: 'comment', label: 'COMMENT', w: 30 },
-    { key: 'tr',      label: 'TR',      w: 8 },
+    { key: 'grade',   label: 'GRADE',   w: 14 },
+    { key: 'comment', label: 'COMMENT', w: 18 },
+    { key: 'tr',      label: 'TR',      w: 10 },
   ];
   // Normalize widths to contentW
   const sumW = cols.reduce((s, c) => s + c.w, 0);
@@ -308,7 +309,10 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
       if (p === 0 && mark) {
         // Subject info spans both paper rows visually (drawn once)
         drawCell(colX[0], cols[0].w, subjTop + subjBlockH / 2 + 1.2, mark.subject_code || (mark.subjects as any)?.subject_code || '', { bold: true, color: NAVY, size: 8 });
-        drawCell(colX[1], cols[1].w, subjTop + subjBlockH / 2 + 1.2, (mark.subjects?.subject_name || '').toUpperCase().substring(0, 22), { bold: true, color: NAVY, size: 8 });
+        const subjFullName = mark.subjects?.subject_name || '';
+        const subjCodeForName = mark.subject_code || (mark.subjects as any)?.subject_code || '';
+        const displaySubj = getDisplaySubjectName(subjFullName, subjCodeForName).toUpperCase();
+        drawCell(colX[1], cols[1].w, subjTop + subjBlockH / 2 + 1.2, displaySubj, { bold: true, color: NAVY, size: 8 });
       }
 
       // Paper number

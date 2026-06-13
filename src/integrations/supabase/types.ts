@@ -1089,6 +1089,7 @@ export type Database = {
       }
       teacher_subjects: {
         Row: {
+          class_id: string | null
           created_at: string | null
           id: string
           school_id: string | null
@@ -1096,6 +1097,7 @@ export type Database = {
           teacher_id: string
         }
         Insert: {
+          class_id?: string | null
           created_at?: string | null
           id?: string
           school_id?: string | null
@@ -1103,6 +1105,7 @@ export type Database = {
           teacher_id: string
         }
         Update: {
+          class_id?: string | null
           created_at?: string | null
           id?: string
           school_id?: string | null
@@ -1110,6 +1113,13 @@ export type Database = {
           teacher_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "teacher_subjects_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "teacher_subjects_school_id_fkey"
             columns: ["school_id"]
