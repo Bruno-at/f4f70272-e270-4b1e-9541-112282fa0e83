@@ -21,6 +21,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { generateReportCardPDF, addStampOverlayToPdf } from '@/utils/pdfGenerator';
 import { calculateStudentFees } from '@/utils/feesCalculator';
+import { enrichMarksForReport } from '@/utils/reportEnrichment';
 
 interface ReportCardWithDetails {
   id: string;
@@ -629,41 +630,11 @@ const ReportCardManagement = () => {
 
       if (marksError) throw marksError;
 
-      // Fetch teacher assignments for subjects to compute TR (teacher initials)
-      const { data: teacherLinks } = await supabase
-        .from('teacher_subjects')
-        .select('subject_id, teacher_id, profiles!teacher_subjects_teacher_id_fkey(full_name)');
-
-      const toInitials = (name?: string | null) => {
-        if (!name) return '';
-        return name
-          .trim()
-          .split(/\s+/)
-          .map((p) => p.charAt(0).toUpperCase())
-          .filter(Boolean)
-          .join('.');
-      };
-
-      const subjectIdToInitials = new Map<string, string>();
-      (teacherLinks || []).forEach((link: any) => {
-        if (link.subject_id && !subjectIdToInitials.has(link.subject_id)) {
-          const initials = toInitials(link.profiles?.full_name);
-          if (initials) subjectIdToInitials.set(link.subject_id, initials);
-        }
-      });
-
-      // Enrich marks with auto-populated subject_code and teacher_initials (TR)
-      const enrichedMarks = (marksData || []).map((m: any) => {
-        const subjCode = m.subjects?.subject_code || m.subject_code || '';
-        const trFromMap = subjectIdToInitials.get(m.subject_id) || '';
-        return {
-          ...m,
-          subject_code: subjCode || 'N/A',
-          subjects: m.subjects
-            ? { ...m.subjects, subject_code: m.subjects.subject_code || subjCode || 'N/A' }
-            : m.subjects,
-          teacher_initials: m.teacher_initials || trFromMap || 'N/A',
-        };
+      // Enrich marks with auto-filled subject_code, teacher_initials (class+subject teacher),
+      // and final_grade computed from the active grading system.
+      const enrichedMarks = await enrichMarksForReport(marksData || [], {
+        classId: studentData.class_id,
+        schoolId: (studentData as any).school_id,
       });
 
       // Fetch subjects assigned to the student's class via class_subjects

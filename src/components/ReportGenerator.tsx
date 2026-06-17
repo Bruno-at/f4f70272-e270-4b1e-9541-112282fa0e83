@@ -12,6 +12,7 @@ import { Download, FileText, Users } from 'lucide-react';
 import { generateReportCardPDF } from '@/utils/pdfGenerator';
 import { TemplateSelector, TemplateType, ReportColor } from '@/components/TemplateSelector';
 import { calculateStudentFees } from '@/utils/feesCalculator';
+import { enrichMarksForReport } from '@/utils/reportEnrichment';
 
 const ReportGenerator = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -174,6 +175,12 @@ const ReportGenerator = () => {
     // Find the student
     const student = students.find(s => s.id === studentId);
     if (!student) throw new Error('Student not found');
+
+    // Auto-fill subject_code, teacher_initials (TR), and final_grade
+    const enrichedMarks = await enrichMarksForReport(marks || [], {
+      classId: student.class_id,
+      schoolId,
+    });
 
     // Find the term
     const term = terms.find(t => t.id === selectedTerm);
@@ -364,7 +371,7 @@ const ReportGenerator = () => {
       student: studentWithBase64Photo,
       term,
       schoolInfo: schoolInfoWithBase64Logo,
-      marks: marks || [],
+      marks: enrichedMarks,
       reportData: {
         overall_average: reportData.overall_average,
         overall_grade: reportData.overall_grade,
