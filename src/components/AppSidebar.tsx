@@ -1,4 +1,4 @@
-import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare, FolderOpen, Pencil, DollarSign, UserCog } from 'lucide-react';
+import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare, FolderOpen, Pencil, DollarSign, UserCog, Table2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -25,6 +25,7 @@ const menuItems = [
   { id: 'signatures', title: 'Signatures', icon: Pencil },
   { id: 'teachers', title: 'Teachers', icon: UserCog },
   { id: 'reports', title: 'Reports', icon: Download },
+  { id: 'marksheet', title: 'Marksheet', icon: Table2 },
   { id: 'manage-reports', title: 'Manage Report Cards', icon: FolderOpen, isRoute: true },
   { id: 'finance', title: 'Finance Portal', icon: DollarSign, isRoute: true },
 ];
