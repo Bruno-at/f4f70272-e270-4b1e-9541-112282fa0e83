@@ -95,9 +95,10 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   pdf.setTextColor(BLACK.r, BLACK.g, BLACK.b);
   pdf.setFont('helvetica', 'normal');
   pdf.setFontSize(8.5);
-  const poBox = schoolInfo.po_box ? `P.O BOX ${schoolInfo.po_box}` : '';
-  const loc = schoolInfo.location || '';
-  pdf.text(`${poBox}${poBox && loc ? ', ' : ''}${loc}`, pageW / 2, y + 11.5, { align: 'center' });
+  const address = formatSchoolAddress(schoolInfo);
+  if (address) {
+    pdf.text(address, pageW / 2, y + 11.5, { align: 'center' });
+  }
   if (schoolInfo.email) {
     pdf.text(`EMAIL: ${schoolInfo.email}`, pageW / 2, y + 15.5, { align: 'center' });
   }
