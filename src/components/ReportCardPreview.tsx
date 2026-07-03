@@ -76,7 +76,7 @@ const ALevelPreview = ({
         </div>
         <div className="flex-1 text-center px-3">
           <h1 className="font-bold text-lg uppercase tracking-wide" style={{ color: '#000080' }}>{schoolInfo.school_name}</h1>
-          <p className="text-[9px]">P.O BOX {schoolInfo.po_box || ''}, {schoolInfo.location || ''}</p>
+          <p className="text-[9px]">{formatSchoolAddress(schoolInfo)}</p>
           <p className="text-[9px]">EMAIL: {schoolInfo.email || ''}</p>
           <p className="text-[9px]">CONTACTS: {schoolInfo.telephone || ''}</p>
         </div>
@@ -368,8 +368,7 @@ const OLevelPreview = ({
         <div className="flex-1 text-center px-3">
           <h1 className="text-gray-800 font-bold text-lg uppercase tracking-wide">{schoolInfo.school_name}</h1>
           <p className="italic text-[10px] text-gray-600">"{schoolInfo.motto || 'Mbizi we are'}"</p>
-          <p className="text-[9px]">Location: {schoolInfo.location || 'Kibizi'}</p>
-          <p className="text-[9px]">P.O BOX: {schoolInfo.po_box || '104 Kampala'}</p>
+          <p className="text-[9px]">{formatSchoolAddress(schoolInfo)}</p>
           <p className="text-[9px]">TEL: {schoolInfo.telephone || '+256705746484'}</p>
           <p className="text-gray-600 text-[8px]">
             Email: {schoolInfo.email || 'mugabifood@gmail.com'} | Website: {schoolInfo.website || 'mugabifood@gmail.com'}
