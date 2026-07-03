@@ -370,9 +370,8 @@ const OLevelPreview = ({
           <p className="italic text-[10px] text-gray-600">"{schoolInfo.motto || 'Mbizi we are'}"</p>
           <p className="text-[9px]">{formatSchoolAddress(schoolInfo)}</p>
           <p className="text-[9px]">TEL: {schoolInfo.telephone || '+256705746484'}</p>
-          <p className="text-gray-600 text-[8px]">
-            Email: {schoolInfo.email || 'mugabifood@gmail.com'} | Website: {schoolInfo.website || 'mugabifood@gmail.com'}
-          </p>
+          <p className="text-gray-600 text-[8px]">Email: {schoolInfo.email || 'mugabifood@gmail.com'}</p>
+          <p className="text-gray-600 text-[8px]">Website: {schoolInfo.website || 'mugabifood@gmail.com'}</p>
         </div>
         <div className="w-20 h-20 border border-gray-400 flex items-center justify-center overflow-hidden bg-white">
           {student.photo_url ? (
