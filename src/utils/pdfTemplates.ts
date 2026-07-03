@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import { Student, Term, SchoolInfo, StudentMark } from '@/types/database';
+import { formatSchoolAddress } from './schoolAddress';
 
 export type ReportColor = 'white' | 'green' | 'blue' | 'pink' | 'yellow' | 'gray';
 

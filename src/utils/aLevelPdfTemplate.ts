@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import { Student, Term, SchoolInfo, StudentMark } from '@/types/database';
 import { ReportColor, reportColorHex } from './pdfTemplates';
 import { getDisplaySubjectName } from './subjectCode';
+import { formatSchoolAddress } from './schoolAddress';
 
 const hexToRgb = (hex: string): { r: number; g: number; b: number } => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);

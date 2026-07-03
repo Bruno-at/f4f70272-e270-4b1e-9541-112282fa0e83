@@ -1,6 +1,7 @@
 import { Student, Term, SchoolInfo, StudentMark, Subject } from '@/types/database';
 import { StampConfig } from './StampConfigurator';
 import { detectAcademicLevel } from '@/utils/academicLevel';
+import { formatSchoolAddress } from '@/utils/schoolAddress';
 
 export type StampPosition = 'bottom-right' | 'bottom-center' | 'over-signatures' | 'center';
 
