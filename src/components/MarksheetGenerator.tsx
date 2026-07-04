@@ -181,27 +181,29 @@ const MarksheetGenerator = () => {
     if (!klass || !term) return;
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
-    let cursorY = 10;
-
-    // Logo
+    // Logo box
+    doc.setDrawColor(30, 58, 138);
+    doc.setLineWidth(0.6);
+    doc.rect(8, 8, 24, 24);
     if (school?.logo_url) {
       try {
         const dataUrl = await urlToDataUrl(school.logo_url);
-        if (dataUrl) doc.addImage(dataUrl, 'PNG', 10, 8, 22, 22);
+        if (dataUrl) doc.addImage(dataUrl, 'PNG', 9, 9, 22, 22);
       } catch {}
     }
 
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(20, 40, 120);
-    doc.setFontSize(20);
-    doc.text(school?.school_name?.toUpperCase() || 'SCHOOL', pageW / 2, 15, { align: 'center' });
-    doc.setFontSize(13);
-    doc.text(`${term.term_name.toUpperCase()} MARKSHEET ${term.year}`, pageW / 2, 22, { align: 'center' });
-    doc.setFontSize(11);
+    doc.setTextColor(30, 58, 138);
+    doc.setFontSize(24);
+    doc.text(school?.school_name?.toUpperCase() || 'SCHOOL', pageW / 2, 17, { align: 'center' });
+    doc.setFontSize(15);
+    doc.setTextColor(37, 99, 235);
+    doc.text(`${term.term_name.toUpperCase()} MARKSHEET ${term.year}`, pageW / 2, 25, { align: 'center' });
+    doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
-    doc.text(`Class: ${klass.class_name}${klass.section ? ' ' + klass.section : ''}`, pageW / 2 - 40, 29);
-    doc.text(`Stream: ${klass.section || '-'}`, pageW / 2 + 20, 29);
-    cursorY = 33;
+    doc.text(`Class: ${klass.class_name}${klass.section ? ' ' + klass.section : ''}`, pageW / 2 - 35, 32);
+    doc.text(`Stream: ${klass.section || '-'}`, pageW / 2 + 20, 32);
+    const cursorY = 36;
 
     const head = [[
       'No.', 'Student Name',
@@ -216,9 +218,10 @@ const MarksheetGenerator = () => {
 
     autoTable(doc, {
       head, body, startY: cursorY,
-      styles: { fontSize: 8, halign: 'center', cellPadding: 1.5, lineColor: [120, 140, 180], lineWidth: 0.2 },
-      headStyles: { fillColor: [220, 230, 245], textColor: [20, 40, 120], fontStyle: 'bold' },
-      columnStyles: { 0: { cellWidth: 8 }, 1: { halign: 'left', cellWidth: 38 } },
+      styles: { fontSize: 8, halign: 'center', cellPadding: 1.5, lineColor: [30, 58, 138], lineWidth: 0.2 },
+      headStyles: { fillColor: [239, 246, 255], textColor: [30, 58, 138], fontStyle: 'bold', lineColor: [30, 58, 138], lineWidth: 0.3 },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      columnStyles: { 0: { cellWidth: 8 }, 1: { halign: 'left', cellWidth: 42, fontStyle: 'normal' } },
       margin: { left: 6, right: 6 },
       theme: 'grid',
     });
@@ -226,7 +229,7 @@ const MarksheetGenerator = () => {
     let y = (doc as any).lastAutoTable.finalY + 4;
 
     // Summary of grades
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(20, 40, 120);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(30, 58, 138);
     doc.text('SUMMARY OF GRADES', pageW / 2, y, { align: 'center' });
     y += 2;
     const sumHead = [['Grade', ...gradingFull.map(g => g.grade_name), 'Total Students']];
@@ -236,8 +239,9 @@ const MarksheetGenerator = () => {
     ];
     autoTable(doc, {
       head: sumHead, body: sumBody, startY: y + 1,
-      styles: { fontSize: 8, halign: 'center', cellPadding: 1.5, lineColor: [120, 140, 180], lineWidth: 0.2 },
-      headStyles: { fillColor: [220, 230, 245], textColor: [20, 40, 120], fontStyle: 'bold' },
+      styles: { fontSize: 8, halign: 'center', cellPadding: 1.5, lineColor: [30, 58, 138], lineWidth: 0.2 },
+      headStyles: { fillColor: [239, 246, 255], textColor: [30, 58, 138], fontStyle: 'bold', lineColor: [30, 58, 138], lineWidth: 0.3 },
+      columnStyles: { 0: { halign: 'left', fontStyle: 'bold', fillColor: [239, 246, 255], textColor: [30, 58, 138] } },
       margin: { left: 6, right: 6 },
       theme: 'grid',
     });
@@ -262,8 +266,8 @@ const MarksheetGenerator = () => {
       head: [['Grade', 'Range (%)', 'Description']],
       body: gradingFull.map(g => [g.grade_name, `${g.min_percentage}% - ${g.max_percentage}%`, g.description || '']),
       startY: y,
-      styles: { fontSize: 8, cellPadding: 1.2, lineColor: [120, 140, 180], lineWidth: 0.2 },
-      headStyles: { fillColor: [220, 230, 245], textColor: [20, 40, 120], fontStyle: 'bold', halign: 'center' },
+      styles: { fontSize: 8, cellPadding: 1.2, lineColor: [30, 58, 138], lineWidth: 0.2 },
+      headStyles: { fillColor: [239, 246, 255], textColor: [30, 58, 138], fontStyle: 'bold', halign: 'center', lineColor: [30, 58, 138], lineWidth: 0.3 },
       margin: { left: 95, right: pageW - 95 - 110 },
       tableWidth: 110,
       theme: 'grid',
@@ -337,49 +341,59 @@ const MarksheetGenerator = () => {
       ) : loadingSheet ? (
         <div className="p-6">Building marksheet...</div>
       ) : (
-        <div id="marksheet-print" className="bg-white text-black border rounded-md overflow-auto p-4 print:p-2 print:border-0">
-          <div className="flex items-center gap-3 mb-2">
-            {school?.logo_url && (
-              <img src={school.logo_url} alt="logo" className="w-16 h-16 object-contain" />
-            )}
-            <div className="flex-1 text-center">
-              <h2 className="text-2xl font-bold text-[#14306b] tracking-wide">{school?.school_name?.toUpperCase()}</h2>
-              <p className="text-lg font-semibold text-[#1f4ea0]">{term?.term_name.toUpperCase()} MARKSHEET {term?.year}</p>
-              <p className="text-sm font-semibold mt-1">
-                Class: {klass?.class_name}{klass?.section ? ` ${klass?.section}` : ''}
-                <span className="ml-8">Stream: {klass?.section || '-'}</span>
+        <div id="marksheet-print" className="bg-white text-black overflow-auto p-4 print:p-0">
+          {/* Header */}
+          <div className="grid grid-cols-[auto_1fr] items-center gap-4 mb-3">
+            <div className="w-24 h-24 border-2 border-[#1e3a8a] flex items-center justify-center bg-white">
+              {school?.logo_url ? (
+                <img src={school.logo_url} alt="logo" className="max-w-full max-h-full object-contain" />
+              ) : (
+                <span className="text-[10px] text-slate-500">LOGO</span>
+              )}
+            </div>
+            <div className="text-center">
+              <h2 className="text-4xl font-extrabold text-[#1e3a8a] tracking-wide leading-tight">
+                {school?.school_name?.toUpperCase()}
+              </h2>
+              <p className="text-2xl font-bold text-[#2563eb] mt-1">
+                {term?.term_name.toUpperCase()} MARKSHEET {term?.year}
+              </p>
+              <p className="text-lg font-semibold mt-2">
+                <span>Class: {klass?.class_name}{klass?.section ? ` ${klass?.section}` : ''}</span>
+                <span className="inline-block w-16" />
+                <span>Stream: {klass?.section || '-'}</span>
               </p>
             </div>
-            <div className="w-16" />
           </div>
 
-          <table className="w-full border-collapse text-[11px]">
+          {/* Marks Table */}
+          <table className="w-full border-collapse text-[11px] border-2 border-[#1e3a8a]">
             <thead>
-              <tr className="bg-[#e6ecf7] text-[#14306b]">
-                <th className="border border-slate-400 px-1 py-1">No.</th>
-                <th className="border border-slate-400 px-2 py-1 text-left">Student Name</th>
+              <tr className="bg-[#eff6ff] text-[#1e3a8a]">
+                <th className="border border-[#1e3a8a] px-1 py-2 w-10">No.</th>
+                <th className="border border-[#1e3a8a] px-2 py-2 text-left">Student Name</th>
                 {subjects.map(s => (
-                  <th key={s.id} className="border border-slate-400 px-1 py-1">
-                    <div>{s.subject_name}</div>
-                    <div className="text-[10px] font-normal">({getSubjectShortCode(s.subject_name, s.subject_code)})</div>
+                  <th key={s.id} className="border border-[#1e3a8a] px-1 py-2">
+                    <div className="font-bold">{s.subject_name}</div>
+                    <div className="text-[10px] font-semibold">({getSubjectShortCode(s.subject_name, s.subject_code)})</div>
                   </th>
                 ))}
-                <th className="border border-slate-400 px-1 py-1">Total<br/>({totalMax})</th>
-                <th className="border border-slate-400 px-1 py-1">Average<br/>(100)</th>
-                <th className="border border-slate-400 px-1 py-1">Grade</th>
+                <th className="border border-[#1e3a8a] px-1 py-2">Total<br/>({totalMax})</th>
+                <th className="border border-[#1e3a8a] px-1 py-2">Average<br/>(100)</th>
+                <th className="border border-[#1e3a8a] px-1 py-2">Grade</th>
               </tr>
             </thead>
             <tbody>
               {rows.map(r => (
-                <tr key={r.student.id}>
-                  <td className="border border-slate-400 px-1 py-1 text-center">{r.no}</td>
-                  <td className="border border-slate-400 px-2 py-1">{r.student.name}</td>
+                <tr key={r.student.id} className="odd:bg-white even:bg-slate-50">
+                  <td className="border border-[#1e3a8a] px-1 py-1.5 text-center">{r.no}</td>
+                  <td className="border border-[#1e3a8a] px-2 py-1.5">{r.student.name}</td>
                   {r.scores.map((v, i) => (
-                    <td key={i} className="border border-slate-400 px-1 py-1 text-center">{v == null ? '-' : v}</td>
+                    <td key={i} className="border border-[#1e3a8a] px-1 py-1.5 text-center">{v == null ? '-' : v}</td>
                   ))}
-                  <td className="border border-slate-400 px-1 py-1 text-center font-semibold">{r.total}</td>
-                  <td className="border border-slate-400 px-1 py-1 text-center">{r.avg.toFixed(2)}</td>
-                  <td className="border border-slate-400 px-1 py-1 text-center font-semibold">{r.grade}</td>
+                  <td className="border border-[#1e3a8a] px-1 py-1.5 text-center font-semibold">{r.total}</td>
+                  <td className="border border-[#1e3a8a] px-1 py-1.5 text-center">{r.avg.toFixed(2)}</td>
+                  <td className="border border-[#1e3a8a] px-1 py-1.5 text-center font-bold">{r.grade}</td>
                 </tr>
               ))}
               {rows.length === 0 && (
@@ -389,69 +403,74 @@ const MarksheetGenerator = () => {
           </table>
 
           {/* Summary of grades */}
-          <div className="text-center font-bold text-[#14306b] mt-4 mb-1">SUMMARY OF GRADES</div>
-          <table className="w-full border-collapse text-[11px]">
+          <div className="text-center font-bold text-[#1e3a8a] mt-4 mb-1 text-base">SUMMARY OF GRADES</div>
+          <table className="w-full border-collapse text-[11px] border-2 border-[#1e3a8a]">
             <thead>
-              <tr className="bg-[#e6ecf7] text-[#14306b]">
-                <th className="border border-slate-400 px-2 py-1 text-left">Grade</th>
-                {gradingFull.map(g => <th key={g.grade_name} className="border border-slate-400 px-2 py-1">{g.grade_name}</th>)}
-                <th className="border border-slate-400 px-2 py-1">Total Students</th>
+              <tr className="bg-[#eff6ff] text-[#1e3a8a]">
+                <th className="border border-[#1e3a8a] px-2 py-1.5 text-left w-56">GRADE</th>
+                {gradingFull.map(g => <th key={g.grade_name} className="border border-[#1e3a8a] px-2 py-1.5">{g.grade_name}</th>)}
+                <th className="border border-[#1e3a8a] px-2 py-1.5 bg-[#dbeafe]">TOTAL STUDENTS</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td className="border border-slate-400 px-2 py-1 font-semibold">Number of Students</td>
-                {gradingFull.map(g => <td key={g.grade_name} className="border border-slate-400 px-2 py-1 text-center">{gradeCounts[g.grade_name] || 0}</td>)}
-                <td className="border border-slate-400 px-2 py-1 text-center font-semibold">{rows.length}</td>
+                <td className="border border-[#1e3a8a] px-2 py-1.5 font-semibold bg-[#eff6ff] text-[#1e3a8a]">NUMBER OF STUDENTS</td>
+                {gradingFull.map(g => <td key={g.grade_name} className="border border-[#1e3a8a] px-2 py-1.5 text-center">{gradeCounts[g.grade_name] || 0}</td>)}
+                <td className="border border-[#1e3a8a] px-2 py-1.5 text-center font-semibold">{rows.length}</td>
               </tr>
               <tr>
-                <td className="border border-slate-400 px-2 py-1 font-semibold">Percentage (%)</td>
+                <td className="border border-[#1e3a8a] px-2 py-1.5 font-semibold bg-[#eff6ff] text-[#1e3a8a]">PERCENTAGE (%)</td>
                 {gradingFull.map(g => (
-                  <td key={g.grade_name} className="border border-slate-400 px-2 py-1 text-center">
+                  <td key={g.grade_name} className="border border-[#1e3a8a] px-2 py-1.5 text-center">
                     {rows.length ? `${(((gradeCounts[g.grade_name] || 0) / rows.length) * 100).toFixed(2)}%` : '0%'}
                   </td>
                 ))}
-                <td className="border border-slate-400 px-2 py-1 text-center font-semibold">100%</td>
+                <td className="border border-[#1e3a8a] px-2 py-1.5 text-center font-semibold">100%</td>
               </tr>
             </tbody>
           </table>
 
           {/* Stats + grading scale + comment */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 text-[11px]">
-            <div className="border border-slate-400 p-2">
-              <div className="text-center font-bold text-[#14306b] mb-1">CLASS STATISTICS</div>
+            <div className="border-2 border-[#1e3a8a]">
+              <div className="text-center font-bold text-[#1e3a8a] bg-[#eff6ff] py-1.5 border-b-2 border-[#1e3a8a]">CLASS STATISTICS</div>
               {stats && (
-                <div className="space-y-0.5">
-                  <div>Highest Score : <span className="font-semibold">{stats.hi}</span> ({stats.hiStudent})</div>
-                  <div>Lowest Score : <span className="font-semibold">{stats.lo}</span> ({stats.loStudent})</div>
-                  <div>Class Average : <span className="font-semibold">{stats.classAvg.toFixed(2)}</span></div>
-                  <div>Total Students : <span className="font-semibold">{rows.length}</span></div>
-                  <div>Total Subjects : <span className="font-semibold">{subjects.length}</span></div>
+                <div className="p-3 space-y-1">
+                  <div className="flex"><span className="w-32">Highest Score</span><span>: <span className="font-semibold">{stats.hi}</span> ({stats.hiStudent})</span></div>
+                  <div className="flex"><span className="w-32">Lowest Score</span><span>: <span className="font-semibold">{stats.lo}</span> ({stats.loStudent})</span></div>
+                  <div className="flex"><span className="w-32">Class Average</span><span>: <span className="font-semibold">{stats.classAvg.toFixed(2)}</span></span></div>
+                  <div className="flex"><span className="w-32">Total Students</span><span>: <span className="font-semibold">{rows.length}</span></span></div>
+                  <div className="flex"><span className="w-32">Total Subjects</span><span>: <span className="font-semibold">{subjects.length}</span></span></div>
                 </div>
               )}
             </div>
-            <div className="border border-slate-400 p-2">
-              <div className="text-center font-bold text-[#14306b] mb-1">GRADING SCALE</div>
-              <table className="w-full text-[10px]">
-                <thead><tr><th className="text-left">Grade</th><th className="text-left">Range (%)</th><th className="text-left">Description</th></tr></thead>
+            <div className="border-2 border-[#1e3a8a]">
+              <div className="text-center font-bold text-[#1e3a8a] bg-[#eff6ff] py-1.5 border-b-2 border-[#1e3a8a]">GRADING SCALE</div>
+              <table className="w-full text-[10px] border-collapse">
+                <thead>
+                  <tr className="bg-slate-50">
+                    <th className="border border-[#1e3a8a] px-2 py-1">Grade</th>
+                    <th className="border border-[#1e3a8a] px-2 py-1">Range (%)</th>
+                    <th className="border border-[#1e3a8a] px-2 py-1">Description</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {gradingFull.map(g => (
                     <tr key={g.grade_name}>
-                      <td className="pr-2">{g.grade_name}</td>
-                      <td className="pr-2">{g.min_percentage}% - {g.max_percentage}%</td>
-                      <td>{g.description || ''}</td>
+                      <td className="border border-[#1e3a8a] px-2 py-1 text-center font-semibold">{g.grade_name}</td>
+                      <td className="border border-[#1e3a8a] px-2 py-1 text-center">{g.min_percentage}% - {g.max_percentage}%</td>
+                      <td className="border border-[#1e3a8a] px-2 py-1">{g.description || ''}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <div className="border border-slate-400 p-2">
-              <div className="font-semibold mb-2">Class Teacher's Comment:</div>
-              <div className="border-b border-slate-400 h-5" />
-              <div className="border-b border-slate-400 h-5 mt-2" />
-              <div className="grid grid-cols-2 gap-3 mt-6 text-[10px]">
-                <div>Signature: <span className="inline-block border-b border-slate-400 w-24" /></div>
-                <div>Date: <span className="inline-block border-b border-slate-400 w-20" /></div>
+            <div className="border-2 border-[#1e3a8a] p-3">
+              <div className="font-semibold mb-2">Class Teacher's Comment: <span className="inline-block border-b border-slate-500 w-56 align-bottom" /></div>
+              <div className="border-b border-slate-500 h-5 mt-3" />
+              <div className="flex gap-6 mt-8 text-[11px]">
+                <div className="flex-1">Signature: <span className="inline-block border-b border-slate-500 w-40 align-bottom" /></div>
+                <div>Date: <span className="inline-block border-b border-slate-500 w-24 align-bottom" /></div>
               </div>
             </div>
           </div>
