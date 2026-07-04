@@ -367,33 +367,33 @@ const MarksheetGenerator = () => {
           </div>
 
           {/* Marks Table */}
-          <table className="w-full border-collapse text-[11px] border-2 border-[#1e3a8a]">
+          <table className="w-full border-collapse text-[12px] border border-slate-400 bg-white">
             <thead>
-              <tr className="bg-[#eff6ff] text-[#1e3a8a]">
-                <th className="border border-[#1e3a8a] px-1 py-2 w-10">No.</th>
-                <th className="border border-[#1e3a8a] px-2 py-2 text-left">Student Name</th>
+              <tr className="bg-[#dbeafe] text-[#1e3a8a]">
+                <th className="border border-slate-400 px-2 py-2 w-10 font-bold">No.</th>
+                <th className="border border-slate-400 px-3 py-2 text-left font-bold">Student Name</th>
                 {subjects.map(s => (
-                  <th key={s.id} className="border border-[#1e3a8a] px-1 py-2">
+                  <th key={s.id} className="border border-slate-400 px-2 py-2">
                     <div className="font-bold">{s.subject_name}</div>
-                    <div className="text-[10px] font-semibold">({getSubjectShortCode(s.subject_name, s.subject_code)})</div>
+                    <div className="text-[11px] font-bold">({getSubjectShortCode(s.subject_name, s.subject_code)})</div>
                   </th>
                 ))}
-                <th className="border border-[#1e3a8a] px-1 py-2">Total<br/>({totalMax})</th>
-                <th className="border border-[#1e3a8a] px-1 py-2">Average<br/>(100)</th>
-                <th className="border border-[#1e3a8a] px-1 py-2">Grade</th>
+                <th className="border border-slate-400 px-2 py-2 font-bold">Total<br/>({totalMax})</th>
+                <th className="border border-slate-400 px-2 py-2 font-bold">Average<br/>(100)</th>
+                <th className="border border-slate-400 px-2 py-2 font-bold">Grade</th>
               </tr>
             </thead>
             <tbody>
               {rows.map(r => (
-                <tr key={r.student.id} className="odd:bg-white even:bg-slate-50">
-                  <td className="border border-[#1e3a8a] px-1 py-1.5 text-center">{r.no}</td>
-                  <td className="border border-[#1e3a8a] px-2 py-1.5">{r.student.name}</td>
+                <tr key={r.student.id} className="bg-white">
+                  <td className="border border-slate-400 px-2 py-2 text-center">{r.no}</td>
+                  <td className="border border-slate-400 px-3 py-2">{r.student.name}</td>
                   {r.scores.map((v, i) => (
-                    <td key={i} className="border border-[#1e3a8a] px-1 py-1.5 text-center">{v == null ? '-' : v}</td>
+                    <td key={i} className="border border-slate-400 px-2 py-2 text-center">{v == null ? '-' : v}</td>
                   ))}
-                  <td className="border border-[#1e3a8a] px-1 py-1.5 text-center font-semibold">{r.total}</td>
-                  <td className="border border-[#1e3a8a] px-1 py-1.5 text-center">{r.avg.toFixed(2)}</td>
-                  <td className="border border-[#1e3a8a] px-1 py-1.5 text-center font-bold">{r.grade}</td>
+                  <td className="border border-slate-400 px-2 py-2 text-center">{r.total}</td>
+                  <td className="border border-slate-400 px-2 py-2 text-center">{r.avg.toFixed(2)}</td>
+                  <td className="border border-slate-400 px-2 py-2 text-center">{r.grade}</td>
                 </tr>
               ))}
               {rows.length === 0 && (
