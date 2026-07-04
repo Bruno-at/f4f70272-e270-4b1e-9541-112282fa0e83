@@ -181,27 +181,29 @@ const MarksheetGenerator = () => {
     if (!klass || !term) return;
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const pageW = doc.internal.pageSize.getWidth();
-    let cursorY = 10;
-
-    // Logo
+    // Logo box
+    doc.setDrawColor(30, 58, 138);
+    doc.setLineWidth(0.6);
+    doc.rect(8, 8, 24, 24);
     if (school?.logo_url) {
       try {
         const dataUrl = await urlToDataUrl(school.logo_url);
-        if (dataUrl) doc.addImage(dataUrl, 'PNG', 10, 8, 22, 22);
+        if (dataUrl) doc.addImage(dataUrl, 'PNG', 9, 9, 22, 22);
       } catch {}
     }
 
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(20, 40, 120);
-    doc.setFontSize(20);
-    doc.text(school?.school_name?.toUpperCase() || 'SCHOOL', pageW / 2, 15, { align: 'center' });
-    doc.setFontSize(13);
-    doc.text(`${term.term_name.toUpperCase()} MARKSHEET ${term.year}`, pageW / 2, 22, { align: 'center' });
-    doc.setFontSize(11);
+    doc.setTextColor(30, 58, 138);
+    doc.setFontSize(24);
+    doc.text(school?.school_name?.toUpperCase() || 'SCHOOL', pageW / 2, 17, { align: 'center' });
+    doc.setFontSize(15);
+    doc.setTextColor(37, 99, 235);
+    doc.text(`${term.term_name.toUpperCase()} MARKSHEET ${term.year}`, pageW / 2, 25, { align: 'center' });
+    doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
-    doc.text(`Class: ${klass.class_name}${klass.section ? ' ' + klass.section : ''}`, pageW / 2 - 40, 29);
-    doc.text(`Stream: ${klass.section || '-'}`, pageW / 2 + 20, 29);
-    cursorY = 33;
+    doc.text(`Class: ${klass.class_name}${klass.section ? ' ' + klass.section : ''}`, pageW / 2 - 35, 32);
+    doc.text(`Stream: ${klass.section || '-'}`, pageW / 2 + 20, 32);
+    const cursorY = 36;
 
     const head = [[
       'No.', 'Student Name',
@@ -216,9 +218,10 @@ const MarksheetGenerator = () => {
 
     autoTable(doc, {
       head, body, startY: cursorY,
-      styles: { fontSize: 8, halign: 'center', cellPadding: 1.5, lineColor: [120, 140, 180], lineWidth: 0.2 },
-      headStyles: { fillColor: [220, 230, 245], textColor: [20, 40, 120], fontStyle: 'bold' },
-      columnStyles: { 0: { cellWidth: 8 }, 1: { halign: 'left', cellWidth: 38 } },
+      styles: { fontSize: 8, halign: 'center', cellPadding: 1.5, lineColor: [30, 58, 138], lineWidth: 0.2 },
+      headStyles: { fillColor: [239, 246, 255], textColor: [30, 58, 138], fontStyle: 'bold', lineColor: [30, 58, 138], lineWidth: 0.3 },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
+      columnStyles: { 0: { cellWidth: 8 }, 1: { halign: 'left', cellWidth: 42, fontStyle: 'normal' } },
       margin: { left: 6, right: 6 },
       theme: 'grid',
     });
@@ -226,7 +229,7 @@ const MarksheetGenerator = () => {
     let y = (doc as any).lastAutoTable.finalY + 4;
 
     // Summary of grades
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(20, 40, 120);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(30, 58, 138);
     doc.text('SUMMARY OF GRADES', pageW / 2, y, { align: 'center' });
     y += 2;
     const sumHead = [['Grade', ...gradingFull.map(g => g.grade_name), 'Total Students']];
@@ -236,8 +239,9 @@ const MarksheetGenerator = () => {
     ];
     autoTable(doc, {
       head: sumHead, body: sumBody, startY: y + 1,
-      styles: { fontSize: 8, halign: 'center', cellPadding: 1.5, lineColor: [120, 140, 180], lineWidth: 0.2 },
-      headStyles: { fillColor: [220, 230, 245], textColor: [20, 40, 120], fontStyle: 'bold' },
+      styles: { fontSize: 8, halign: 'center', cellPadding: 1.5, lineColor: [30, 58, 138], lineWidth: 0.2 },
+      headStyles: { fillColor: [239, 246, 255], textColor: [30, 58, 138], fontStyle: 'bold', lineColor: [30, 58, 138], lineWidth: 0.3 },
+      columnStyles: { 0: { halign: 'left', fontStyle: 'bold', fillColor: [239, 246, 255], textColor: [30, 58, 138] } },
       margin: { left: 6, right: 6 },
       theme: 'grid',
     });
@@ -262,8 +266,8 @@ const MarksheetGenerator = () => {
       head: [['Grade', 'Range (%)', 'Description']],
       body: gradingFull.map(g => [g.grade_name, `${g.min_percentage}% - ${g.max_percentage}%`, g.description || '']),
       startY: y,
-      styles: { fontSize: 8, cellPadding: 1.2, lineColor: [120, 140, 180], lineWidth: 0.2 },
-      headStyles: { fillColor: [220, 230, 245], textColor: [20, 40, 120], fontStyle: 'bold', halign: 'center' },
+      styles: { fontSize: 8, cellPadding: 1.2, lineColor: [30, 58, 138], lineWidth: 0.2 },
+      headStyles: { fillColor: [239, 246, 255], textColor: [30, 58, 138], fontStyle: 'bold', halign: 'center', lineColor: [30, 58, 138], lineWidth: 0.3 },
       margin: { left: 95, right: pageW - 95 - 110 },
       tableWidth: 110,
       theme: 'grid',
