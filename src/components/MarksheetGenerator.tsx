@@ -21,7 +21,7 @@ interface MarkRow { student_id: string; subject_id: string; hundred_percent: num
 interface SchoolRow { id: string; school_name: string; logo_url?: string | null }
 
 const MarksheetGenerator = () => {
-  const { schoolId } = useSchool();
+  const { schoolId, loading: schoolLoading } = useSchool();
   const { toast } = useToast();
 
   const [loading, setLoading] = useState(true);
@@ -37,32 +37,57 @@ const MarksheetGenerator = () => {
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
   const [students, setStudents] = useState<StudentRow[]>([]);
   const [marks, setMarks] = useState<MarkRow[]>([]);
+  const [usesIndividualSubjectAssignments, setUsesIndividualSubjectAssignments] = useState(false);
+  const [studentSubjectIdsByStudent, setStudentSubjectIdsByStudent] = useState<Record<string, string[]>>({});
   const [loadingSheet, setLoadingSheet] = useState(false);
 
   useEffect(() => {
+    if (!schoolId) {
+      setTerms([]);
+      setClasses([]);
+      setSchool(null);
+      setGrading([]);
+      setGradingFull([]);
+      setTermId('');
+      setClassId('');
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
     (async () => {
+      setLoading(true);
       try {
         const [t, c, s, g] = await Promise.all([
-          supabase.from('terms').select('id,term_name,year,is_active').order('year', { ascending: false }),
-          supabase.from('classes').select('id,class_name,section').order('class_name'),
-          supabase.from('schools').select('id,school_name,logo_url').limit(1).maybeSingle(),
-          supabase.from('grading_systems').select('grade_name,min_percentage,max_percentage,description').eq('is_active', true).order('min_percentage', { ascending: false }),
+          supabase.from('terms').select('id,term_name,year,is_active').eq('school_id', schoolId).order('year', { ascending: false }),
+          supabase.from('classes').select('id,class_name,section').eq('school_id', schoolId).order('class_name'),
+          supabase.from('schools').select('id,school_name,logo_url').eq('id', schoolId).maybeSingle(),
+          supabase.from('grading_systems').select('grade_name,min_percentage,max_percentage,description').eq('school_id', schoolId).eq('is_active', true).order('min_percentage', { ascending: false }),
         ]);
+        if (t.error) throw t.error;
+        if (c.error) throw c.error;
+        if (s.error) throw s.error;
+        if (g.error) throw g.error;
+        if (cancelled) return;
+
         setTerms((t.data as any) || []);
         setClasses((c.data as any) || []);
         setSchool((s.data as any) || null);
         setGradingFull((g.data as any) || []);
         setGrading((g.data as any) || []);
         const active = (t.data as any[])?.find(x => x.is_active);
-        if (active) setTermId(active.id);
+        setTermId(active?.id || '');
       } catch (e) {
         console.error(e);
         toast({ title: 'Error', description: 'Failed to load data', variant: 'destructive' });
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [schoolId, toast]);
 
   useEffect(() => {
     if (!termId || !classId) return;
@@ -71,39 +96,113 @@ const MarksheetGenerator = () => {
   }, [termId, classId]);
 
   const loadSheet = async () => {
+    if (!schoolId) return;
     setLoadingSheet(true);
     try {
-      // Subjects for this class
-      const { data: csLinks } = await supabase
-        .from('class_subjects')
-        .select('subject_id, subjects!class_subjects_subject_id_fkey(id, subject_name, subject_code)')
-        .eq('class_id', classId);
-      const subs: SubjectRow[] = ((csLinks || []) as any[])
-        .map((l) => l.subjects)
-        .filter(Boolean)
-        .sort((a: any, b: any) => a.subject_name.localeCompare(b.subject_name));
-      setSubjects(subs);
+      const debugOutput: Record<string, unknown> = {
+        selected_class_id: classId,
+        selected_term_id: termId,
+      };
 
-      const { data: studs } = await supabase
+      const { data: selectedClass, error: classError } = await supabase
+        .from('classes')
+        .select('id, class_name, section, school_id')
+        .eq('school_id', schoolId)
+        .eq('id', classId)
+        .maybeSingle();
+      if (classError) throw classError;
+      if (!selectedClass) throw new Error('Selected class was not found for this school');
+      debugOutput.selected_class = selectedClass;
+
+      // Step 1: read the class → subject junction directly.
+      // Do not use embedded joins here because class_subjects has no FK relationship
+      // exposed in the PostgREST schema cache in this project.
+      const { data: classSubjectLinks, error: classSubjectsError } = await supabase
+        .from('class_subjects')
+        .select('class_id, subject_id, school_id')
+        .eq('school_id', schoolId)
+        .eq('class_id', classId);
+      if (classSubjectsError) throw classSubjectsError;
+      const classSubjectIds = Array.from(new Set(((classSubjectLinks || []) as any[]).map((l) => l.subject_id).filter(Boolean)));
+      debugOutput.class_subjects_records = classSubjectLinks || [];
+
+      const { data: studs, error: studentsError } = await supabase
         .from('students')
         .select('id,name,class_id')
+        .eq('school_id', schoolId)
         .eq('class_id', classId)
         .order('name');
+      if (studentsError) throw studentsError;
       const studentRows: StudentRow[] = (studs as any) || [];
       setStudents(studentRows);
+      debugOutput.students_returned = studentRows;
+      debugOutput.number_of_students_returned = studentRows.length;
+
+      // Step 2: if individual student subject assignments exist for this class,
+      // use their union for the columns; otherwise use all class subjects.
+      let studentSubjectRows: Array<{ student_id: string; subject_id: string; school_id: string | null }> = [];
+      if (studentRows.length > 0) {
+        const { data: ss, error: studentSubjectsError } = await supabase
+          .from('student_subjects')
+          .select('student_id, subject_id, school_id')
+          .eq('school_id', schoolId)
+          .in('student_id', studentRows.map((s) => s.id));
+        if (studentSubjectsError) throw studentSubjectsError;
+        studentSubjectRows = (ss as any) || [];
+      }
+
+      const perStudentAssignments: Record<string, string[]> = {};
+      studentSubjectRows.forEach((row) => {
+        perStudentAssignments[row.student_id] = [
+          ...(perStudentAssignments[row.student_id] || []),
+          row.subject_id,
+        ];
+      });
+      const studentSubjectIds = Array.from(new Set(studentSubjectRows.map((row) => row.subject_id).filter(Boolean)));
+      const hasIndividualAssignments = studentSubjectIds.length > 0;
+      const subjectIds = hasIndividualAssignments ? studentSubjectIds : classSubjectIds;
+
+      setUsesIndividualSubjectAssignments(hasIndividualAssignments);
+      setStudentSubjectIdsByStudent(perStudentAssignments);
+      debugOutput.student_subject_assignments_records = studentSubjectRows;
+      debugOutput.subject_assignment_mode = hasIndividualAssignments ? 'student_subjects' : 'class_subjects';
+      debugOutput.subject_ids = subjectIds;
+
+      let subs: SubjectRow[] = [];
+      if (subjectIds.length > 0) {
+        const { data: subjData, error: subjectsError } = await supabase
+          .from('subjects')
+          .select('id, subject_name, subject_code')
+          .eq('school_id', schoolId)
+          .in('id', subjectIds);
+        if (subjectsError) throw subjectsError;
+        subs = ((subjData as any) || []).sort((a: any, b: any) => a.subject_name.localeCompare(b.subject_name));
+      }
+      setSubjects(subs);
+      debugOutput.subjects_returned = subs;
+      debugOutput.number_of_subjects_returned = subs.length;
 
       if (studentRows.length === 0 || subs.length === 0) {
         setMarks([]);
+        debugOutput.marks_returned = [];
+        debugOutput.number_of_marks_returned = 0;
+        console.info('[Marksheet data flow]', debugOutput);
         return;
       }
 
-      const { data: mk } = await supabase
+      const { data: mk, error: marksError } = await supabase
         .from('student_marks')
         .select('student_id, subject_id, hundred_percent, eighty_percent, average_score, final_grade')
+        .eq('school_id', schoolId)
         .eq('term_id', termId)
         .in('student_id', studentRows.map(s => s.id))
         .in('subject_id', subs.map(s => s.id));
-      setMarks((mk as any) || []);
+      if (marksError) throw marksError;
+      const markRows: MarkRow[] = (mk as any) || [];
+      setMarks(markRows);
+      debugOutput.marks_returned = markRows;
+      debugOutput.number_of_marks_returned = markRows.length;
+      console.info('[Marksheet data flow]', debugOutput);
     } catch (e) {
       console.error(e);
       toast({ title: 'Error', description: 'Failed to build marksheet', variant: 'destructive' });
@@ -133,14 +232,18 @@ const MarksheetGenerator = () => {
 
   const rows = useMemo(() => {
     return students.map((st, idx) => {
-      const scores = subjects.map(sub => scoreOf(st.id, sub.id));
+      const assignedSubjectIds = studentSubjectIdsByStudent[st.id] || [];
+      const scores = subjects.map(sub => {
+        if (usesIndividualSubjectAssignments && !assignedSubjectIds.includes(sub.id)) return null;
+        return scoreOf(st.id, sub.id);
+      });
       const valid = scores.filter((v): v is number => v != null);
       const total = valid.reduce((a, b) => a + b, 0);
       const avg = valid.length ? total / valid.length : 0;
       const grade = valid.length ? gradeFromScore(avg, grading) : '';
       return { no: idx + 1, student: st, scores, total, avg, grade };
     });
-  }, [students, subjects, marks, grading]);
+  }, [students, subjects, marks, grading, usesIndividualSubjectAssignments, studentSubjectIdsByStudent]);
 
   const totalMax = subjects.length * 100;
 
@@ -301,7 +404,7 @@ const MarksheetGenerator = () => {
 
   const printSheet = () => window.print();
 
-  if (loading) return <div className="p-6">Loading...</div>;
+  if (loading || schoolLoading) return <div className="p-6">Loading...</div>;
 
   return (
     <div className="space-y-4">
@@ -405,7 +508,9 @@ const MarksheetGenerator = () => {
                 </tr>
               ))}
               {rows.length === 0 && (
-                <tr><td colSpan={subjects.length + 5} className="text-center p-4 text-muted-foreground">No students in this class.</td></tr>
+                <tr><td colSpan={subjects.length + 5} className="text-center p-4 text-muted-foreground">
+                  {subjects.length === 0 ? 'No subjects assigned to this class.' : 'No students in this class.'}
+                </td></tr>
               )}
             </tbody>
           </table>
