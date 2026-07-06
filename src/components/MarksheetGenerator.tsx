@@ -116,11 +116,19 @@ const MarksheetGenerator = () => {
   const klass = classes.find(c => c.id === classId) || null;
 
   // Build matrix [studentId][subjectId] = score
+  const marksIndex = useMemo(() => {
+    const map = new Map<string, MarkRow>();
+    marks.forEach(m => map.set(`${m.student_id}::${m.subject_id}`, m));
+    return map;
+  }, [marks]);
+
   const scoreOf = (sid: string, subId: string): number | null => {
-    const m = marks.find(x => x.student_id === sid && x.subject_id === subId);
+    const m = marksIndex.get(`${sid}::${subId}`);
     if (!m) return null;
-    const v = m.hundred_percent ?? m.eighty_percent ?? m.average_score;
-    return v == null ? null : Number(v);
+    const raw = m.hundred_percent ?? m.eighty_percent ?? m.average_score;
+    if (raw === null || raw === undefined) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
   };
 
   const rows = useMemo(() => {
