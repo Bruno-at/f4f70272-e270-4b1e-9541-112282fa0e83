@@ -13,6 +13,8 @@ import { generateReportCardPDF } from '@/utils/pdfGenerator';
 import { TemplateSelector, TemplateType, ReportColor } from '@/components/TemplateSelector';
 import { calculateStudentFees } from '@/utils/feesCalculator';
 import { enrichMarksForReport } from '@/utils/reportEnrichment';
+import { setReportFont } from '@/utils/reportFont';
+import { detectAcademicLevel } from '@/utils/academicLevel';
 
 const ReportGenerator = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -30,6 +32,9 @@ const ReportGenerator = () => {
   const [headteacherComment, setHeadteacherComment] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('classic');
   const [selectedColor, setSelectedColor] = useState<ReportColor>('white');
+  const [oLevelTemplate, setOLevelTemplate] = useState<TemplateType>('classic');
+  const [aLevelTemplate, setALevelTemplate] = useState<TemplateType>('classic');
+  const [reportFontId, setReportFontId] = useState<string>('helvetica');
 
   const { toast } = useToast();
   const { schoolId } = useSchool();
@@ -59,6 +64,19 @@ const ReportGenerator = () => {
       setClasses(classesResult.data || []);
       setSubjects(subjectsResult.data || []);
       setSchoolInfo(schoolResult.data);
+
+      // Apply saved font + template preferences from settings
+      const sd = schoolResult.data as any;
+      if (sd) {
+        const font = sd.report_font || 'helvetica';
+        setReportFontId(font);
+        setReportFont(font);
+        const oTpl = (sd.o_level_template as TemplateType) || 'classic';
+        const aTpl = (sd.a_level_template as TemplateType) || 'classic';
+        setOLevelTemplate(oTpl);
+        setALevelTemplate(aTpl);
+        setSelectedTemplate(oTpl);
+      }
 
       // Set active term as default
       const activeTerm = termsResult.data?.find(term => term.is_active);
@@ -367,6 +385,9 @@ const ReportGenerator = () => {
     }
 
     // Generate PDF
+    const className = student.classes?.class_name || '';
+    const level = detectAcademicLevel(className);
+    const templateForStudent = level === 'a-level' ? aLevelTemplate : oLevelTemplate;
     await generateReportCardPDF({
       student: studentWithBase64Photo,
       term,
@@ -381,8 +402,9 @@ const ReportGenerator = () => {
         headteacher_comment: reportData.headteacher_comment,
       },
       subjects: classSubjects,
-      template: selectedTemplate,
+      template: templateForStudent,
       reportColor: selectedColor,
+      reportFont: reportFontId,
       classTeacherSignature,
       headteacherSignature,
       stampUrl: stampBase64,
