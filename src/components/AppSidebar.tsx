@@ -26,7 +26,6 @@ const menuItems = [
   { id: 'teachers', title: 'Teachers', icon: UserCog },
   { id: 'reports', title: 'Reports', icon: Download },
   { id: 'marksheet', title: 'Marksheet', icon: Table2 },
-  { id: 'settings', title: 'Settings', icon: Settings },
   { id: 'manage-reports', title: 'Manage Report Cards', icon: FolderOpen, isRoute: true },
   { id: 'finance', title: 'Finance Portal', icon: DollarSign, isRoute: true },
 ];

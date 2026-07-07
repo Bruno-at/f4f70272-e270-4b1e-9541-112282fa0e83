@@ -22,7 +22,6 @@ import { cn } from '@/lib/utils';
 import { generateReportCardPDF, addStampOverlayToPdf } from '@/utils/pdfGenerator';
 import { calculateStudentFees } from '@/utils/feesCalculator';
 import { enrichMarksForReport } from '@/utils/reportEnrichment';
-import { setReportFont } from '@/utils/reportFont';
 
 interface ReportCardWithDetails {
   id: string;
@@ -128,22 +127,7 @@ const ReportCardManagement = () => {
   useEffect(() => {
     fetchReportCards();
     loadStampConfig();
-    loadReportFontSetting();
   }, []);
-
-  const loadReportFontSetting = async () => {
-    try {
-      const { data } = await supabase
-        .from('schools')
-        .select('report_font')
-        .limit(1)
-        .maybeSingle();
-      const font = (data as any)?.report_font || 'helvetica';
-      setReportFont(font);
-    } catch (e) {
-      console.error('Error loading report font setting:', e);
-    }
-  };
 
   const loadStampConfig = async () => {
     try {

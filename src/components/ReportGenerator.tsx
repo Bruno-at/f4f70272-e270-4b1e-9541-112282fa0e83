@@ -10,12 +10,9 @@ import { useSchool } from '@/contexts/SchoolContext';
 import { Student, Term, Class, Subject, SchoolInfo } from '@/types/database';
 import { Download, FileText, Users } from 'lucide-react';
 import { generateReportCardPDF } from '@/utils/pdfGenerator';
-import { TemplateType, ReportColor, reportColors } from '@/components/TemplateSelector';
-import { Check } from 'lucide-react';
+import { TemplateSelector, TemplateType, ReportColor } from '@/components/TemplateSelector';
 import { calculateStudentFees } from '@/utils/feesCalculator';
 import { enrichMarksForReport } from '@/utils/reportEnrichment';
-import { setReportFont } from '@/utils/reportFont';
-import { detectAcademicLevel } from '@/utils/academicLevel';
 
 const ReportGenerator = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -33,9 +30,6 @@ const ReportGenerator = () => {
   const [headteacherComment, setHeadteacherComment] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('classic');
   const [selectedColor, setSelectedColor] = useState<ReportColor>('white');
-  const [oLevelTemplate, setOLevelTemplate] = useState<TemplateType>('classic');
-  const [aLevelTemplate, setALevelTemplate] = useState<TemplateType>('classic');
-  const [reportFontId, setReportFontId] = useState<string>('helvetica');
 
   const { toast } = useToast();
   const { schoolId } = useSchool();
@@ -65,19 +59,6 @@ const ReportGenerator = () => {
       setClasses(classesResult.data || []);
       setSubjects(subjectsResult.data || []);
       setSchoolInfo(schoolResult.data);
-
-      // Apply saved font + template preferences from settings
-      const sd = schoolResult.data as any;
-      if (sd) {
-        const font = sd.report_font || 'helvetica';
-        setReportFontId(font);
-        setReportFont(font);
-        const oTpl = (sd.o_level_template as TemplateType) || 'classic';
-        const aTpl = (sd.a_level_template as TemplateType) || 'classic';
-        setOLevelTemplate(oTpl);
-        setALevelTemplate(aTpl);
-        setSelectedTemplate(oTpl);
-      }
 
       // Set active term as default
       const activeTerm = termsResult.data?.find(term => term.is_active);
@@ -386,9 +367,6 @@ const ReportGenerator = () => {
     }
 
     // Generate PDF
-    const className = student.classes?.class_name || '';
-    const level = detectAcademicLevel(className);
-    const templateForStudent = level === 'a-level' ? aLevelTemplate : oLevelTemplate;
     await generateReportCardPDF({
       student: studentWithBase64Photo,
       term,
@@ -403,9 +381,8 @@ const ReportGenerator = () => {
         headteacher_comment: reportData.headteacher_comment,
       },
       subjects: classSubjects,
-      template: templateForStudent,
+      template: selectedTemplate,
       reportColor: selectedColor,
-      reportFont: reportFontId,
       classTeacherSignature,
       headteacherSignature,
       stampUrl: stampBase64,
@@ -503,33 +480,18 @@ const ReportGenerator = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Report Card Color</CardTitle>
+          <CardTitle>Select Report Card Template</CardTitle>
           <CardDescription>
-            Templates and font are configured in the <strong>Settings</strong> section. The system
-            automatically applies the O-Level or A-Level template based on each student's class.
-            Pick a background color for this batch below.
+            Choose a report card template design. Preview each template to see how it looks.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-3">
-            {reportColors.map((color) => (
-              <button
-                key={color.id}
-                type="button"
-                onClick={() => setSelectedColor(color.id)}
-                className={`relative w-12 h-12 rounded-lg border-2 transition-all ${color.bgClass} ${
-                  selectedColor === color.id
-                    ? 'border-primary ring-2 ring-primary ring-offset-2'
-                    : 'border-border hover:border-primary/50'
-                }`}
-                title={color.name}
-              >
-                {selectedColor === color.id && (
-                  <Check className="w-5 h-5 absolute inset-0 m-auto text-primary" />
-                )}
-              </button>
-            ))}
-          </div>
+          <TemplateSelector
+            value={selectedTemplate}
+            onChange={setSelectedTemplate}
+            colorValue={selectedColor}
+            onColorChange={setSelectedColor}
+          />
         </CardContent>
       </Card>
 

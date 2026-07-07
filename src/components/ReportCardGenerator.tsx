@@ -1,7 +1,7 @@
 import { useState, Suspense, lazy, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare, Pencil, Table2, Sliders } from 'lucide-react';
+import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare, Pencil, Table2 } from 'lucide-react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from './AppSidebar';
 import { ThemeToggle } from './ThemeToggle';
@@ -20,7 +20,6 @@ const CommentTemplatesManager = lazy(() => import('./CommentTemplatesManager'));
 const SignaturesManager = lazy(() => import('./SignaturesManager'));
 const TeachersManager = lazy(() => import('./TeachersManager'));
 const MarksheetGenerator = lazy(() => import('./MarksheetGenerator'));
-const ReportCardSettings = lazy(() => import('./ReportCardSettings'));
 
 const SectionLoader = () => (
   <div className="space-y-4">
@@ -44,7 +43,6 @@ const sectionConfig = [
   { id: 'teachers', title: 'Teachers Management', desc: 'Add and manage teachers for your school', icon: Pencil, Component: TeachersManager },
   { id: 'reports', title: 'Report Card Generation', desc: 'Generate individual or bulk PDF report cards', icon: Download, Component: ReportGenerator },
   { id: 'marksheet', title: 'Class Marksheet', desc: 'Generate a professional class marksheet (PDF, Excel, Print) from real data', icon: Table2, Component: MarksheetGenerator },
-  { id: 'settings', title: 'Report Card Settings', desc: 'Choose the report card font, O-Level & A-Level templates, and stamp position', icon: Sliders, Component: ReportCardSettings },
 ];
 
 const ReportCardGenerator = () => {
