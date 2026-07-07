@@ -10,7 +10,8 @@ import { useSchool } from '@/contexts/SchoolContext';
 import { Student, Term, Class, Subject, SchoolInfo } from '@/types/database';
 import { Download, FileText, Users } from 'lucide-react';
 import { generateReportCardPDF } from '@/utils/pdfGenerator';
-import { TemplateSelector, TemplateType, ReportColor } from '@/components/TemplateSelector';
+import { TemplateSelector, TemplateType, ReportColor, reportColors } from '@/components/TemplateSelector';
+import { Check } from 'lucide-react';
 import { calculateStudentFees } from '@/utils/feesCalculator';
 import { enrichMarksForReport } from '@/utils/reportEnrichment';
 import { setReportFont } from '@/utils/reportFont';
@@ -502,18 +503,33 @@ const ReportGenerator = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Select Report Card Template</CardTitle>
+          <CardTitle>Report Card Color</CardTitle>
           <CardDescription>
-            Choose a report card template design. Preview each template to see how it looks.
+            Templates and font are configured in the <strong>Settings</strong> section. The system
+            automatically applies the O-Level or A-Level template based on each student's class.
+            Pick a background color for this batch below.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <TemplateSelector
-            value={selectedTemplate}
-            onChange={setSelectedTemplate}
-            colorValue={selectedColor}
-            onColorChange={setSelectedColor}
-          />
+          <div className="flex flex-wrap gap-3">
+            {reportColors.map((color) => (
+              <button
+                key={color.id}
+                type="button"
+                onClick={() => setSelectedColor(color.id)}
+                className={`relative w-12 h-12 rounded-lg border-2 transition-all ${color.bgClass} ${
+                  selectedColor === color.id
+                    ? 'border-primary ring-2 ring-primary ring-offset-2'
+                    : 'border-border hover:border-primary/50'
+                }`}
+                title={color.name}
+              >
+                {selectedColor === color.id && (
+                  <Check className="w-5 h-5 absolute inset-0 m-auto text-primary" />
+                )}
+              </button>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
