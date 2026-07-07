@@ -669,6 +669,7 @@ export type Database = {
       }
       schools: {
         Row: {
+          a_level_template: Database["public"]["Enums"]["template_type"]
           address: string | null
           created_at: string
           email: string | null
@@ -678,7 +679,9 @@ export type Database = {
           location: string | null
           logo_url: string | null
           motto: string | null
+          o_level_template: Database["public"]["Enums"]["template_type"]
           po_box: string | null
+          report_font: string
           school_name: string
           slug: string
           stamp_opacity: number | null
@@ -691,6 +694,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          a_level_template?: Database["public"]["Enums"]["template_type"]
           address?: string | null
           created_at?: string
           email?: string | null
@@ -700,7 +704,9 @@ export type Database = {
           location?: string | null
           logo_url?: string | null
           motto?: string | null
+          o_level_template?: Database["public"]["Enums"]["template_type"]
           po_box?: string | null
+          report_font?: string
           school_name: string
           slug: string
           stamp_opacity?: number | null
@@ -713,6 +719,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          a_level_template?: Database["public"]["Enums"]["template_type"]
           address?: string | null
           created_at?: string
           email?: string | null
@@ -722,7 +729,9 @@ export type Database = {
           location?: string | null
           logo_url?: string | null
           motto?: string | null
+          o_level_template?: Database["public"]["Enums"]["template_type"]
           po_box?: string | null
+          report_font?: string
           school_name?: string
           slug?: string
           stamp_opacity?: number | null
