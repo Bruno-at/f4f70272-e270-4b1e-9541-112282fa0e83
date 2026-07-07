@@ -3,6 +3,7 @@ import { Student, Term, SchoolInfo, StudentMark, Subject } from '@/types/databas
 import { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } from './pdfTemplates';
 import { generateALevelTemplate } from './aLevelPdfTemplate';
 import { detectAcademicLevel } from './academicLevel';
+import { setReportFont } from './reportFont';
 
 export type ReportColor = 'white' | 'green' | 'blue' | 'pink' | 'yellow' | 'gray';
 
@@ -47,6 +48,7 @@ export interface ReportCardData {
     feesNextTerm: number;
     otherRequirements: string;
   };
+  reportFont?: string | null;
 }
 
 const getImageFormatFromDataUrl = (dataUrl: string): 'PNG' | 'JPEG' | 'WEBP' => {
@@ -103,6 +105,10 @@ export const addStampOverlayToPdf = (pdf: jsPDF, stampUrl: string, stampConfig: 
 
 export const generateReportCardPDF = async (data: ReportCardData) => {
   const { student, term, template = 'classic' } = data;
+
+  if (data.reportFont) {
+    setReportFont(data.reportFont);
+  }
   
   // Auto-detect academic level
   const className = student.classes?.class_name || '';
