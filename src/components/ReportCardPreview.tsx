@@ -282,7 +282,7 @@ const ALevelPreview = ({
 
       {/* Footer */}
       <div className="mt-2 border border-gray-400">
-        <div className="grid grid-cols-4 text-[8px] text-center">
+        <div className="grid grid-cols-3 text-[8px] text-center">
           <div className="border-r border-gray-400 p-1">
             <p className="font-bold">TERM ENDED ON</p>
             <p className="font-bold">{formatDate(term.end_date)}</p>
@@ -291,19 +291,15 @@ const ALevelPreview = ({
             <p className="font-bold">NEXT TERM BEGINS</p>
             <p className="font-bold">{getNextTermDate(term.end_date)}</p>
           </div>
-          <div className="border-r border-gray-400 p-1">
+          <div className="p-1">
             <p className="font-bold">FEES BALANCE</p>
             <p className="font-bold">{feesData ? `Ugx ${feesData.feesBalance.toLocaleString()}/=` : ''}</p>
-          </div>
-          <div className="p-1">
-            <p className="font-bold">FEES NEXT TERM</p>
-            <p className="font-bold">{feesData ? `Ugx ${feesData.feesNextTerm.toLocaleString()}/=` : ''}</p>
           </div>
         </div>
       </div>
 
       {/* Motto */}
-      <div className="text-center mt-2 font-bold italic text-[10px]">
+      <div className="text-center mt-2 italic text-[10px]">
         {schoolInfo.motto?.toUpperCase() || 'SUCCESS AFTER STRUGGLE'}
       </div>
 
