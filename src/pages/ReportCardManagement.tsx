@@ -445,12 +445,8 @@ const ReportCardManagement = () => {
       const sd = data as any;
       const stampBase64 = await resolveImageDataUrl(sd.stamp_url, 'student-photos');
 
-      if (!stampBase64?.startsWith('data:image')) {
-        stampBase64 = null;
-      }
-
       return {
-        stampUrl: stampBase64,
+        stampUrl: stampBase64?.startsWith('data:image') ? stampBase64 : null,
         stampConfig: {
           positionX: Number(sd.stamp_position_x ?? 75),
           positionY: Number(sd.stamp_position_y ?? 80),
