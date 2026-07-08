@@ -549,8 +549,8 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.setDrawColor(120, 120, 120);
   pdf.rect(10, yPosition, pageWidth - 20, 10);
   
-  const footerColW = (pageWidth - 20) / 5;
-  for (let i = 1; i < 5; i++) {
+  const footerColW = (pageWidth - 20) / 4;
+  for (let i = 1; i < 4; i++) {
     pdf.line(10 + footerColW * i, yPosition, 10 + footerColW * i, yPosition + 10);
   }
   
@@ -558,27 +558,22 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(0, 0, 0);
   
-  pdf.text(termEndDate, 10 + footerColW * 0.5, yPosition + 4, { align: 'center' });
-  pdf.text('TERM ENDED ON', 10 + footerColW * 0.5, yPosition + 8, { align: 'center' });
-  
-  pdf.text(nextTermDate, 10 + footerColW * 1.5, yPosition + 4, { align: 'center' });
-  pdf.text('NEXT TERM BEGINS', 10 + footerColW * 1.5, yPosition + 8, { align: 'center' });
-  
+  pdf.text('TERM ENDED ON', 10 + footerColW * 0.5, yPosition + 4, { align: 'center' });
+  pdf.text(termEndDate, 10 + footerColW * 0.5, yPosition + 8, { align: 'center' });
+
+  pdf.text('NEXT TERM BEGINS', 10 + footerColW * 1.5, yPosition + 4, { align: 'center' });
+  pdf.text(nextTermDate, 10 + footerColW * 1.5, yPosition + 8, { align: 'center' });
+
   pdf.text('FEES BALANCE', 10 + footerColW * 2.5, yPosition + 6, { align: 'center' });
-  pdf.text('FEES NEXT TERM', 10 + footerColW * 3.5, yPosition + 6, { align: 'center' });
-  
+
   pdf.setFont('helvetica', 'italic');
-  pdf.text('Other Requirement', 10 + footerColW * 4.5, yPosition + 6, { align: 'center' });
+  pdf.text('Other Requirement', 10 + footerColW * 3.5, yPosition + 6, { align: 'center' });
   
   yPosition += 13;
   
-  // Motto - subtle
-  pdf.setFillColor(240, 240, 240);
-  pdf.rect(10, yPosition, pageWidth - 20, 6, 'F');
-  pdf.setDrawColor(120, 120, 120);
-  pdf.rect(10, yPosition, pageWidth - 20, 6);
+  // Motto - centered italic text only, no border
   pdf.setTextColor(50, 50, 50);
-  pdf.setFont('helvetica', 'bolditalic');
+  pdf.setFont('helvetica', 'italic');
   pdf.setFontSize(9);
   const motto = schoolInfo.motto || 'Work hard to excel';
   pdf.text(motto, pageWidth / 2, yPosition + 4.5, { align: 'center' });
