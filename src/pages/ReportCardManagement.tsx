@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { generateReportCardPDF, addStampOverlayToPdf } from '@/utils/pdfGenerator';
 import { calculateStudentFees } from '@/utils/feesCalculator';
 import { enrichMarksForReport } from '@/utils/reportEnrichment';
+import { blobToDataUrl, resolveImageDataUrl } from '@/utils/photoUrl';
 
 interface ReportCardWithDetails {
   id: string;
@@ -326,12 +327,12 @@ const ReportCardManagement = () => {
       }
 
       // Load stamp/config and fall back to the stamp already rendered in preview DOM
-      const stampInfo = await loadStampForPdf();
+      const stampInfo = await loadStampForPdf(reportData.schoolInfo.id);
       let resolvedStampUrl = stampInfo.stampUrl || null;
       if (!resolvedStampUrl && reportData.stampUrl) {
         resolvedStampUrl = reportData.stampUrl.startsWith('data:image')
           ? reportData.stampUrl
-          : await urlToBase64(reportData.stampUrl);
+          : await resolveImageDataUrl(reportData.stampUrl, 'student-photos');
       }
 
       // Generate PDF using the unified generator (handles A-Level detection)
@@ -406,12 +407,12 @@ const ReportCardManagement = () => {
       if (!reportData) return;
 
       // Load stamp and config for PDF (fallback to preview stamp in report data)
-      const stampInfo = await loadStampForPdf();
+      const stampInfo = await loadStampForPdf(reportData.schoolInfo.id);
       let resolvedStampUrl = stampInfo.stampUrl || null;
       if (!resolvedStampUrl && reportData.stampUrl) {
         resolvedStampUrl = reportData.stampUrl.startsWith('data:image')
           ? reportData.stampUrl
-          : await urlToBase64(reportData.stampUrl);
+          : await resolveImageDataUrl(reportData.stampUrl, 'student-photos');
       }
 
       await generateReportCardPDF({ ...reportData, ...stampInfo, stampUrl: resolvedStampUrl });
@@ -430,53 +431,22 @@ const ReportCardManagement = () => {
     }
   };
 
-  const loadStampForPdf = async (): Promise<{ stampUrl?: string | null; stampConfig?: { positionX: number; positionY: number; size: number; opacity: number } | null }> => {
+  const loadStampForPdf = async (schoolId?: string | null): Promise<{ stampUrl?: string | null; stampConfig?: { positionX: number; positionY: number; size: number; opacity: number } | null }> => {
     try {
-      const { data } = await supabase
+      let query = supabase
         .from('schools')
-        .select('stamp_url, stamp_position_x, stamp_position_y, stamp_size, stamp_opacity')
-        .limit(1)
-        .maybeSingle();
+        .select('stamp_url, stamp_position_x, stamp_position_y, stamp_size, stamp_opacity');
+
+      query = schoolId ? query.eq('id', schoolId) : query.limit(1);
+      const { data } = await query.maybeSingle();
 
       if (!data) return {};
 
       const sd = data as any;
-      let stampBase64: string | null = null;
-
-      if (sd.stamp_url) {
-        if (sd.stamp_url.startsWith('data:image')) {
-          stampBase64 = sd.stamp_url;
-        } else if (!sd.stamp_url.startsWith('http')) {
-          const { data: fileData, error: downloadError } = await supabase.storage
-            .from('student-photos')
-            .download(sd.stamp_url);
-
-          if (!downloadError && fileData) {
-            stampBase64 = await new Promise<string>((resolve) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve((reader.result as string) || '');
-              reader.onerror = () => resolve('');
-              reader.readAsDataURL(fileData);
-            });
-          } else {
-            const { data: signedData } = await supabase.storage
-              .from('student-photos')
-              .createSignedUrl(sd.stamp_url, 3600);
-            if (signedData?.signedUrl) {
-              stampBase64 = await urlToBase64(signedData.signedUrl);
-            }
-          }
-        } else {
-          stampBase64 = await urlToBase64(sd.stamp_url);
-        }
-      }
-
-      if (!stampBase64?.startsWith('data:image')) {
-        stampBase64 = null;
-      }
+      const stampBase64 = await resolveImageDataUrl(sd.stamp_url, 'student-photos');
 
       return {
-        stampUrl: stampBase64,
+        stampUrl: stampBase64?.startsWith('data:image') ? stampBase64 : null,
         stampConfig: {
           positionX: Number(sd.stamp_position_x ?? 75),
           positionY: Number(sd.stamp_position_y ?? 80),
@@ -497,17 +467,15 @@ const ReportCardManagement = () => {
     try {
       toast({ title: "Preparing...", description: "Generating report card PDF" });
 
-      const [reportData, stampInfo] = await Promise.all([
-        fetchFullReportData(reportId),
-        loadStampForPdf()
-      ]);
+      const reportData = await fetchFullReportData(reportId);
       if (!reportData) return;
+      const stampInfo = await loadStampForPdf(reportData.schoolInfo.id);
 
       let resolvedStampUrl = stampInfo.stampUrl || null;
       if (!resolvedStampUrl && reportData.stampUrl) {
         resolvedStampUrl = reportData.stampUrl.startsWith('data:image')
           ? reportData.stampUrl
-          : await urlToBase64(reportData.stampUrl);
+          : await resolveImageDataUrl(reportData.stampUrl, 'student-photos');
       }
 
       const fullData = { ...reportData, ...stampInfo, stampUrl: resolvedStampUrl };
@@ -569,13 +537,8 @@ const ReportCardManagement = () => {
   const urlToBase64 = async (url: string): Promise<string> => {
     try {
       const response = await fetch(url);
-      const blob = await response.blob();
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
+      if (!response.ok) return '';
+      return await blobToDataUrl(await response.blob());
     } catch (error) {
       console.error('Error converting image to base64:', error);
       return '';
@@ -612,11 +575,14 @@ const ReportCardManagement = () => {
 
       if (termError) throw termError;
 
-      // Fetch school info
+      // Fetch school info from the same school as the report/student record.
+      // Using limit(1) can return the wrong tenant's school in edge cases and
+      // also makes it easy to miss the exact logo_url used by School Info.
+      const reportSchoolId = (report as any).school_id || (studentData as any).school_id;
       const { data: schoolData, error: schoolError } = await supabase
         .from('schools')
         .select('*')
-        .limit(1)
+        .eq('id', reportSchoolId)
         .single();
 
       if (schoolError) throw schoolError;
@@ -654,64 +620,37 @@ const ReportCardManagement = () => {
         subjectsData = subs || [];
       }
 
-      // Convert student photo to base64 for PDF
+      // Convert student photo/logo to data URLs for both in-DOM preview and PDF.
+      // Stored values may be private storage paths, signed URLs, public URLs, or legacy data URIs.
       const studentWithBase64 = { ...studentData };
-      if (studentData.photo_url && !studentData.photo_url.startsWith('data:image')) {
-        // Extract file path from the stored URL for private bucket signed URL
-        const photoUrl = studentData.photo_url;
-        const bucketPath = photoUrl.includes('/student-photos/') 
-          ? photoUrl.split('/student-photos/').pop() 
-          : null;
-        
-        if (bucketPath) {
-          // Use signed URL for private bucket
-          const { data: signedUrlData } = await supabase.storage
-            .from('student-photos')
-            .createSignedUrl(bucketPath, 3600);
-          
-          if (signedUrlData?.signedUrl) {
-            const base64Photo = await urlToBase64(signedUrlData.signedUrl);
-            if (base64Photo) studentWithBase64.photo_url = base64Photo;
-          }
-        } else {
-          const base64Photo = await urlToBase64(photoUrl);
-          if (base64Photo) studentWithBase64.photo_url = base64Photo;
-        }
-      }
-
-      // Convert school logo to base64 for PDF
       const schoolWithBase64 = { ...schoolData };
-      if (schoolData.logo_url && !schoolData.logo_url.startsWith('data:image')) {
-        const base64Logo = await urlToBase64(schoolData.logo_url);
-        if (base64Logo) schoolWithBase64.logo_url = base64Logo;
-      }
+      const [base64Photo, base64Logo] = await Promise.all([
+        resolveImageDataUrl(studentData.photo_url, 'student-photos'),
+        resolveImageDataUrl(schoolData.logo_url, 'student-photos'),
+      ]);
+      if (base64Photo) studentWithBase64.photo_url = base64Photo;
+      if (base64Logo) schoolWithBase64.logo_url = base64Logo;
+
+      console.info('[ReportCard image flow]', {
+        reportId,
+        reportSchoolId,
+        schoolLogoRaw: schoolData.logo_url || null,
+        studentPhotoRaw: studentData.photo_url || null,
+        finalLogoSrc: schoolWithBase64.logo_url ? `${String(schoolWithBase64.logo_url).slice(0, 32)}...` : null,
+        finalPhotoSrc: studentWithBase64.photo_url ? `${String(studentWithBase64.photo_url).slice(0, 32)}...` : null,
+        logoReadyForPdf: Boolean(schoolWithBase64.logo_url?.startsWith('data:image')),
+        photoReadyForPdf: Boolean(studentWithBase64.photo_url?.startsWith('data:image')),
+      });
 
       // Convert signatures to base64
       let classTeacherSig = studentData.classes?.class_signature_url || null;
-      if (classTeacherSig && !classTeacherSig.startsWith('data:image')) {
-        const base64Sig = await urlToBase64(classTeacherSig);
-        if (base64Sig) classTeacherSig = base64Sig;
-      }
+      classTeacherSig = await resolveImageDataUrl(classTeacherSig, 'student-photos') || classTeacherSig;
 
       let headteacherSig = schoolData.headteacher_signature_url || null;
-      if (headteacherSig && !headteacherSig.startsWith('data:image')) {
-        const base64Sig = await urlToBase64(headteacherSig);
-        if (base64Sig) headteacherSig = base64Sig;
-      }
+      headteacherSig = await resolveImageDataUrl(headteacherSig, 'student-photos') || headteacherSig;
 
       // Resolve stamp URL for in-DOM preview/print container
-      let stampPreviewUrl: string | null = null;
-      if ((schoolData as any).stamp_url) {
-        const stampPath = (schoolData as any).stamp_url as string;
-        if (stampPath.startsWith('data:image') || stampPath.startsWith('http')) {
-          stampPreviewUrl = stampPath;
-        } else {
-          const { data: signedData } = await supabase.storage
-            .from('student-photos')
-            .createSignedUrl(stampPath, 3600);
-          stampPreviewUrl = signedData?.signedUrl || null;
-        }
-      }
+      const stampPreviewUrl = await resolveImageDataUrl((schoolData as any).stamp_url, 'student-photos');
 
       // Calculate fees data
       const feesData = await calculateStudentFees(report.student_id, report.term_id, studentData.class_id);
@@ -775,21 +714,7 @@ const ReportCardManagement = () => {
         return;
       }
 
-      // Get the stamp image - handle storage paths and URLs
-      let stampBase64 = stampPath;
-      if (stampPath.startsWith('data:image')) {
-        // Already base64
-      } else if (!stampPath.startsWith('http')) {
-        // Storage path - get signed URL first, then convert to base64
-        const { data: signedData } = await supabase.storage
-          .from('student-photos')
-          .createSignedUrl(stampPath, 3600);
-        if (signedData?.signedUrl) {
-          stampBase64 = await urlToBase64(signedData.signedUrl);
-        }
-      } else {
-        stampBase64 = await urlToBase64(stampPath);
-      }
+      const stampBase64 = await resolveImageDataUrl(stampPath, 'student-photos');
 
       if (previewData) {
         setPreviewData({ ...previewData, stampUrl: stampBase64 });

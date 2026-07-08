@@ -13,6 +13,7 @@ import { generateReportCardPDF } from '@/utils/pdfGenerator';
 import { TemplateSelector, TemplateType, ReportColor } from '@/components/TemplateSelector';
 import { calculateStudentFees } from '@/utils/feesCalculator';
 import { enrichMarksForReport } from '@/utils/reportEnrichment';
+import { blobToDataUrl, resolveImageDataUrl } from '@/utils/photoUrl';
 
 const ReportGenerator = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -45,7 +46,9 @@ const ReportGenerator = () => {
         supabase.from('terms').select('*').order('year', { ascending: false }),
         supabase.from('classes').select('*').order('class_name'),
         supabase.from('subjects').select('*').order('subject_name'),
-        supabase.from('schools').select('*').limit(1).maybeSingle()
+        schoolId
+          ? supabase.from('schools').select('*').eq('id', schoolId).maybeSingle()
+          : supabase.from('schools').select('*').limit(1).maybeSingle()
       ]);
 
       if (studentsResult.error) throw studentsResult.error;
@@ -146,13 +149,8 @@ const ReportGenerator = () => {
   const urlToBase64 = async (url: string): Promise<string> => {
     try {
       const response = await fetch(url);
-      const blob = await response.blob();
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
+      if (!response.ok) return '';
+      return await blobToDataUrl(await response.blob());
     } catch (error) {
       console.error('Error converting image to base64:', error);
       return '';
@@ -200,7 +198,7 @@ const ReportGenerator = () => {
     const { data: schoolData } = await supabase
       .from('schools')
       .select('headteacher_signature_url')
-      .limit(1)
+      .eq('id', schoolId)
       .maybeSingle();
 
     const headteacherSignature = schoolData?.headteacher_signature_url || null;
@@ -289,30 +287,26 @@ const ReportGenerator = () => {
         .insert([{ ...reportData, school_id: schoolId }]);
     }
 
-    // Convert images to base64 for PDF
+    // Convert images to base64 for PDF. Stored values may be private storage paths,
+    // signed URLs, public URLs, or legacy data URIs.
     const studentWithBase64Photo = { ...student };
-    if (student.photo_url && !student.photo_url.startsWith('data:image')) {
-      const photoUrl = student.photo_url;
-      const bucketPath = photoUrl.includes('/student-photos/')
-        ? photoUrl.split('/student-photos/').pop()
-        : null;
-
-      if (bucketPath) {
-        const { data: signedUrlData } = await supabase.storage
-          .from('student-photos')
-          .createSignedUrl(bucketPath, 3600);
-        if (signedUrlData?.signedUrl) {
-          studentWithBase64Photo.photo_url = await urlToBase64(signedUrlData.signedUrl);
-        }
-      } else {
-        studentWithBase64Photo.photo_url = await urlToBase64(photoUrl);
-      }
-    }
-
     const schoolInfoWithBase64Logo = { ...schoolInfo! };
-    if (schoolInfo?.logo_url && !schoolInfo.logo_url.startsWith('data:image')) {
-      schoolInfoWithBase64Logo.logo_url = await urlToBase64(schoolInfo.logo_url);
-    }
+    const [base64Photo, base64Logo] = await Promise.all([
+      resolveImageDataUrl(student.photo_url, 'student-photos'),
+      resolveImageDataUrl(schoolInfo?.logo_url, 'student-photos'),
+    ]);
+    if (base64Photo) studentWithBase64Photo.photo_url = base64Photo;
+    if (base64Logo) schoolInfoWithBase64Logo.logo_url = base64Logo;
+
+    console.info('[ReportGenerator image flow]', {
+      schoolId,
+      schoolLogoRaw: schoolInfo?.logo_url || null,
+      studentPhotoRaw: student.photo_url || null,
+      finalLogoSrc: schoolInfoWithBase64Logo.logo_url ? `${String(schoolInfoWithBase64Logo.logo_url).slice(0, 32)}...` : null,
+      finalPhotoSrc: studentWithBase64Photo.photo_url ? `${String(studentWithBase64Photo.photo_url).slice(0, 32)}...` : null,
+      logoReadyForPdf: Boolean(schoolInfoWithBase64Logo.logo_url?.startsWith('data:image')),
+      photoReadyForPdf: Boolean(studentWithBase64Photo.photo_url?.startsWith('data:image')),
+    });
 
     // Load stamp URL and config
     let stampBase64: string | null = null;
@@ -327,36 +321,7 @@ const ReportGenerator = () => {
     if (stampData) {
       const sd = stampData as any;
       if (sd.stamp_url) {
-        // Convert stamp to base64
-        if (sd.stamp_url.startsWith('data:image')) {
-          stampBase64 = sd.stamp_url;
-        } else if (!sd.stamp_url.startsWith('http')) {
-          // Use download() to avoid CORS issues with signed URLs
-          try {
-            const { data: fileData, error: downloadError } = await supabase.storage
-              .from('student-photos')
-              .download(sd.stamp_url);
-            
-            if (!downloadError && fileData) {
-              stampBase64 = await new Promise<string>((resolve) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.onerror = () => resolve('');
-                reader.readAsDataURL(fileData);
-              });
-            } else {
-              // Fallback to signed URL
-              const { data: signedData } = await supabase.storage.from('student-photos').createSignedUrl(sd.stamp_url, 3600);
-              if (signedData?.signedUrl) stampBase64 = await urlToBase64(signedData.signedUrl);
-            }
-          } catch (e) {
-            console.error('Stamp download error:', e);
-            const { data: signedData } = await supabase.storage.from('student-photos').createSignedUrl(sd.stamp_url, 3600);
-            if (signedData?.signedUrl) stampBase64 = await urlToBase64(signedData.signedUrl);
-          }
-        } else {
-          stampBase64 = await urlToBase64(sd.stamp_url);
-        }
+        stampBase64 = await resolveImageDataUrl(sd.stamp_url, 'student-photos');
       }
       stampConfig = {
         positionX: sd.stamp_position_x ?? 75,
