@@ -327,12 +327,12 @@ const ReportCardManagement = () => {
       }
 
       // Load stamp/config and fall back to the stamp already rendered in preview DOM
-      const stampInfo = await loadStampForPdf();
+      const stampInfo = await loadStampForPdf(reportData.schoolInfo.id);
       let resolvedStampUrl = stampInfo.stampUrl || null;
       if (!resolvedStampUrl && reportData.stampUrl) {
         resolvedStampUrl = reportData.stampUrl.startsWith('data:image')
           ? reportData.stampUrl
-          : await urlToBase64(reportData.stampUrl);
+          : await resolveImageDataUrl(reportData.stampUrl, 'student-photos');
       }
 
       // Generate PDF using the unified generator (handles A-Level detection)
@@ -407,12 +407,12 @@ const ReportCardManagement = () => {
       if (!reportData) return;
 
       // Load stamp and config for PDF (fallback to preview stamp in report data)
-      const stampInfo = await loadStampForPdf();
+      const stampInfo = await loadStampForPdf(reportData.schoolInfo.id);
       let resolvedStampUrl = stampInfo.stampUrl || null;
       if (!resolvedStampUrl && reportData.stampUrl) {
         resolvedStampUrl = reportData.stampUrl.startsWith('data:image')
           ? reportData.stampUrl
-          : await urlToBase64(reportData.stampUrl);
+          : await resolveImageDataUrl(reportData.stampUrl, 'student-photos');
       }
 
       await generateReportCardPDF({ ...reportData, ...stampInfo, stampUrl: resolvedStampUrl });
@@ -467,17 +467,15 @@ const ReportCardManagement = () => {
     try {
       toast({ title: "Preparing...", description: "Generating report card PDF" });
 
-      const [reportData, stampInfo] = await Promise.all([
-        fetchFullReportData(reportId),
-        loadStampForPdf()
-      ]);
+      const reportData = await fetchFullReportData(reportId);
       if (!reportData) return;
+      const stampInfo = await loadStampForPdf(reportData.schoolInfo.id);
 
       let resolvedStampUrl = stampInfo.stampUrl || null;
       if (!resolvedStampUrl && reportData.stampUrl) {
         resolvedStampUrl = reportData.stampUrl.startsWith('data:image')
           ? reportData.stampUrl
-          : await urlToBase64(reportData.stampUrl);
+          : await resolveImageDataUrl(reportData.stampUrl, 'student-photos');
       }
 
       const fullData = { ...reportData, ...stampInfo, stampUrl: resolvedStampUrl };
@@ -646,30 +644,13 @@ const ReportCardManagement = () => {
 
       // Convert signatures to base64
       let classTeacherSig = studentData.classes?.class_signature_url || null;
-      if (classTeacherSig && !classTeacherSig.startsWith('data:image')) {
-        const base64Sig = await urlToBase64(classTeacherSig);
-        if (base64Sig) classTeacherSig = base64Sig;
-      }
+      classTeacherSig = await resolveImageDataUrl(classTeacherSig, 'student-photos') || classTeacherSig;
 
       let headteacherSig = schoolData.headteacher_signature_url || null;
-      if (headteacherSig && !headteacherSig.startsWith('data:image')) {
-        const base64Sig = await urlToBase64(headteacherSig);
-        if (base64Sig) headteacherSig = base64Sig;
-      }
+      headteacherSig = await resolveImageDataUrl(headteacherSig, 'student-photos') || headteacherSig;
 
       // Resolve stamp URL for in-DOM preview/print container
-      let stampPreviewUrl: string | null = null;
-      if ((schoolData as any).stamp_url) {
-        const stampPath = (schoolData as any).stamp_url as string;
-        if (stampPath.startsWith('data:image') || stampPath.startsWith('http')) {
-          stampPreviewUrl = stampPath;
-        } else {
-          const { data: signedData } = await supabase.storage
-            .from('student-photos')
-            .createSignedUrl(stampPath, 3600);
-          stampPreviewUrl = signedData?.signedUrl || null;
-        }
-      }
+      const stampPreviewUrl = await resolveImageDataUrl((schoolData as any).stamp_url, 'student-photos');
 
       // Calculate fees data
       const feesData = await calculateStudentFees(report.student_id, report.term_id, studentData.class_id);
@@ -733,21 +714,7 @@ const ReportCardManagement = () => {
         return;
       }
 
-      // Get the stamp image - handle storage paths and URLs
-      let stampBase64 = stampPath;
-      if (stampPath.startsWith('data:image')) {
-        // Already base64
-      } else if (!stampPath.startsWith('http')) {
-        // Storage path - get signed URL first, then convert to base64
-        const { data: signedData } = await supabase.storage
-          .from('student-photos')
-          .createSignedUrl(stampPath, 3600);
-        if (signedData?.signedUrl) {
-          stampBase64 = await urlToBase64(signedData.signedUrl);
-        }
-      } else {
-        stampBase64 = await urlToBase64(stampPath);
-      }
+      const stampBase64 = await resolveImageDataUrl(stampPath, 'student-photos');
 
       if (previewData) {
         setPreviewData({ ...previewData, stampUrl: stampBase64 });
