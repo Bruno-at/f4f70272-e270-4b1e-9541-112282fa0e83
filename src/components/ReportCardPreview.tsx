@@ -74,25 +74,24 @@ const ALevelPreview = ({
   return (
     <div className="report-card-container bg-white text-black p-4 border border-gray-400 text-[10px] leading-tight relative" style={{ fontFamily: 'Arial, sans-serif' }}>
       {/* Header */}
-      <div className="flex justify-between items-start mb-2">
-        <div className="w-16 h-16 border border-gray-400 flex items-center justify-center overflow-hidden bg-white">
-          {schoolInfo.logo_url ? (
+      <div className="flex justify-between items-start gap-3 mb-2">
+        <div className="w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden">
+          {schoolInfo.logo_url && (
             <img src={schoolInfo.logo_url} alt="Logo" className="w-full h-full object-contain" />
-          ) : (
-            <span className="text-[8px] text-gray-400">LOGO</span>
           )}
         </div>
-        <div className="flex-1 text-center px-3">
-          <h1 className="font-bold text-lg uppercase tracking-wide" style={{ color: '#000080' }}>{schoolInfo.school_name}</h1>
-          <p className="text-[9px]">{formatSchoolAddress(schoolInfo)}</p>
-          <p className="text-[9px]">EMAIL: {schoolInfo.email || ''}</p>
-          <p className="text-[9px]">CONTACTS: {schoolInfo.telephone || ''}</p>
+        <div className="flex-1 min-w-0 text-center px-2">
+          <h1 className="font-bold text-base sm:text-lg uppercase tracking-wide break-words leading-tight" style={{ color: '#000080' }}>{schoolInfo.school_name}</h1>
+          <p className="text-[9px] mt-0.5">{formatSchoolAddress(schoolInfo)}</p>
+          <p className="text-[9px]">
+            <span className="font-semibold">EMAIL:</span> {schoolInfo.email || ''}
+            {schoolInfo.website ? <> &nbsp;|&nbsp; <span className="font-semibold">WEBSITE:</span> {schoolInfo.website}</> : null}
+          </p>
+          <p className="text-[9px]"><span className="font-semibold">CONTACTS:</span> {schoolInfo.telephone || ''}</p>
         </div>
-        <div className="w-20 h-20 border border-gray-400 flex items-center justify-center overflow-hidden bg-white">
-          {student.photo_url ? (
+        <div className="w-20 h-20 shrink-0 flex items-center justify-center overflow-hidden">
+          {student.photo_url && (
             <img src={student.photo_url} alt="Student" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-[8px] text-gray-400">PHOTO</span>
           )}
         </div>
       </div>
@@ -100,7 +99,7 @@ const ALevelPreview = ({
       {/* Title */}
       <div className="text-center mb-2 py-1.5" style={{ backgroundColor: '#000080' }}>
         <h2 className="text-white font-bold text-sm uppercase tracking-wide">
-          A LEVEL END OF TERM {term.term_name.toUpperCase()} REPORT CARD {term.year}
+          A LEVEL END OF TERM {stripTermPrefix(term.term_name).toUpperCase()} REPORT CARD {term.year}
         </h2>
       </div>
 
@@ -112,8 +111,8 @@ const ALevelPreview = ({
         </div>
         <div className="flex justify-between mt-0.5">
           <div><span className="font-bold">AGE:</span> <span>{student.age || ''}</span></div>
-          <div><span className="font-bold">Roll No</span> <span>{student.student_id || ''}</span></div>
-          <div><span className="font-bold">TERM:</span> <span className="font-semibold">{term.term_name.toUpperCase()}</span></div>
+          <div><span className="font-bold">Roll No:</span> <span>{student.student_id || ''}</span></div>
+          <div><span className="font-bold">TERM:</span> <span className="font-semibold">{stripTermPrefix(term.term_name).toUpperCase()}</span></div>
         </div>
         <div className="flex justify-between mt-0.5">
           <div><span className="font-bold">CLASS</span> <span className="font-semibold">{student.classes?.class_name || ''}</span></div>
