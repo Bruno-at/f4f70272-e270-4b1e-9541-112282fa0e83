@@ -2,6 +2,13 @@ import jsPDF from 'jspdf';
 import { Student, Term, SchoolInfo, StudentMark } from '@/types/database';
 import { formatSchoolAddress } from './schoolAddress';
 
+// Strip a leading "TERM" word from a term name so the template's "TERM"
+// prefix/label doesn't get duplicated (e.g. "Term 1" → "1", "TERM ONE" → "ONE").
+const stripTermPrefix = (name: string | undefined | null): string => {
+  if (!name) return '';
+  return String(name).replace(/^\s*term\s*/i, '').trim();
+};
+
 export type ReportColor = 'white' | 'green' | 'blue' | 'pink' | 'yellow' | 'gray';
 
 export const reportColorHex: Record<ReportColor, string> = {
