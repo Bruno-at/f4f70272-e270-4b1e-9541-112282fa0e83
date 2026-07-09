@@ -175,80 +175,72 @@ export const generateClassicTemplate = (data: TemplateData) => {
   });
   cursorY += nameLines.length * nameLineH;
 
-  pdf.setFontSize(9);
-  pdf.setFont('helvetica', 'italic');
-  pdf.setTextColor(80, 80, 80);
-  pdf.text(`"${schoolInfo.motto || 'Mbizi we are'}"`, centerX, cursorY + 1, { align: 'center' });
-
   pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(0, 0, 0);
-  pdf.setFontSize(8);
-  pdf.text(formatSchoolAddress(schoolInfo), centerX, cursorY + 5.5, { align: 'center' });
-  pdf.text(`TEL: ${schoolInfo.telephone || ''}`, centerX, cursorY + 9.5, { align: 'center' });
+  pdf.setTextColor(40, 40, 40);
+  pdf.setFontSize(9);
+  pdf.text(formatSchoolAddress(schoolInfo), centerX, cursorY + 4, { align: 'center' });
+  pdf.text(`TEL: ${schoolInfo.telephone || ''}`, centerX, cursorY + 8.5, { align: 'center' });
 
   // Email + Website on the SAME line
-  pdf.setTextColor(80, 80, 80);
-  pdf.setFontSize(7);
+  pdf.setFontSize(8);
   const email = schoolInfo.email || '';
   const website = schoolInfo.website || '';
   const contactLine = website
     ? `Email: ${email}   |   Website: ${website}`
     : `Email: ${email}`;
-  pdf.text(contactLine, centerX, cursorY + 13.5, { align: 'center' });
+  pdf.text(contactLine, centerX, cursorY + 13, { align: 'center' });
 
   const headerBottom = Math.max(cursorY + 15, yPosition + photoBoxH + 2);
   yPosition = Math.max(47, headerBottom + 2);
   
-  // Title Section
-  pdf.setTextColor(50, 50, 50);
-  pdf.setFontSize(14);
+  // Title Section (bounded by top/bottom horizontal lines)
+  pdf.setDrawColor(120, 120, 120);
+  pdf.setLineWidth(0.2);
+  pdf.line(10, yPosition, pageWidth - 10, yPosition);
+  pdf.setTextColor(0, 0, 0);
+  pdf.setFontSize(15);
   pdf.setFont('helvetica', 'bold');
   const reportTitle = `TERM ${stripTermPrefix(term.term_name).toUpperCase()} REPORT CARD ${term.year}`;
-  pdf.text(reportTitle, pageWidth / 2, yPosition, { align: 'center' });
-  
-  yPosition += 8;
-  
-  // Student Information - Horizontal Layout with thin lines
-  pdf.setDrawColor(120, 120, 120);
-  pdf.setLineWidth(0.2);
+  pdf.text(reportTitle, pageWidth / 2, yPosition + 7, { align: 'center' });
+  yPosition += 10;
   pdf.line(10, yPosition, pageWidth - 10, yPosition);
-  
-  yPosition += 1;
-  
+
+  yPosition += 4;
+
+  // Student Information — 3 columns x 3 rows grid
   pdf.setTextColor(0, 0, 0);
-  pdf.setFontSize(8);
-  pdf.setFont('helvetica', 'bold');
-  
+  pdf.setFontSize(9);
+
+  const col1X = 12;
+  const col2X = 85;
+  const col3X = 150;
+  const labelOffset = 22;
+  const rowH = 6;
+  const termDisplay = `TERM ${stripTermPrefix(term.term_name).toUpperCase()}`;
+
+  const drawField = (label: string, value: string, x: number, y: number) => {
+    pdf.setFont('helvetica', 'bold');
+    pdf.text(label, x, y);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(value, x + labelOffset, y);
+  };
+
   // Row 1
-  pdf.text('NAME:', 12, yPosition + 4);
-  pdf.text(student.name.toUpperCase(), 28, yPosition + 4);
-  
-  pdf.text('GENDER:', 85, yPosition + 4);
-  pdf.text(student.gender.toUpperCase(), 105, yPosition + 4);
-  
-  pdf.text('TERM:', 150, yPosition + 4);
-  pdf.text(stripTermPrefix(term.term_name).toUpperCase(), 165, yPosition + 4);
-  
+  drawField('NAME:', student.name.toUpperCase(), col1X, yPosition + 4);
+  drawField('GENDER:', student.gender.toUpperCase(), col2X, yPosition + 4);
+  drawField('TERM:', termDisplay, col3X, yPosition + 4);
   // Row 2
-  pdf.text('SECTION:', 12, yPosition + 9);
-  pdf.text(student.classes?.section || 'East', 32, yPosition + 9);
-  
-  pdf.text('CLASS:', 85, yPosition + 9);
-  pdf.text(student.classes?.class_name || 'S.1', 101, yPosition + 9);
-  
+  drawField('SECTION:', student.classes?.section || '', col1X, yPosition + 4 + rowH);
+  drawField('CLASS:', student.classes?.class_name || '', col2X, yPosition + 4 + rowH);
   // Row 3
-  pdf.setFont('helvetica', 'bold');
-  pdf.text('House:', 12, yPosition + 14);
-  pdf.text(student.house || 'Blue', 26, yPosition + 14);
-  
-  pdf.text('Age:', 50, yPosition + 14);
-  pdf.text(student.age?.toString() || 'N/A', 60, yPosition + 14);
-  
-  yPosition += 16;
+  drawField('HOUSE:', student.house || '', col1X, yPosition + 4 + rowH * 2);
+  drawField('AGE:', student.age?.toString() || '', col2X, yPosition + 4 + rowH * 2);
+
+  yPosition += 4 + rowH * 2 + 3;
   pdf.setDrawColor(120, 120, 120);
   pdf.setLineWidth(0.2);
   pdf.line(10, yPosition, pageWidth - 10, yPosition);
-  
+
   yPosition += 3;
   
   // Performance Records Section
