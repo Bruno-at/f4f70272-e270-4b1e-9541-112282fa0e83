@@ -5,6 +5,14 @@ import { formatSchoolAddress } from '@/utils/schoolAddress';
 
 export type StampPosition = 'bottom-right' | 'bottom-center' | 'over-signatures' | 'center';
 
+// Strip a leading "TERM" word from a term name so the template label
+// "TERM:" (or the title prefix "TERM ") doesn't get duplicated when the
+// stored value already contains it (e.g. "Term 1" → "1", "TERM ONE" → "ONE").
+const stripTermPrefix = (name: string | undefined | null): string => {
+  if (!name) return '';
+  return String(name).replace(/^\s*term\s*/i, '').trim();
+};
+
 interface ReportCardPreviewProps {
   student: Student;
   term: Term;
@@ -66,25 +74,24 @@ const ALevelPreview = ({
   return (
     <div className="report-card-container bg-white text-black p-4 border border-gray-400 text-[10px] leading-tight relative" style={{ fontFamily: 'Arial, sans-serif' }}>
       {/* Header */}
-      <div className="flex justify-between items-start mb-2">
-        <div className="w-16 h-16 border border-gray-400 flex items-center justify-center overflow-hidden bg-white">
-          {schoolInfo.logo_url ? (
+      <div className="flex justify-between items-start gap-3 mb-2">
+        <div className="w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden">
+          {schoolInfo.logo_url && (
             <img src={schoolInfo.logo_url} alt="Logo" className="w-full h-full object-contain" />
-          ) : (
-            <span className="text-[8px] text-gray-400">LOGO</span>
           )}
         </div>
-        <div className="flex-1 text-center px-3">
-          <h1 className="font-bold text-lg uppercase tracking-wide" style={{ color: '#000080' }}>{schoolInfo.school_name}</h1>
-          <p className="text-[9px]">{formatSchoolAddress(schoolInfo)}</p>
-          <p className="text-[9px]">EMAIL: {schoolInfo.email || ''}</p>
-          <p className="text-[9px]">CONTACTS: {schoolInfo.telephone || ''}</p>
+        <div className="flex-1 min-w-0 text-center px-2">
+          <h1 className="font-bold text-base sm:text-lg uppercase tracking-wide break-words leading-tight" style={{ color: '#000080' }}>{schoolInfo.school_name}</h1>
+          <p className="text-[9px] mt-0.5">{formatSchoolAddress(schoolInfo)}</p>
+          <p className="text-[9px]">
+            <span className="font-semibold">EMAIL:</span> {schoolInfo.email || ''}
+            {schoolInfo.website ? <> &nbsp;|&nbsp; <span className="font-semibold">WEBSITE:</span> {schoolInfo.website}</> : null}
+          </p>
+          <p className="text-[9px]"><span className="font-semibold">CONTACTS:</span> {schoolInfo.telephone || ''}</p>
         </div>
-        <div className="w-20 h-20 border border-gray-400 flex items-center justify-center overflow-hidden bg-white">
-          {student.photo_url ? (
+        <div className="w-20 h-20 shrink-0 flex items-center justify-center overflow-hidden">
+          {student.photo_url && (
             <img src={student.photo_url} alt="Student" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-[8px] text-gray-400">PHOTO</span>
           )}
         </div>
       </div>
@@ -92,7 +99,7 @@ const ALevelPreview = ({
       {/* Title */}
       <div className="text-center mb-2 py-1.5" style={{ backgroundColor: '#000080' }}>
         <h2 className="text-white font-bold text-sm uppercase tracking-wide">
-          A LEVEL END OF TERM {term.term_name.toUpperCase()} REPORT CARD {term.year}
+          A LEVEL END OF TERM {stripTermPrefix(term.term_name).toUpperCase()} REPORT CARD {term.year}
         </h2>
       </div>
 
@@ -104,8 +111,8 @@ const ALevelPreview = ({
         </div>
         <div className="flex justify-between mt-0.5">
           <div><span className="font-bold">AGE:</span> <span>{student.age || ''}</span></div>
-          <div><span className="font-bold">Roll No</span> <span>{student.student_id || ''}</span></div>
-          <div><span className="font-bold">TERM:</span> <span className="font-semibold">{term.term_name.toUpperCase()}</span></div>
+          <div><span className="font-bold">Roll No:</span> <span>{student.student_id || ''}</span></div>
+          <div><span className="font-bold">TERM:</span> <span className="font-semibold">{stripTermPrefix(term.term_name).toUpperCase()}</span></div>
         </div>
         <div className="flex justify-between mt-0.5">
           <div><span className="font-bold">CLASS</span> <span className="font-semibold">{student.classes?.class_name || ''}</span></div>
@@ -353,27 +360,25 @@ const OLevelPreview = ({
   return (
     <div className="report-card-container bg-white text-black p-4 border border-gray-400 text-[10px] leading-tight relative" style={{ fontFamily: 'Arial, sans-serif' }}>
       {/* Header Section */}
-      <div className="flex justify-between items-start mb-3">
-        <div className="w-16 h-16 border border-gray-400 flex items-center justify-center overflow-hidden bg-white">
-          {schoolInfo.logo_url ? (
+      <div className="flex justify-between items-start gap-3 mb-3">
+        <div className="w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden">
+          {schoolInfo.logo_url && (
             <img src={schoolInfo.logo_url} alt="Logo" className="w-full h-full object-contain" />
-          ) : (
-            <span className="text-[8px] text-gray-400">LOGO</span>
           )}
         </div>
-        <div className="flex-1 text-center px-3">
-          <h1 className="text-gray-800 font-bold text-lg uppercase tracking-wide">{schoolInfo.school_name}</h1>
-          <p className="italic text-[10px] text-gray-600">"{schoolInfo.motto || 'Mbizi we are'}"</p>
+        <div className="flex-1 min-w-0 text-center px-2">
+          <h1 className="text-gray-800 font-bold text-base sm:text-lg uppercase tracking-wide break-words leading-tight">{schoolInfo.school_name}</h1>
+          <p className="italic text-[10px] text-gray-600 mt-0.5">"{schoolInfo.motto || 'Mbizi we are'}"</p>
           <p className="text-[9px]">{formatSchoolAddress(schoolInfo)}</p>
-          <p className="text-[9px]">TEL: {schoolInfo.telephone || '+256705746484'}</p>
-          <p className="text-gray-600 text-[8px]">Email: {schoolInfo.email || 'mugabifood@gmail.com'}</p>
-          <p className="text-gray-600 text-[8px]">Website: {schoolInfo.website || 'mugabifood@gmail.com'}</p>
+          <p className="text-[9px]">TEL: {schoolInfo.telephone || ''}</p>
+          <p className="text-gray-600 text-[8px] break-words">
+            <span className="font-semibold">Email:</span> {schoolInfo.email || ''}
+            {schoolInfo.website ? <> &nbsp;|&nbsp; <span className="font-semibold">Website:</span> {schoolInfo.website}</> : null}
+          </p>
         </div>
-        <div className="w-20 h-20 border border-gray-400 flex items-center justify-center overflow-hidden bg-white">
-          {student.photo_url ? (
+        <div className="w-20 h-20 shrink-0 flex items-center justify-center overflow-hidden">
+          {student.photo_url && (
             <img src={student.photo_url} alt="Student" className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-[8px] text-gray-400">PHOTO</span>
           )}
         </div>
       </div>
@@ -381,25 +386,24 @@ const OLevelPreview = ({
       {/* Report Title */}
       <div className="text-center mb-3">
         <h2 className="text-gray-800 font-bold text-base uppercase tracking-wide">
-          TERM {term.term_name.toUpperCase()} REPORT CARD {term.year}
+          TERM {stripTermPrefix(term.term_name).toUpperCase()} REPORT CARD {term.year}
         </h2>
       </div>
 
       {/* Student Information */}
       <div className="border-t border-b border-gray-400 py-2 mb-3 text-[9px]">
-        <div className="flex justify-between items-center">
-          <div className="flex gap-1"><span className="font-bold">NAME:</span><span className="font-semibold">{student.name.toUpperCase()}</span></div>
-          <div className="flex gap-1"><span className="font-bold">GENDER:</span><span className="font-semibold">{student.gender.toUpperCase()}</span></div>
-          <div className="flex gap-1"><span className="font-bold">TERM:</span><span className="font-semibold">{term.term_name.toUpperCase()}</span></div>
-        </div>
-        <div className="flex justify-between items-center mt-1">
-          <div className="flex gap-1"><span className="font-bold">SECTION:</span><span className="font-semibold">{student.classes?.section || 'East'}</span></div>
-          <div className="flex gap-1"><span className="font-bold">CLASS:</span><span className="font-semibold">{student.classes?.class_name || 'S.1'}</span></div>
-          <div className="flex gap-1"><span>Printed on</span><span className="font-semibold">{new Date().toLocaleDateString('en-GB')}</span></div>
-        </div>
-        <div className="flex gap-6 mt-1">
-          <div className="flex gap-1"><span className="font-bold">House:</span><span className="font-semibold">{student.house || 'Blue'}</span></div>
-          <div className="flex gap-1"><span className="font-bold">Age:</span><span className="font-semibold">{student.age || 'N/A'}</span></div>
+        <div className="grid grid-cols-3 gap-x-4 gap-y-1">
+          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">NAME:</span><span className="font-semibold truncate">{student.name.toUpperCase()}</span></div>
+          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">GENDER:</span><span className="font-semibold">{student.gender.toUpperCase()}</span></div>
+          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">TERM:</span><span className="font-semibold">{stripTermPrefix(term.term_name).toUpperCase()}</span></div>
+
+          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">CLASS:</span><span className="font-semibold">{student.classes?.class_name || ''}</span></div>
+          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">SECTION:</span><span className="font-semibold">{student.classes?.section || ''}</span></div>
+          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">PRINTED:</span><span className="font-semibold">{new Date().toLocaleDateString('en-GB')}</span></div>
+
+          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">HOUSE:</span><span className="font-semibold">{student.house || ''}</span></div>
+          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">AGE:</span><span className="font-semibold">{student.age ?? ''}</span></div>
+          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">ROLL NO:</span><span className="font-semibold">{student.student_id || ''}</span></div>
         </div>
       </div>
 
