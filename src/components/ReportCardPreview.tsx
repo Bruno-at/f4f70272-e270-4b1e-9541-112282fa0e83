@@ -5,6 +5,14 @@ import { formatSchoolAddress } from '@/utils/schoolAddress';
 
 export type StampPosition = 'bottom-right' | 'bottom-center' | 'over-signatures' | 'center';
 
+// Strip a leading "TERM" word from a term name so the template label
+// "TERM:" (or the title prefix "TERM ") doesn't get duplicated when the
+// stored value already contains it (e.g. "Term 1" → "1", "TERM ONE" → "ONE").
+const stripTermPrefix = (name: string | undefined | null): string => {
+  if (!name) return '';
+  return String(name).replace(/^\s*term\s*/i, '').trim();
+};
+
 interface ReportCardPreviewProps {
   student: Student;
   term: Term;
