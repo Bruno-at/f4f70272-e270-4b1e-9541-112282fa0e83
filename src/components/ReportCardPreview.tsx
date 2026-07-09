@@ -358,25 +358,28 @@ const OLevelPreview = ({
   const stampStyle = getStampStyle();
 
   return (
-    <div className="report-card-container bg-white text-black p-4 border border-gray-400 text-[10px] leading-tight relative" style={{ fontFamily: 'Arial, sans-serif' }}>
+    <div className="report-card-container bg-white text-black p-4 border border-gray-400 text-[10px] leading-tight relative" style={{ fontFamily: '"Poppins","Montserrat",Arial,sans-serif' }}>
       {/* Header Section */}
-      <div className="flex justify-between items-start gap-3 mb-3">
-        <div className="w-16 h-16 shrink-0 flex items-center justify-center overflow-hidden">
+      <div className="flex justify-between items-start gap-4 mb-2">
+        <div className="w-20 h-20 shrink-0 flex items-center justify-center overflow-hidden">
           {schoolInfo.logo_url && (
             <img src={schoolInfo.logo_url} alt="Logo" className="w-full h-full object-contain" />
           )}
         </div>
-        <div className="flex-1 min-w-0 text-center px-2">
-          <h1 className="text-gray-800 font-bold text-base sm:text-lg uppercase tracking-wide break-words leading-tight">{schoolInfo.school_name}</h1>
-          <p className="italic text-[10px] text-gray-600 mt-0.5">"{schoolInfo.motto || 'Mbizi we are'}"</p>
-          <p className="text-[9px]">{formatSchoolAddress(schoolInfo)}</p>
-          <p className="text-[9px]">TEL: {schoolInfo.telephone || ''}</p>
-          <p className="text-gray-600 text-[8px] break-words">
-            <span className="font-semibold">Email:</span> {schoolInfo.email || ''}
-            {schoolInfo.website ? <> &nbsp;|&nbsp; <span className="font-semibold">Website:</span> {schoolInfo.website}</> : null}
-          </p>
+        <div className="flex-1 min-w-0 text-center px-2 flex flex-col justify-start">
+          <h1 className="text-black font-extrabold text-lg sm:text-xl uppercase tracking-wide break-words leading-tight">
+            {schoolInfo.school_name}
+          </h1>
+          <div className="mt-2 space-y-0.5 text-[10px] text-gray-800">
+            <p>{formatSchoolAddress(schoolInfo)}</p>
+            <p>TEL: {schoolInfo.telephone || ''}</p>
+            <p className="break-words">
+              <span className="font-semibold">Email:</span> {schoolInfo.email || ''}
+              {schoolInfo.website ? <> &nbsp;&nbsp;|&nbsp;&nbsp; <span className="font-semibold">Website:</span> {schoolInfo.website}</> : null}
+            </p>
+          </div>
         </div>
-        <div className="w-20 h-20 shrink-0 flex items-center justify-center overflow-hidden">
+        <div className="w-20 h-24 shrink-0 flex items-center justify-center overflow-hidden">
           {student.photo_url && (
             <img src={student.photo_url} alt="Student" className="w-full h-full object-cover" />
           )}
@@ -384,26 +387,26 @@ const OLevelPreview = ({
       </div>
 
       {/* Report Title */}
-      <div className="text-center mb-3">
-        <h2 className="text-gray-800 font-bold text-base uppercase tracking-wide">
+      <div className="text-center border-t border-b border-gray-400 py-2 my-2">
+        <h2 className="text-black font-extrabold text-lg uppercase tracking-wide">
           TERM {stripTermPrefix(term.term_name).toUpperCase()} REPORT CARD {term.year}
         </h2>
       </div>
 
       {/* Student Information */}
-      <div className="border-t border-b border-gray-400 py-2 mb-3 text-[9px]">
-        <div className="grid grid-cols-3 gap-x-4 gap-y-1">
-          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">NAME:</span><span className="font-semibold truncate">{student.name.toUpperCase()}</span></div>
-          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">GENDER:</span><span className="font-semibold">{student.gender.toUpperCase()}</span></div>
-          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">TERM:</span><span className="font-semibold">{stripTermPrefix(term.term_name).toUpperCase()}</span></div>
+      <div className="border-b border-gray-400 pb-2 mb-3 text-[10px]">
+        <div className="grid grid-cols-3 gap-x-6 gap-y-2">
+          <div className="flex gap-2"><span className="font-bold w-20 shrink-0">NAME:</span><span>{student.name.toUpperCase()}</span></div>
+          <div className="flex gap-2"><span className="font-bold w-20 shrink-0">GENDER:</span><span>{student.gender.toUpperCase()}</span></div>
+          <div className="flex gap-2"><span className="font-bold w-20 shrink-0">TERM:</span><span>TERM {stripTermPrefix(term.term_name).toUpperCase()}</span></div>
 
-          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">CLASS:</span><span className="font-semibold">{student.classes?.class_name || ''}</span></div>
-          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">SECTION:</span><span className="font-semibold">{student.classes?.section || ''}</span></div>
-          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">PRINTED:</span><span className="font-semibold">{new Date().toLocaleDateString('en-GB')}</span></div>
+          <div className="flex gap-2"><span className="font-bold w-20 shrink-0">SECTION:</span><span>{student.classes?.section || ''}</span></div>
+          <div className="flex gap-2"><span className="font-bold w-20 shrink-0">CLASS:</span><span>{student.classes?.class_name || ''}</span></div>
+          <div />
 
-          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">HOUSE:</span><span className="font-semibold">{student.house || ''}</span></div>
-          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">AGE:</span><span className="font-semibold">{student.age ?? ''}</span></div>
-          <div className="flex gap-1"><span className="font-bold w-16 shrink-0">ROLL NO:</span><span className="font-semibold">{student.student_id || ''}</span></div>
+          <div className="flex gap-2"><span className="font-bold w-20 shrink-0">HOUSE:</span><span>{student.house || ''}</span></div>
+          <div className="flex gap-2"><span className="font-bold w-20 shrink-0">AGE:</span><span>{student.age ?? ''}</span></div>
+          <div />
         </div>
       </div>
 
