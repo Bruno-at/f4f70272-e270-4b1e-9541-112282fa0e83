@@ -132,67 +132,78 @@ export const generateClassicTemplate = (data: TemplateData) => {
   let yPosition = 12;
   
   // Header Section
-  // Left: School logo placeholder
+  // Left: School logo (no border)
   const logoBoxSize = 22;
-  pdf.setDrawColor(120, 120, 120);
-  pdf.setLineWidth(0.2);
-  pdf.rect(10, yPosition, logoBoxSize, logoBoxSize);
-  
   if (schoolInfo.logo_url && schoolInfo.logo_url.startsWith('data:image')) {
     try {
-      pdf.addImage(schoolInfo.logo_url, 'PNG', 10.5, yPosition + 0.5, logoBoxSize - 1, logoBoxSize - 1);
+      pdf.addImage(schoolInfo.logo_url, 'PNG', 10, yPosition, logoBoxSize, logoBoxSize);
     } catch (error) {
       console.log('Could not add logo');
     }
   }
-  
-  // Right: Student photo demarcation box
+
+  // Right: Student photo (no border)
   const photoBoxX = pageWidth - 38;
   const photoBoxY = yPosition;
   const photoBoxW = 28;
   const photoBoxH = 30;
-  
-  pdf.setDrawColor(120, 120, 120);
-  pdf.setLineWidth(0.2);
-  pdf.rect(photoBoxX, photoBoxY, photoBoxW, photoBoxH);
-  
   if (student.photo_url && student.photo_url.startsWith('data:image')) {
     try {
-      pdf.addImage(student.photo_url, 'PNG', photoBoxX + 0.5, photoBoxY + 0.5, photoBoxW - 1, photoBoxH - 1);
+      pdf.addImage(student.photo_url, 'PNG', photoBoxX, photoBoxY, photoBoxW, photoBoxH);
     } catch (error) {
       console.log('Could not add photo');
     }
   }
-  
-  // Center: School details
+
+  // Center: School details. Reserve horizontal space so long school names
+  // wrap to a new line instead of overlapping the logo (ends at x=34) or the
+  // student photo (starts at x=pageWidth-38). Available center width ≈ 130mm.
+  const centerX = pageWidth / 2;
+  const centerMaxWidth = pageWidth - 80; // leave ~40mm on each side for logo/photo + gutter
+
   pdf.setTextColor(50, 50, 50);
-  pdf.setFontSize(18);
+  pdf.setFontSize(16);
   pdf.setFont('helvetica', 'bold');
-  pdf.text(schoolInfo.school_name.toUpperCase(), pageWidth / 2, yPosition + 7, { align: 'center' });
-  
+  const nameLines: string[] = pdf.splitTextToSize(
+    schoolInfo.school_name.toUpperCase(),
+    centerMaxWidth
+  );
+  const nameLineH = 6;
+  let cursorY = yPosition + 6;
+  nameLines.forEach((line, i) => {
+    pdf.text(line, centerX, cursorY + i * nameLineH, { align: 'center' });
+  });
+  cursorY += nameLines.length * nameLineH;
+
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'italic');
   pdf.setTextColor(80, 80, 80);
-  pdf.text(`"${schoolInfo.motto || 'Mbizi we are'}"`, pageWidth / 2, yPosition + 12, { align: 'center' });
-  
+  pdf.text(`"${schoolInfo.motto || 'Mbizi we are'}"`, centerX, cursorY + 1, { align: 'center' });
+
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(0, 0, 0);
   pdf.setFontSize(8);
-  pdf.text(formatSchoolAddress(schoolInfo), pageWidth / 2, yPosition + 17, { align: 'center' });
-  pdf.text(`TEL: ${schoolInfo.telephone || '+256705746484'}`, pageWidth / 2, yPosition + 21, { align: 'center' });
+  pdf.text(formatSchoolAddress(schoolInfo), centerX, cursorY + 5.5, { align: 'center' });
+  pdf.text(`TEL: ${schoolInfo.telephone || ''}`, centerX, cursorY + 9.5, { align: 'center' });
 
+  // Email + Website on the SAME line
   pdf.setTextColor(80, 80, 80);
   pdf.setFontSize(7);
-  pdf.text(`Email: ${schoolInfo.email || 'mugabifood@gmail.com'}`, pageWidth / 2, yPosition + 25, { align: 'center' });
-  pdf.text(`Website: ${schoolInfo.website || 'mugabifood@gmail.com'}`, pageWidth / 2, yPosition + 29, { align: 'center' });
-  
-  yPosition = 47;
+  const email = schoolInfo.email || '';
+  const website = schoolInfo.website || '';
+  const contactLine = website
+    ? `Email: ${email}   |   Website: ${website}`
+    : `Email: ${email}`;
+  pdf.text(contactLine, centerX, cursorY + 13.5, { align: 'center' });
+
+  const headerBottom = Math.max(cursorY + 15, yPosition + photoBoxH + 2);
+  yPosition = Math.max(47, headerBottom + 2);
   
   // Title Section
   pdf.setTextColor(50, 50, 50);
   pdf.setFontSize(14);
   pdf.setFont('helvetica', 'bold');
-  const reportTitle = `TERM ${term.term_name.toUpperCase()} REPORT CARD ${term.year}`;
+  const reportTitle = `TERM ${stripTermPrefix(term.term_name).toUpperCase()} REPORT CARD ${term.year}`;
   pdf.text(reportTitle, pageWidth / 2, yPosition, { align: 'center' });
   
   yPosition += 8;
@@ -216,7 +227,7 @@ export const generateClassicTemplate = (data: TemplateData) => {
   pdf.text(student.gender.toUpperCase(), 105, yPosition + 4);
   
   pdf.text('TERM:', 150, yPosition + 4);
-  pdf.text(term.term_name.toUpperCase(), 165, yPosition + 4);
+  pdf.text(stripTermPrefix(term.term_name).toUpperCase(), 165, yPosition + 4);
   
   // Row 2
   pdf.text('SECTION:', 12, yPosition + 9);
