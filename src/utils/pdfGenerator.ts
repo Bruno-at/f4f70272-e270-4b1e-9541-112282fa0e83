@@ -102,52 +102,9 @@ export const addStampOverlayToPdf = (pdf: jsPDF, stampUrl: string, stampConfig: 
 };
 
 export const generateReportCardPDF = async (data: ReportCardData) => {
-  const { student, term, template = 'classic' } = data;
-  
-  // Auto-detect academic level
-  const className = student.classes?.class_name || '';
-  const level = detectAcademicLevel(className);
-  
-  let pdf: jsPDF;
-  
-  if (level === 'a-level') {
-    // Use the A-Level template with the selected style
-    pdf = generateALevelTemplate({
-      student: data.student,
-      term: data.term,
-      schoolInfo: data.schoolInfo,
-      marks: data.marks,
-      reportData: data.reportData,
-      reportColor: data.reportColor,
-      classTeacherSignature: data.classTeacherSignature,
-      headteacherSignature: data.headteacherSignature,
-      feesData: data.feesData,
-      template: template,
-    });
-  } else {
-    switch (template) {
-      case 'modern':
-        pdf = generateModernTemplate(data);
-        break;
-      case 'professional':
-        pdf = generateProfessionalTemplate(data);
-        break;
-      case 'minimal':
-        pdf = generateMinimalTemplate(data);
-        break;
-      case 'classic':
-      default:
-        pdf = generateClassicTemplate(data);
-        break;
-    }
-  }
-
-  if (data.stampUrl && data.stampConfig) {
-    addStampOverlayToPdf(pdf, data.stampUrl, data.stampConfig);
-  }
-
-  const fileName = `${student.name.replace(/\s+/g, '_')}_Report_${term.term_name}_${term.year}.pdf`;
-  pdf.save(fileName);
+  const { buildReportCardBlob, reportFileName, downloadBlob } = await import('./reportPdf');
+  const blob = await buildReportCardBlob(data);
+  downloadBlob(blob, reportFileName(data));
 };
 
 const calculateGrade = (percentage: number): string => {
