@@ -337,32 +337,8 @@ const ReportCardManagement = () => {
 
       // Generate PDF using the unified generator (handles A-Level detection)
       const fullData = { ...reportData, ...stampInfo, stampUrl: resolvedStampUrl };
-      const { detectAcademicLevel } = await import('@/utils/academicLevel');
-      const { generateALevelTemplate } = await import('@/utils/aLevelPdfTemplate');
-      const { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } = await import('@/utils/pdfTemplates');
-      
-      const className = fullData.student.classes?.class_name || '';
-      const level = detectAcademicLevel(className);
-      
-      let pdf;
-      if (level === 'a-level') {
-        pdf = generateALevelTemplate({ ...fullData, template: fullData.template || 'classic' });
-      } else {
-        switch (fullData.template) {
-          case 'modern': pdf = generateModernTemplate(fullData); break;
-          case 'professional': pdf = generateProfessionalTemplate(fullData); break;
-          case 'minimal': pdf = generateMinimalTemplate(fullData); break;
-          default: pdf = generateClassicTemplate(fullData);
-        }
-      }
-
-      // Add stamp overlay to PDF
-      if (fullData.stampUrl && fullData.stampConfig) {
-        addStampOverlayToPdf(pdf, fullData.stampUrl, fullData.stampConfig);
-      }
-
-      // Create blob URL (less likely to be blocked than data URI)
-      const pdfBlob = pdf.output('blob');
+      const { buildReportCardBlob, reportFileName, downloadBlob } = await import('@/utils/reportPdf');
+      const pdfBlob = await buildReportCardBlob(fullData as any);
       const blobUrl = URL.createObjectURL(pdfBlob);
 
       // Try to open in new window
@@ -382,8 +358,7 @@ const ReportCardManagement = () => {
       } else {
         // Fallback: Download the PDF if popup blocked
         URL.revokeObjectURL(blobUrl);
-        const fileName = `${reportData.student.name.replace(/\s+/g, '_')}_Report_${reportData.term.term_name}_${reportData.term.year}.pdf`;
-        pdf.save(fileName);
+        downloadBlob(pdfBlob, reportFileName(fullData as any));
         
         toast({
           title: "PDF Downloaded",
