@@ -455,32 +455,9 @@ const ReportCardManagement = () => {
 
       const fullData = { ...reportData, ...stampInfo, stampUrl: resolvedStampUrl };
 
-      const { detectAcademicLevel } = await import('@/utils/academicLevel');
-      const { generateALevelTemplate } = await import('@/utils/aLevelPdfTemplate');
-      const { generateClassicTemplate, generateModernTemplate, generateProfessionalTemplate, generateMinimalTemplate } = await import('@/utils/pdfTemplates');
-
-      const className = fullData.student.classes?.class_name || '';
-      const level = detectAcademicLevel(className);
-      
-      let pdf;
-      if (level === 'a-level') {
-        pdf = generateALevelTemplate({ ...fullData, template: fullData.template || 'classic' });
-      } else {
-        switch (fullData.template) {
-          case 'modern': pdf = generateModernTemplate(fullData); break;
-          case 'professional': pdf = generateProfessionalTemplate(fullData); break;
-          case 'minimal': pdf = generateMinimalTemplate(fullData); break;
-          default: pdf = generateClassicTemplate(fullData);
-        }
-      }
-
-      // Add stamp to PDF
-      if (fullData.stampUrl && fullData.stampConfig) {
-        addStampOverlayToPdf(pdf, fullData.stampUrl, fullData.stampConfig);
-      }
-
-      const fileName = `${reportData.student.name.replace(/\s+/g, '_')}_Report_${reportData.term.term_name}_${reportData.term.year}.pdf`;
-      const pdfBlob = pdf.output('blob');
+      const { buildReportCardBlob, reportFileName, downloadBlob } = await import('@/utils/reportPdf');
+      const fileName = reportFileName(fullData as any);
+      const pdfBlob = await buildReportCardBlob(fullData as any);
       const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
       // Try native share API (works well on mobile)
@@ -500,7 +477,7 @@ const ReportCardManagement = () => {
       }
 
       // Fallback: download the PDF
-      pdf.save(fileName);
+      downloadBlob(pdfBlob, fileName);
       toast({ title: "Downloaded", description: `${fileName} saved — you can now share it from your device` });
     } catch (error) {
       console.error('Error sharing:', error);
