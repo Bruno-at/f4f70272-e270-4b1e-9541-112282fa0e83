@@ -213,12 +213,10 @@ export const buildOLevelReportPdf = async (data: OLevelPdfData): Promise<Uint8Ar
 
   const boxTop = y;
   const logoBox = 24;
-  c.rect(L + 1, boxTop, logoBox, logoBox, { border: NAVY, lw: 0.6 });
-  if (logo) c.image(logo, L + 2, boxTop + 1, logoBox - 2, logoBox - 2);
+  if (logo) c.image(logo, L + 1, boxTop, logoBox, logoBox);
 
   const photoW = 22, photoH = 26;
-  c.rect(R - photoW - 1, boxTop, photoW, photoH, { border: NAVY, lw: 0.6 });
-  if (photo) c.image(photo, R - photoW, boxTop + 1, photoW - 2, photoH - 2);
+  if (photo) c.image(photo, R - photoW - 1, boxTop, photoW, photoH);
   else c.text('PHOTO', R - photoW / 2 - 1, boxTop + photoH / 2, { size: 6.5, color: GREY, align: 'center' });
 
   const cx = (L + R) / 2;
@@ -247,9 +245,8 @@ export const buildOLevelReportPdf = async (data: OLevelPdfData): Promise<Uint8Ar
 
   /* ---------------- Title ---------------- */
   const termLabel = stripTermPrefix(term.term_name).toUpperCase() || '1';
-  c.rect(L, y, W, 9, { fill: NAVY });
   c.text(`TERM ${termLabel} REPORT CARD ${term.year}`, cx, y + 6.2, {
-    size: 12.5, font: c.bold, color: WHITE, align: 'center', maxWidth: W - 6,
+    size: 12.5, font: c.bold, color: NAVY, align: 'center', maxWidth: W - 6,
   });
   y += 12;
 
@@ -299,16 +296,15 @@ export const buildOLevelReportPdf = async (data: OLevelPdfData): Promise<Uint8Ar
   y += headH;
 
   // Vertical space budget for everything below the subject rows
-  const BELOW = 6 /*avg*/ + 7 /*overall*/ + 12 /*scale*/ + 3 + 32 /*comments*/ + 3 + 17 /*key*/ + 3 + 12 /*footer*/ + 10 /*motto*/ + 8;
+  const BELOW = 6 /*avg*/ + 7 /*overall*/ + 12 /*scale*/ + 3 + 24 /*comments*/ + 3 + 17 /*key*/ + 3 + 12 /*footer*/ + 10 /*motto*/ + 8;
   const rowsCount = Math.max(marks.length, 8);
   let rowH = (297 - BELOW - y) / rowsCount;
-  rowH = Math.max(4.2, Math.min(8.5, rowH));
+  rowH = Math.max(4.2, Math.min(10, rowH));
   const rowFs = rowH < 5 ? 6.2 : rowH < 6.5 ? 7 : 7.6;
 
   const bodyTop = y;
   for (let i = 0; i < rowsCount; i++) {
     const m = marks[i];
-    if (i % 2 === 1) c.rect(L, y, W, rowH, { fill: rgb(0.972, 0.98, 0.996) });
     const cells = m
       ? [
           m.subjects?.subject_code || (m as any).subject_code || '',
@@ -335,7 +331,7 @@ export const buildOLevelReportPdf = async (data: OLevelPdfData): Promise<Uint8Ar
       else c.text(val, cxs[ci] + cw[ci] / 2, baseline, { size: rowFs, font, color, align: 'center', maxWidth: cw[ci] - 1.5 });
     });
     y += rowH;
-    if (i < rowsCount - 1) c.line(L, y, R, y);
+    if (i < rowsCount - 1) c.line(L, y, R, y, LINE, 0.4);
   }
 
   // Table grid
@@ -391,7 +387,7 @@ export const buildOLevelReportPdf = async (data: OLevelPdfData): Promise<Uint8Ar
   y += gsRow * 2 + 3;
 
   /* ---------------- Comments ---------------- */
-  const cmtH = 32;
+  const cmtH = 24;
   const cmtW = (W - 3) / 2;
   const sigCT = await embedImage(doc, classTeacherSignature);
   const sigHT = await embedImage(doc, headteacherSignature);
@@ -400,9 +396,9 @@ export const buildOLevelReportPdf = async (data: OLevelPdfData): Promise<Uint8Ar
     c.rect(x, y, cmtW, cmtH, { border: NAVY, lw: 0.6 });
     c.rect(x, y, cmtW, 5.5, { fill: LIGHT });
     c.text(title, x + 2, y + 3.9, { size: 7.4, font: c.bold, color: NAVY, maxWidth: cmtW - 4 });
-    c.paragraph(body || 'No comment provided.', x + 2, y + 9.5, cmtW - 4, 7, 3.6, c.italic, BLACK, 4);
+    c.paragraph(body || 'No comment provided.', x + 2, y + 9, cmtW - 4, 6.8, 3.3, c.italic, BLACK, 3);
     c.text('Signature:', x + 2, y + cmtH - 3.5, { size: 7, font: c.bold, color: BLACK });
-    if (sig) c.image(sig, x + 18, y + cmtH - 12, 26, 10);
+    if (sig) c.image(sig, x + 18, y + cmtH - 11, 24, 8);
     c.line(x + 17, y + cmtH - 3, x + cmtW - 2, y + cmtH - 3, GREY, 0.4);
   };
   drawComment(L, "CLASS TEACHER'S COMMENT", reportData.class_teacher_comment, sigCT);
