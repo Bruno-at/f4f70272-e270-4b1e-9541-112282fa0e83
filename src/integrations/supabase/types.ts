@@ -607,6 +607,62 @@ export type Database = {
           },
         ]
       }
+      report_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          fields: Json
+          file_path: string
+          id: string
+          is_active: boolean
+          level: string
+          mime_type: string
+          name: string
+          page_height_mm: number
+          page_width_mm: number
+          school_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          fields?: Json
+          file_path: string
+          id?: string
+          is_active?: boolean
+          level?: string
+          mime_type: string
+          name: string
+          page_height_mm?: number
+          page_width_mm?: number
+          school_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          fields?: Json
+          file_path?: string
+          id?: string
+          is_active?: boolean
+          level?: string
+          mime_type?: string
+          name?: string
+          page_height_mm?: number
+          page_width_mm?: number
+          school_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_templates_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       school_info: {
         Row: {
           created_at: string
@@ -791,6 +847,54 @@ export type Database = {
             foreignKeyName: "student_bursaries_student_id_fkey"
             columns: ["student_id"]
             isOneToOne: true
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_custom_field_values: {
+        Row: {
+          created_at: string
+          field_key: string
+          id: string
+          school_id: string
+          student_id: string
+          term_id: string | null
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          created_at?: string
+          field_key: string
+          id?: string
+          school_id: string
+          student_id: string
+          term_id?: string | null
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          created_at?: string
+          field_key?: string
+          id?: string
+          school_id?: string
+          student_id?: string
+          term_id?: string | null
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_custom_field_values_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_custom_field_values_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
@@ -1148,6 +1252,44 @@ export type Database = {
             columns: ["teacher_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_custom_fields: {
+        Row: {
+          created_at: string
+          default_value: string | null
+          field_key: string
+          id: string
+          label: string
+          school_id: string
+          scope: string
+        }
+        Insert: {
+          created_at?: string
+          default_value?: string | null
+          field_key: string
+          id?: string
+          label: string
+          school_id: string
+          scope?: string
+        }
+        Update: {
+          created_at?: string
+          default_value?: string | null
+          field_key?: string
+          id?: string
+          label?: string
+          school_id?: string
+          scope?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_custom_fields_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
             referencedColumns: ["id"]
           },
         ]
