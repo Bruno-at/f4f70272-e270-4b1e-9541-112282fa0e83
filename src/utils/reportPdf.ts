@@ -1,6 +1,7 @@
 import { detectAcademicLevel } from './academicLevel';
 import { buildOLevelReportBlob, OLevelPdfData } from './pdfLibOLevelTemplate';
 import type { ReportCardData } from './pdfGenerator';
+import { fetchActiveTemplate, buildCustomTemplateBlob } from './customTemplatePdf';
 
 /**
  * Unified report card PDF builder.
@@ -32,6 +33,16 @@ export const buildReportCardBlob = async (data: ReportCardData): Promise<Blob> =
       addStampOverlayToPdf(pdf, data.stampUrl, data.stampConfig);
     }
     return pdf.output('blob');
+  }
+
+  // A school may upload its own O-Level template. When one is active it is used
+  // as-is (layout and design preserved) with values drawn into its mapped fields.
+  try {
+    const schoolId = (data.student as any)?.school_id || (data.schoolInfo as any)?.school_id || null;
+    const custom = await fetchActiveTemplate(schoolId, 'o-level');
+    if (custom) return await buildCustomTemplateBlob(custom, data);
+  } catch (e) {
+    console.error('Custom template failed, falling back to the default template', e);
   }
 
   return buildOLevelReportBlob(data as unknown as OLevelPdfData);
