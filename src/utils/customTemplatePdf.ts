@@ -216,5 +216,5 @@ export async function buildCustomTemplateBlob(
   }
 
   const out = await pdf.save();
-  return new Blob([out], { type: 'application/pdf' });
+  return new Blob([out.slice().buffer as ArrayBuffer], { type: 'application/pdf' });
 }
