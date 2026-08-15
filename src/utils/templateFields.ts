@@ -76,7 +76,7 @@ export function resolveSystemFieldValue(key: string, data: ReportCardData): stri
   switch (key) {
     case 'school_name': return s.school_name || '';
     case 'school_motto': return s.motto || '';
-    case 'school_address': return formatSchoolAddress(s.po_box, s.location) || '';
+    case 'school_address': return formatSchoolAddress({ po_box: s.po_box, location: s.location }) || '';
     case 'school_telephone': return s.telephone || '';
     case 'school_email': return s.email || '';
     case 'school_website': return s.website || '';
