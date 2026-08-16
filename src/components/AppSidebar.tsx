@@ -1,4 +1,4 @@
-import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare, FolderOpen, Pencil, DollarSign, UserCog, Table2 } from 'lucide-react';
+import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare, FolderOpen, Pencil, DollarSign, UserCog, Table2, LayoutTemplate } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -26,6 +26,7 @@ const menuItems = [
   { id: 'teachers', title: 'Teachers', icon: UserCog },
   { id: 'reports', title: 'Reports', icon: Download },
   { id: 'marksheet', title: 'Marksheet', icon: Table2 },
+  { id: 'templates', title: 'Templates', icon: LayoutTemplate, isRoute: true },
   { id: 'manage-reports', title: 'Manage Report Cards', icon: FolderOpen, isRoute: true },
   { id: 'finance', title: 'Finance Portal', icon: DollarSign, isRoute: true },
 ];
@@ -44,6 +45,8 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
   const handleItemClick = (sectionId: string, isRoute?: boolean) => {
     if (isRoute && sectionId === 'manage-reports') {
       navigate('/report-cards');
+    } else if (isRoute && sectionId === 'templates') {
+      navigate('/templates');
     } else if (isRoute && sectionId === 'finance') {
       navigate('/finance');
     } else if (location.pathname !== '/') {
