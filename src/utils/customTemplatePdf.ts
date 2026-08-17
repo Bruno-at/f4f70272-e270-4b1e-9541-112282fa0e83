@@ -1,4 +1,4 @@
-import { PDFDocument, PDFFont, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, PDFFont, StandardFonts, degrees, rgb } from 'pdf-lib';
 import { supabase } from '@/integrations/supabase/client';
 import type { ReportCardData } from './pdfGenerator';
 import {
