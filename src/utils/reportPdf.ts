@@ -2,18 +2,40 @@ import { detectAcademicLevel } from './academicLevel';
 import { buildOLevelReportBlob, OLevelPdfData } from './pdfLibOLevelTemplate';
 import type { ReportCardData } from './pdfGenerator';
 import { fetchActiveTemplate, buildCustomTemplateBlob } from './customTemplatePdf';
+import { loadReportOverlays } from './reportOverlays';
+
+const schoolIdOf = (data: ReportCardData) =>
+  (data.student as any)?.school_id || (data.schoolInfo as any)?.id || (data.schoolInfo as any)?.school_id || null;
+
+/**
+ * Make sure every render path (preview, print, download) uses the same
+ * school-configured stamp and watermark settings.
+ */
+const withOverlays = async (data: ReportCardData): Promise<ReportCardData> => {
+  const overlays = await loadReportOverlays(schoolIdOf(data));
+  const stampUrl = data.stampUrl?.startsWith('data:image') ? data.stampUrl : overlays.stampUrl;
+  const watermarkUrl = data.watermarkUrl?.startsWith('data:image') ? data.watermarkUrl : overlays.watermarkUrl;
+  return {
+    ...data,
+    stampUrl,
+    stampConfig: data.stampConfig || overlays.stampConfig,
+    watermarkUrl,
+    watermarkConfig: data.watermarkConfig || overlays.watermarkConfig,
+  };
+};
 
 /**
  * Unified report card PDF builder.
  * O-Level (S1–S4) reports are rendered with pdf-lib (vector, no HTML rendering).
  * A-Level (S5–S6) reports still use the dedicated A-Level template.
  */
-export const buildReportCardBlob = async (data: ReportCardData): Promise<Blob> => {
+export const buildReportCardBlob = async (input: ReportCardData): Promise<Blob> => {
+  const data = await withOverlays(input);
   const className = data.student.classes?.class_name || '';
   const level = detectAcademicLevel(className);
 
   if (level === 'a-level') {
-    const [{ generateALevelTemplate }, { addStampOverlayToPdf }] = await Promise.all([
+    const [{ generateALevelTemplate }, { addStampOverlayToPdf, addWatermarkOverlayToPdf }] = await Promise.all([
       import('./aLevelPdfTemplate'),
       import('./pdfGenerator'),
     ]);
@@ -29,6 +51,9 @@ export const buildReportCardBlob = async (data: ReportCardData): Promise<Blob> =
       feesData: data.feesData,
       template: data.template || 'classic',
     } as any);
+    if (data.watermarkUrl && data.watermarkConfig) {
+      addWatermarkOverlayToPdf(pdf, data.watermarkUrl, data.watermarkConfig);
+    }
     if (data.stampUrl && data.stampConfig) {
       addStampOverlayToPdf(pdf, data.stampUrl, data.stampConfig);
     }
@@ -38,7 +63,7 @@ export const buildReportCardBlob = async (data: ReportCardData): Promise<Blob> =
   // A school may upload its own O-Level template. When one is active it is used
   // as-is (layout and design preserved) with values drawn into its mapped fields.
   try {
-    const schoolId = (data.student as any)?.school_id || (data.schoolInfo as any)?.school_id || null;
+    const schoolId = schoolIdOf(data);
     const custom = await fetchActiveTemplate(schoolId, 'o-level');
     if (custom) return await buildCustomTemplateBlob(custom, data);
   } catch (e) {
