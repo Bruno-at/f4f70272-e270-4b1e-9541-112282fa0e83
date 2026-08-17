@@ -48,6 +48,8 @@ export interface OLevelPdfData {
   headteacherSignature?: string | null;
   stampUrl?: string | null;
   stampConfig?: { positionX: number; positionY: number; size: number; opacity: number } | null;
+  watermarkUrl?: string | null;
+  watermarkConfig?: { positionX: number; positionY: number; size: number; opacity: number; rotation?: number } | null;
   feesData?: { feesBalance: number; feesNextTerm: number; otherRequirements: string };
 }
 
@@ -157,6 +159,26 @@ class Canvas {
   image(img: any, x: number, y: number, w: number, h: number, opacity = 1) {
     this.page.drawImage(img, { x: x * MM, y: this.Y(y + h), width: w * MM, height: h * MM, opacity, rotate: degrees(0) });
   }
+
+  /** Draw an image rotated around its own centre (x/y = centre, mm from top-left). */
+  rotatedImage(img: any, cxMm: number, cyMm: number, wMm: number, hMm: number, opacity = 1, rotationDeg = 0) {
+    const rad = (rotationDeg * Math.PI) / 180;
+    const w = wMm * MM;
+    const h = hMm * MM;
+    // pdf-lib rotates around the drawing origin, so offset it back to keep the centre fixed.
+    const cx = cxMm * MM;
+    const cy = this.Y(cyMm);
+    const dx = (-w / 2) * Math.cos(rad) - (-h / 2) * Math.sin(rad);
+    const dy = (-w / 2) * Math.sin(rad) + (-h / 2) * Math.cos(rad);
+    this.page.drawImage(img, {
+      x: cx + dx,
+      y: cy + dy,
+      width: w,
+      height: h,
+      opacity,
+      rotate: degrees(rotationDeg),
+    });
+  }
 }
 
 const embedImage = async (doc: PDFDocument, dataUrl?: string | null) => {
@@ -182,6 +204,7 @@ export const buildOLevelReportPdf = async (data: OLevelPdfData): Promise<Uint8Ar
     student, term, schoolInfo, marks, reportData,
     reportColor = 'white', classTeacherSignature, headteacherSignature,
     stampUrl, stampConfig, feesData,
+    watermarkUrl, watermarkConfig,
   } = data;
 
   const doc = await PDFDocument.create();
@@ -196,6 +219,19 @@ export const buildOLevelReportPdf = async (data: OLevelPdfData): Promise<Uint8Ar
 
   const [br, bg, bb] = bgHex[reportColor] || bgHex.white;
   c.rect(0, 0, 210, 297, { fill: rgb(br, bg, bb) });
+
+  /* ---------------- Watermark (drawn under the content) ---------------- */
+  if (watermarkUrl && watermarkConfig) {
+    const wm = await embedImage(doc, watermarkUrl);
+    if (wm) {
+      const sizeMm = (Number(watermarkConfig.size) || 120) * 0.35;
+      const px = ((Number(watermarkConfig.positionX) ?? 50) / 100) * 210;
+      const py = ((Number(watermarkConfig.positionY) ?? 50) / 100) * 297;
+      const opacity = Math.max(0, Math.min(100, Number(watermarkConfig.opacity ?? 15))) / 100;
+      const ratio = wm.height / wm.width;
+      c.rotatedImage(wm, px, py, sizeMm, sizeMm * ratio, opacity, Number(watermarkConfig.rotation) || 0);
+    }
+  }
 
   const L = 8;          // content left
   const R = 202;        // content right

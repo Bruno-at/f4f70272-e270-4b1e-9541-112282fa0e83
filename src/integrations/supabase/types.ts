@@ -747,6 +747,12 @@ export type Database = {
           stamp_url: string | null
           telephone: string | null
           updated_at: string
+          watermark_opacity: number
+          watermark_position_x: number
+          watermark_position_y: number
+          watermark_rotation: number
+          watermark_size: number
+          watermark_url: string | null
           website: string | null
         }
         Insert: {
@@ -772,6 +778,12 @@ export type Database = {
           stamp_url?: string | null
           telephone?: string | null
           updated_at?: string
+          watermark_opacity?: number
+          watermark_position_x?: number
+          watermark_position_y?: number
+          watermark_rotation?: number
+          watermark_size?: number
+          watermark_url?: string | null
           website?: string | null
         }
         Update: {
@@ -797,6 +809,12 @@ export type Database = {
           stamp_url?: string | null
           telephone?: string | null
           updated_at?: string
+          watermark_opacity?: number
+          watermark_position_x?: number
+          watermark_position_y?: number
+          watermark_rotation?: number
+          watermark_size?: number
+          watermark_url?: string | null
           website?: string | null
         }
         Relationships: []

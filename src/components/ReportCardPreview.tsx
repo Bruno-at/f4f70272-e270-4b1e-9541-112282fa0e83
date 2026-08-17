@@ -2,6 +2,7 @@ import { Student, Term, SchoolInfo, StudentMark, Subject } from '@/types/databas
 import { StampConfig } from './StampConfigurator';
 import { detectAcademicLevel } from '@/utils/academicLevel';
 import { formatSchoolAddress } from '@/utils/schoolAddress';
+import type { OverlayConfig } from '@/utils/reportOverlays';
 
 export type StampPosition = 'bottom-right' | 'bottom-center' | 'over-signatures' | 'center';
 
@@ -32,6 +33,8 @@ interface ReportCardPreviewProps {
   stampUrl?: string | null;
   stampPosition?: StampPosition;
   stampConfig?: StampConfig | null;
+  watermarkUrl?: string | null;
+  watermarkConfig?: OverlayConfig | null;
   feesData?: {
     feesBalance: number;
     feesNextTerm: number;
@@ -601,11 +604,30 @@ const ReportCardPreview = (props: ReportCardPreviewProps) => {
   const className = props.student.classes?.class_name || '';
   const level = detectAcademicLevel(className);
 
-  if (level === 'a-level') {
-    return <ALevelPreview {...props} />;
-  }
+  const { watermarkUrl, watermarkConfig } = props;
+  const inner = level === 'a-level' ? <ALevelPreview {...props} /> : <OLevelPreview {...props} />;
 
-  return <OLevelPreview {...props} />;
+  if (!watermarkUrl || !watermarkConfig) return inner;
+
+  return (
+    <div className="relative">
+      {inner}
+      <img
+        src={watermarkUrl}
+        alt="Watermark"
+        className="report-card-watermark absolute pointer-events-none select-none"
+        style={{
+          left: `${watermarkConfig.positionX}%`,
+          top: `${watermarkConfig.positionY}%`,
+          width: `${watermarkConfig.size}px`,
+          height: 'auto',
+          opacity: watermarkConfig.opacity / 100,
+          transform: `translate(-50%, -50%) rotate(${watermarkConfig.rotation ?? 0}deg)`,
+          zIndex: 5,
+        }}
+      />
+    </div>
+  );
 };
 
 export default ReportCardPreview;

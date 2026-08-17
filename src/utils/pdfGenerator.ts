@@ -19,6 +19,10 @@ export interface StampConfig {
   opacity: number;
 }
 
+export interface WatermarkConfig extends StampConfig {
+  rotation?: number;
+}
+
 export interface ReportCardData {
   student: Student;
   term: Term;
@@ -39,6 +43,8 @@ export interface ReportCardData {
   headteacherSignature?: string | null;
   stampUrl?: string | null;
   stampConfig?: StampConfig | null;
+  watermarkUrl?: string | null;
+  watermarkConfig?: WatermarkConfig | null;
   feesData?: {
     feesBalance: number;
     feesNextTerm: number;
@@ -102,6 +108,39 @@ export const generateReportCardPDF = async (data: ReportCardData) => {
   const { buildReportCardBlob, reportFileName, downloadBlob } = await import('./reportPdf');
   const blob = await buildReportCardBlob(data);
   downloadBlob(blob, reportFileName(data));
+};
+
+export const addWatermarkOverlayToPdf = (pdf: jsPDF, watermarkUrl: string, config: WatermarkConfig) => {
+  if (!watermarkUrl?.startsWith('data:image') || !config) return;
+
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const sizeMm = (Number(config.size) || 120) * 0.35;
+  const x = ((Number(config.positionX) || 50) / 100) * pageWidth;
+  const y = ((Number(config.positionY) || 50) / 100) * pageHeight;
+  const opacity = Math.max(0, Math.min(100, Number(config.opacity ?? 15))) / 100;
+  const rotation = Number(config.rotation) || 0;
+  const imageFormat = getImageFormatFromDataUrl(watermarkUrl);
+
+  try {
+    const gState = new (pdf as any).GState({ opacity });
+    pdf.saveGraphicsState();
+    pdf.setGState(gState);
+    pdf.addImage(
+      watermarkUrl,
+      imageFormat,
+      x - sizeMm / 2,
+      y - sizeMm / 2,
+      sizeMm,
+      sizeMm,
+      undefined,
+      undefined,
+      rotation,
+    );
+    pdf.restoreGraphicsState();
+  } catch (error) {
+    console.error('Error adding watermark to PDF:', error);
+  }
 };
 
 const calculateGrade = (percentage: number): string => {

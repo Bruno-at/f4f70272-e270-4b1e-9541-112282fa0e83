@@ -1,4 +1,4 @@
-import { PDFDocument, PDFFont, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, PDFFont, StandardFonts, degrees, rgb } from 'pdf-lib';
 import { supabase } from '@/integrations/supabase/client';
 import type { ReportCardData } from './pdfGenerator';
 import {
@@ -104,6 +104,41 @@ export async function buildCustomTemplateBlob(
   const reg = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const BLACK = rgb(0.1, 0.1, 0.1);
+
+  const embedDataUrl = async (dataUrl?: string | null) => {
+    if (!dataUrl?.startsWith('data:image')) return null;
+    const raw = dataUrl.split(',')[1];
+    const buf = Uint8Array.from(atob(raw), (ch) => ch.charCodeAt(0));
+    try {
+      return dataUrl.includes('image/png') ? await pdf.embedPng(buf) : await pdf.embedJpg(buf);
+    } catch {
+      return null;
+    }
+  };
+
+  // Watermark first, so template values print on top of it.
+  if (data.watermarkUrl && data.watermarkConfig) {
+    const wm = await embedDataUrl(data.watermarkUrl);
+    if (wm) {
+      const cfg = data.watermarkConfig;
+      const w = ((Number(cfg.size) || 120) * 0.35 * PW) / 210;
+      const h = (wm.height / wm.width) * w;
+      const cx = ((Number(cfg.positionX) ?? 50) / 100) * PW;
+      const cy = PH - ((Number(cfg.positionY) ?? 50) / 100) * PH;
+      const rot = Number(cfg.rotation) || 0;
+      const rad = (rot * Math.PI) / 180;
+      const dx = (-w / 2) * Math.cos(rad) - (-h / 2) * Math.sin(rad);
+      const dy = (-w / 2) * Math.sin(rad) + (-h / 2) * Math.cos(rad);
+      page.drawImage(wm, {
+        x: cx + dx,
+        y: cy + dy,
+        width: w,
+        height: h,
+        opacity: Math.max(0, Math.min(100, Number(cfg.opacity ?? 15))) / 100,
+        rotate: degrees(rot),
+      });
+    }
+  }
 
   const customValues = await fetchCustomValues(
     data.student.id,
@@ -213,6 +248,24 @@ export async function buildCustomTemplateBlob(
       ? resolveSystemFieldValue(f.systemField, data)
       : customValues[f.key] || '';
     drawText(value, f);
+  }
+
+  // Stamp on top of everything.
+  if (data.stampUrl && data.stampConfig) {
+    const stamp = await embedDataUrl(data.stampUrl);
+    if (stamp) {
+      const cfg = data.stampConfig;
+      const size = ((Number(cfg.size) || 60) * 0.35 * PW) / 210;
+      const cx = ((Number(cfg.positionX) ?? 75) / 100) * PW;
+      const cy = PH - ((Number(cfg.positionY) ?? 80) / 100) * PH;
+      page.drawImage(stamp, {
+        x: cx - size / 2,
+        y: cy - size / 2,
+        width: size,
+        height: size,
+        opacity: Math.max(0, Math.min(100, Number(cfg.opacity ?? 70))) / 100,
+      });
+    }
   }
 
   const out = await pdf.save();
