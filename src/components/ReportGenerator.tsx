@@ -10,7 +10,6 @@ import { useSchool } from '@/contexts/SchoolContext';
 import { Student, Term, Class, Subject, SchoolInfo } from '@/types/database';
 import { Download, FileText, Users } from 'lucide-react';
 import { generateReportCardPDF } from '@/utils/pdfGenerator';
-import { TemplateSelector, TemplateType, ReportColor } from '@/components/TemplateSelector';
 import { calculateStudentFees } from '@/utils/feesCalculator';
 import { enrichMarksForReport } from '@/utils/reportEnrichment';
 import { blobToDataUrl, resolveImageDataUrl } from '@/utils/photoUrl';
@@ -29,8 +28,6 @@ const ReportGenerator = () => {
   const [selectedStudent, setSelectedStudent] = useState('');
   const [teacherComment, setTeacherComment] = useState('');
   const [headteacherComment, setHeadteacherComment] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('classic');
-  const [selectedColor, setSelectedColor] = useState<ReportColor>('white');
 
   const { toast } = useToast();
   const { schoolId } = useSchool();
@@ -308,30 +305,8 @@ const ReportGenerator = () => {
       photoReadyForPdf: Boolean(studentWithBase64Photo.photo_url?.startsWith('data:image')),
     });
 
-    // Load stamp URL and config
-    let stampBase64: string | null = null;
-    let stampConfig: { positionX: number; positionY: number; size: number; opacity: number } | null = null;
-    
-    const { data: stampData } = await supabase
-      .from('schools')
-      .select('stamp_url, stamp_position_x, stamp_position_y, stamp_size, stamp_opacity')
-      .limit(1)
-      .maybeSingle();
-    
-    if (stampData) {
-      const sd = stampData as any;
-      if (sd.stamp_url) {
-        stampBase64 = await resolveImageDataUrl(sd.stamp_url, 'student-photos');
-      }
-      stampConfig = {
-        positionX: sd.stamp_position_x ?? 75,
-        positionY: sd.stamp_position_y ?? 80,
-        size: sd.stamp_size ?? 60,
-        opacity: sd.stamp_opacity ?? 70,
-      };
-    }
-
-    // Generate PDF
+    // Generate PDF. The active template plus the school's stamp, watermark and
+    // term settings are applied automatically by the unified PDF builder.
     await generateReportCardPDF({
       student: studentWithBase64Photo,
       term,
@@ -346,12 +321,8 @@ const ReportGenerator = () => {
         headteacher_comment: reportData.headteacher_comment,
       },
       subjects: classSubjects,
-      template: selectedTemplate,
-      reportColor: selectedColor,
       classTeacherSignature,
       headteacherSignature,
-      stampUrl: stampBase64,
-      stampConfig,
       feesData: {
         feesBalance: feesData.feesBalance,
         feesNextTerm: feesData.feesNextTerm,
@@ -442,23 +413,6 @@ const ReportGenerator = () => {
           </Select>
         </div>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Select Report Card Template</CardTitle>
-          <CardDescription>
-            Choose a report card template design. Preview each template to see how it looks.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <TemplateSelector
-            value={selectedTemplate}
-            onChange={setSelectedTemplate}
-            colorValue={selectedColor}
-            onColorChange={setSelectedColor}
-          />
-        </CardContent>
-      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
