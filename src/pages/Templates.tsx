@@ -271,6 +271,11 @@ const Templates = () => {
                         <Button size="sm" variant="outline" onClick={() => activate(null)}>Use this</Button>
                       )}
                     </div>
+                    <div className="mt-3">
+                      <Button size="sm" variant="outline" onClick={() => setPreviewDefault(true)}>
+                        <Eye className="w-4 h-4 mr-1" /> Preview
+                      </Button>
+                    </div>
                   </div>
 
                   {loading ? (
@@ -291,6 +296,9 @@ const Templates = () => {
                         </div>
                         <div className="flex flex-wrap gap-2 mt-3">
                           {!t.is_active && <Button size="sm" variant="outline" onClick={() => activate(t)}>Use this</Button>}
+                          <Button size="sm" variant="outline" onClick={() => openPreview(t)}>
+                            <Eye className="w-4 h-4 mr-1" /> Preview
+                          </Button>
                           <Button size="sm" variant="outline" onClick={() => openEditor(t)}>
                             <Pencil className="w-4 h-4 mr-1" /> Fields
                           </Button>
