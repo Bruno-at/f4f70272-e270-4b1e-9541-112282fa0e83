@@ -385,14 +385,6 @@ const Templates = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={false}>
-        <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editing?.name} — field positions</DialogTitle>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
-
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
