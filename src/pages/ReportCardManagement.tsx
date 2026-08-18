@@ -5,9 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ReportCard, Student, Term, SchoolInfo, StudentMark, Subject } from '@/types/database';
-import { Eye, Pencil, Printer, Download, Share2, Trash2, ArrowLeft, FileText, Loader2, Stamp } from 'lucide-react';
+import { Eye, Pencil, Printer, Download, Share2, Trash2, ArrowLeft, FileText, Loader2 } from 'lucide-react';
 import ReportCardPreview, { StampPosition } from '@/components/ReportCardPreview';
-import StampConfigurator, { StampConfig } from '@/components/StampConfigurator';
+import { loadReportOverlays, DEFAULT_STAMP_CONFIG, DEFAULT_WATERMARK_CONFIG, type OverlayConfig } from '@/utils/reportOverlays';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -80,8 +80,10 @@ const ReportCardManagement = () => {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [printPreviewLoading, setPrintPreviewLoading] = useState(false);
   const [stampPosition, setStampPosition] = useState<StampPosition>('bottom-right');
-  const [stampConfig, setStampConfig] = useState<StampConfig>({ positionX: 75, positionY: 80, size: 60, opacity: 70 });
-  const [stampSaving, setStampSaving] = useState(false);
+  const [stampConfig, setStampConfig] = useState<OverlayConfig>({ ...DEFAULT_STAMP_CONFIG });
+  const [schoolStampUrl, setSchoolStampUrl] = useState<string | null>(null);
+  const [watermarkUrl, setWatermarkUrl] = useState<string | null>(null);
+  const [watermarkConfig, setWatermarkConfig] = useState<OverlayConfig>({ ...DEFAULT_WATERMARK_CONFIG });
   const [previewData, setPreviewData] = useState<{
     student: Student;
     term: Term;
@@ -127,53 +129,16 @@ const ReportCardManagement = () => {
 
   useEffect(() => {
     fetchReportCards();
-    loadStampConfig();
+    loadOverlays();
   }, []);
 
-  const loadStampConfig = async () => {
-    try {
-      const { data } = await supabase
-        .from('schools')
-        .select('stamp_position_x, stamp_position_y, stamp_size, stamp_opacity')
-        .limit(1)
-        .maybeSingle();
-      if (data) {
-        setStampConfig({
-          positionX: (data as any).stamp_position_x ?? 75,
-          positionY: (data as any).stamp_position_y ?? 80,
-          size: (data as any).stamp_size ?? 60,
-          opacity: (data as any).stamp_opacity ?? 70,
-        });
-      }
-    } catch (e) {
-      console.error('Error loading stamp config:', e);
-    }
-  };
-
-  const handleSaveStampConfig = async (config: StampConfig) => {
-    setStampSaving(true);
-    try {
-      const { data: schoolData } = await supabase.from('schools').select('id').limit(1).maybeSingle();
-      if (!schoolData) throw new Error('No school info found');
-      
-      const { error } = await supabase
-        .from('schools')
-        .update({
-          stamp_position_x: config.positionX,
-          stamp_position_y: config.positionY,
-          stamp_size: config.size,
-          stamp_opacity: config.opacity,
-        } as any)
-        .eq('id', schoolData.id);
-      
-      if (error) throw error;
-      toast({ title: 'Stamp Position Saved', description: 'This position will be applied to all report cards.' });
-    } catch (error) {
-      console.error('Error saving stamp config:', error);
-      toast({ title: 'Error', description: 'Failed to save stamp configuration', variant: 'destructive' });
-    } finally {
-      setStampSaving(false);
-    }
+  // Stamp and watermark are configured once in Settings and applied everywhere.
+  const loadOverlays = async () => {
+    const overlays = await loadReportOverlays();
+    setSchoolStampUrl(overlays.stampUrl);
+    setStampConfig(overlays.stampConfig);
+    setWatermarkUrl(overlays.watermarkUrl);
+    setWatermarkConfig(overlays.watermarkConfig);
   };
 
   const fetchReportCards = async () => {
