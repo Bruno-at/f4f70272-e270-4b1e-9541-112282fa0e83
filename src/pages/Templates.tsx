@@ -84,6 +84,16 @@ const Templates = () => {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    loadReportOverlays(schoolId).then(setOverlays);
+  }, [schoolId]);
+
+  const openPreview = async (t: TemplateRow) => {
+    const { data } = await supabase.storage.from('report-templates').createSignedUrl(t.file_path, 3600);
+    setPreviewUrl(data?.signedUrl || '');
+    setPreviewTemplate(t);
+  };
+
   const handleUpload = async (file: File) => {
     if (!schoolId) return;
     if (file.size > MAX_SIZE) {
