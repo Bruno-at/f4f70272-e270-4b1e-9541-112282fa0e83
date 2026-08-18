@@ -335,6 +335,64 @@ const Templates = () => {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={previewDefault} onOpenChange={setPreviewDefault}>
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Default template preview</DialogTitle>
+          </DialogHeader>
+          {sampleLoading || !sample ? (
+            <div className="flex items-center justify-center py-16 text-muted-foreground">
+              <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading preview…
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-hidden bg-white">
+              <ReportCardPreview
+                student={sample.student}
+                term={sample.term}
+                schoolInfo={sample.schoolInfo}
+                marks={sample.marks}
+                subjects={sample.subjects}
+                reportData={sample.reportData}
+                classTeacherSignature={sample.classTeacherSignature}
+                headteacherSignature={sample.headteacherSignature}
+                stampUrl={overlays.stampUrl}
+                stampConfig={overlays.stampConfig}
+                watermarkUrl={overlays.watermarkUrl}
+                watermarkConfig={overlays.watermarkConfig}
+                feesData={sample.feesData}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!previewTemplate} onOpenChange={(o) => !o && setPreviewTemplate(null)}>
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{previewTemplate?.name} — template preview</DialogTitle>
+          </DialogHeader>
+          {previewUrl ? (
+            previewTemplate?.mime_type.includes('pdf') ? (
+              <iframe src={previewUrl} title="Template preview" className="w-full h-[75vh] rounded-lg border" />
+            ) : (
+              <img src={previewUrl} alt={`${previewTemplate?.name} template preview`} className="w-full rounded-lg border" />
+            )
+          ) : (
+            <div className="flex items-center justify-center py-16 text-muted-foreground">
+              <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading template…
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={false}>
+        <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editing?.name} — field positions</DialogTitle>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
