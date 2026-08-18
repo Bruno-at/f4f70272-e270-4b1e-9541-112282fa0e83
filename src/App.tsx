@@ -15,6 +15,7 @@ import ResetPassword from "./pages/ResetPassword";
 import RegisterSchool from "./pages/RegisterSchool";
 import SetupSchool from "./pages/SetupSchool";
 import Templates from "./pages/Templates";
+import SettingsPage from "./pages/Settings";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/" element={<AuthGuard><Index /></AuthGuard>} />
               <Route path="/report-cards" element={<AuthGuard><ReportCardManagement /></AuthGuard>} />
               <Route path="/templates" element={<AuthGuard><Templates /></AuthGuard>} />
+              <Route path="/settings" element={<AuthGuard><SettingsPage /></AuthGuard>} />
               <Route path="/finance" element={<AuthGuard><FinancePortal /></AuthGuard>} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

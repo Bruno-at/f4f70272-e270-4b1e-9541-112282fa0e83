@@ -12,10 +12,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSchool } from '@/contexts/SchoolContext';
-import { CheckCircle2, FileUp, Loader2, LayoutTemplate, Pencil, Trash2, Sparkles } from 'lucide-react';
+import { CheckCircle2, Eye, FileUp, Loader2, LayoutTemplate, Pencil, Trash2, Sparkles } from 'lucide-react';
 import TemplateFieldEditor from '@/components/templates/TemplateFieldEditor';
 import CustomFieldValues from '@/components/templates/CustomFieldValues';
 import { SYSTEM_FIELDS, TemplateField } from '@/utils/templateFields';
+import ReportCardPreview from '@/components/ReportCardPreview';
+import { useReportPreviewSample } from '@/hooks/useReportPreviewSample';
+import { loadReportOverlays, DEFAULT_STAMP_CONFIG, DEFAULT_WATERMARK_CONFIG, type OverlayConfig } from '@/utils/reportOverlays';
 
 interface TemplateRow {
   id: string;
@@ -50,6 +53,21 @@ const Templates = () => {
   const [editingUrl, setEditingUrl] = useState('');
   const [savingFields, setSavingFields] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<TemplateRow | null>(null);
+  const [previewDefault, setPreviewDefault] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<TemplateRow | null>(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const { sample, loading: sampleLoading } = useReportPreviewSample();
+  const [overlays, setOverlays] = useState<{
+    stampUrl: string | null;
+    stampConfig: OverlayConfig;
+    watermarkUrl: string | null;
+    watermarkConfig: OverlayConfig;
+  }>({
+    stampUrl: null,
+    stampConfig: { ...DEFAULT_STAMP_CONFIG },
+    watermarkUrl: null,
+    watermarkConfig: { ...DEFAULT_WATERMARK_CONFIG },
+  });
 
   const load = useCallback(async () => {
     if (!schoolId) return;
@@ -65,6 +83,16 @@ const Templates = () => {
   }, [schoolId, toast]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    loadReportOverlays(schoolId).then(setOverlays);
+  }, [schoolId]);
+
+  const openPreview = async (t: TemplateRow) => {
+    const { data } = await supabase.storage.from('report-templates').createSignedUrl(t.file_path, 3600);
+    setPreviewUrl(data?.signedUrl || '');
+    setPreviewTemplate(t);
+  };
 
   const handleUpload = async (file: File) => {
     if (!schoolId) return;
@@ -243,6 +271,11 @@ const Templates = () => {
                         <Button size="sm" variant="outline" onClick={() => activate(null)}>Use this</Button>
                       )}
                     </div>
+                    <div className="mt-3">
+                      <Button size="sm" variant="outline" onClick={() => setPreviewDefault(true)}>
+                        <Eye className="w-4 h-4 mr-1" /> Preview
+                      </Button>
+                    </div>
                   </div>
 
                   {loading ? (
@@ -263,6 +296,9 @@ const Templates = () => {
                         </div>
                         <div className="flex flex-wrap gap-2 mt-3">
                           {!t.is_active && <Button size="sm" variant="outline" onClick={() => activate(t)}>Use this</Button>}
+                          <Button size="sm" variant="outline" onClick={() => openPreview(t)}>
+                            <Eye className="w-4 h-4 mr-1" /> Preview
+                          </Button>
                           <Button size="sm" variant="outline" onClick={() => openEditor(t)}>
                             <Pencil className="w-4 h-4 mr-1" /> Fields
                           </Button>
@@ -295,6 +331,56 @@ const Templates = () => {
               saving={savingFields}
               onSave={saveFields}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={previewDefault} onOpenChange={setPreviewDefault}>
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Default template preview</DialogTitle>
+          </DialogHeader>
+          {sampleLoading || !sample ? (
+            <div className="flex items-center justify-center py-16 text-muted-foreground">
+              <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading preview…
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-hidden bg-white">
+              <ReportCardPreview
+                student={sample.student}
+                term={sample.term}
+                schoolInfo={sample.schoolInfo}
+                marks={sample.marks}
+                subjects={sample.subjects}
+                reportData={sample.reportData}
+                classTeacherSignature={sample.classTeacherSignature}
+                headteacherSignature={sample.headteacherSignature}
+                stampUrl={overlays.stampUrl}
+                stampConfig={overlays.stampConfig}
+                watermarkUrl={overlays.watermarkUrl}
+                watermarkConfig={overlays.watermarkConfig}
+                feesData={sample.feesData}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!previewTemplate} onOpenChange={(o) => !o && setPreviewTemplate(null)}>
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{previewTemplate?.name} — template preview</DialogTitle>
+          </DialogHeader>
+          {previewUrl ? (
+            previewTemplate?.mime_type.includes('pdf') ? (
+              <iframe src={previewUrl} title="Template preview" className="w-full h-[75vh] rounded-lg border" />
+            ) : (
+              <img src={previewUrl} alt={`${previewTemplate?.name} template preview`} className="w-full rounded-lg border" />
+            )
+          ) : (
+            <div className="flex items-center justify-center py-16 text-muted-foreground">
+              <Loader2 className="w-5 h-5 animate-spin mr-2" /> Loading template…
+            </div>
           )}
         </DialogContent>
       </Dialog>

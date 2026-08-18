@@ -1,4 +1,4 @@
-import { Calendar, School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare, FolderOpen, Pencil, DollarSign, UserCog, Table2, LayoutTemplate } from 'lucide-react';
+import { School, Users, Download, BookOpen, User, FileText, Settings, MessageSquare, FolderOpen, Pencil, DollarSign, UserCog, Table2, LayoutTemplate, Cog } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -15,7 +15,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 const menuItems = [
   { id: 'school', title: 'School', icon: School },
-  { id: 'terms', title: 'Terms', icon: Calendar },
   { id: 'classes', title: 'Classes', icon: Users },
   { id: 'subjects', title: 'Subjects', icon: BookOpen },
   { id: 'students', title: 'Students', icon: User },
@@ -29,6 +28,7 @@ const menuItems = [
   { id: 'templates', title: 'Templates', icon: LayoutTemplate, isRoute: true },
   { id: 'manage-reports', title: 'Manage Report Cards', icon: FolderOpen, isRoute: true },
   { id: 'finance', title: 'Finance Portal', icon: DollarSign, isRoute: true },
+  { id: 'settings', title: 'Settings', icon: Cog, isRoute: true },
 ];
 
 interface AppSidebarProps {
@@ -49,6 +49,8 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
       navigate('/templates');
     } else if (isRoute && sectionId === 'finance') {
       navigate('/finance');
+    } else if (isRoute && sectionId === 'settings') {
+      navigate('/settings');
     } else if (location.pathname !== '/') {
       // Section items only work on the generator page — navigate there with state
       navigate('/', { state: { section: sectionId } });
