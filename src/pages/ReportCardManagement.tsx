@@ -950,9 +950,11 @@ const ReportCardManagement = () => {
                 reportData={printPreviewData.reportData}
                 classTeacherSignature={printPreviewData.classTeacherSignature}
                 headteacherSignature={printPreviewData.headteacherSignature}
-                stampUrl={printPreviewData.stampUrl}
+                stampUrl={printPreviewData.stampUrl || schoolStampUrl}
                 stampPosition={stampPosition}
-                stampConfig={printPreviewData.stampUrl ? stampConfig : undefined}
+                stampConfig={stampConfig}
+                watermarkUrl={watermarkUrl}
+                watermarkConfig={watermarkConfig}
                 feesData={printPreviewData.feesData}
               />
             </div>
