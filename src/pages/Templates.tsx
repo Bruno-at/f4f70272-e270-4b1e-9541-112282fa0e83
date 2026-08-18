@@ -12,10 +12,13 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSchool } from '@/contexts/SchoolContext';
-import { CheckCircle2, FileUp, Loader2, LayoutTemplate, Pencil, Trash2, Sparkles } from 'lucide-react';
+import { CheckCircle2, Eye, FileUp, Loader2, LayoutTemplate, Pencil, Trash2, Sparkles } from 'lucide-react';
 import TemplateFieldEditor from '@/components/templates/TemplateFieldEditor';
 import CustomFieldValues from '@/components/templates/CustomFieldValues';
 import { SYSTEM_FIELDS, TemplateField } from '@/utils/templateFields';
+import ReportCardPreview from '@/components/ReportCardPreview';
+import { useReportPreviewSample } from '@/hooks/useReportPreviewSample';
+import { loadReportOverlays, DEFAULT_STAMP_CONFIG, DEFAULT_WATERMARK_CONFIG, type OverlayConfig } from '@/utils/reportOverlays';
 
 interface TemplateRow {
   id: string;
@@ -50,6 +53,21 @@ const Templates = () => {
   const [editingUrl, setEditingUrl] = useState('');
   const [savingFields, setSavingFields] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<TemplateRow | null>(null);
+  const [previewDefault, setPreviewDefault] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<TemplateRow | null>(null);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const { sample, loading: sampleLoading } = useReportPreviewSample();
+  const [overlays, setOverlays] = useState<{
+    stampUrl: string | null;
+    stampConfig: OverlayConfig;
+    watermarkUrl: string | null;
+    watermarkConfig: OverlayConfig;
+  }>({
+    stampUrl: null,
+    stampConfig: { ...DEFAULT_STAMP_CONFIG },
+    watermarkUrl: null,
+    watermarkConfig: { ...DEFAULT_WATERMARK_CONFIG },
+  });
 
   const load = useCallback(async () => {
     if (!schoolId) return;
