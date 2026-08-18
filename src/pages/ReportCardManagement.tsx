@@ -879,37 +879,23 @@ const ReportCardManagement = () => {
               <span className="ml-2 text-muted-foreground">Loading report card...</span>
             </div>
           ) : previewData ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Report card preview - 2/3 width */}
-              <div className="lg:col-span-2 border rounded-lg overflow-hidden">
-                <ReportCardPreview
-                  student={previewData.student}
-                  term={previewData.term}
-                  schoolInfo={previewData.schoolInfo}
-                  marks={previewData.marks}
-                  subjects={previewData.subjects}
-                  reportData={previewData.reportData}
-                  classTeacherSignature={previewData.classTeacherSignature}
-                  headteacherSignature={previewData.headteacherSignature}
-                  stampUrl={previewData.stampUrl}
-                  stampPosition={stampPosition}
-                  stampConfig={previewData.stampUrl ? stampConfig : undefined}
-                  feesData={previewData.feesData}
-                />
-              </div>
-
-              {/* Stamp configurator - 1/3 width */}
-              {previewData.stampUrl && (
-                <div className="lg:col-span-1">
-                  <StampConfigurator
-                    stampUrl={previewData.stampUrl}
-                    config={stampConfig}
-                    onChange={setStampConfig}
-                    onSave={handleSaveStampConfig}
-                    saving={stampSaving}
-                  />
-                </div>
-              )}
+            <div className="border rounded-lg overflow-hidden">
+              <ReportCardPreview
+                student={previewData.student}
+                term={previewData.term}
+                schoolInfo={previewData.schoolInfo}
+                marks={previewData.marks}
+                subjects={previewData.subjects}
+                reportData={previewData.reportData}
+                classTeacherSignature={previewData.classTeacherSignature}
+                headteacherSignature={previewData.headteacherSignature}
+                stampUrl={previewData.stampUrl || schoolStampUrl}
+                stampPosition={stampPosition}
+                stampConfig={stampConfig}
+                watermarkUrl={watermarkUrl}
+                watermarkConfig={watermarkConfig}
+                feesData={previewData.feesData}
+              />
             </div>
           ) : (
             <div className="text-center py-12 text-muted-foreground">
@@ -922,12 +908,6 @@ const ReportCardManagement = () => {
             </Button>
             {selectedReport && (
               <>
-                {!previewData?.stampUrl && (
-                  <Button variant="outline" onClick={handleApplyStamp}>
-                    <Stamp className="w-4 h-4 mr-2" />
-                    Apply Stamp
-                  </Button>
-                )}
                 <Button variant="outline" onClick={() => handlePrint(selectedReport.id)}>
                   <Printer className="w-4 h-4 mr-2" />
                   Print
