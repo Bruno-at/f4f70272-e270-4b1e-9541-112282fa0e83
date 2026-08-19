@@ -104,6 +104,24 @@ export async function buildCustomTemplateBlob(
   const reg = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
   const BLACK = rgb(0.1, 0.1, 0.1);
+  const WHITE = rgb(1, 1, 1);
+
+  /**
+   * Uploaded templates often ship with sample data already printed on them.
+   * Blank out each mapped box first so the school's real values replace the
+   * template's own content instead of printing on top of it.
+   */
+  const maskField = (f: TemplateField, padX = 1, padY = 1) => {
+    const w = Math.max(f.w * PW, 2);
+    const h = Math.max(f.h * PH, 2);
+    page.drawRectangle({
+      x: f.x * PW - padX,
+      y: PH - f.y * PH - h - padY,
+      width: w + padX * 2,
+      height: h + padY * 2,
+      color: WHITE,
+    });
+  };
 
   const embedDataUrl = async (dataUrl?: string | null) => {
     if (!dataUrl?.startsWith('data:image')) return null;
@@ -147,7 +165,6 @@ export async function buildCustomTemplateBlob(
   );
 
   const drawText = (text: string, f: TemplateField, font: PDFFont = reg) => {
-    if (!text) return;
     const x = f.x * PW;
     const boxW = Math.max(f.w * PW, 10);
     const boxH = Math.max(f.h * PH, 8);
@@ -236,17 +253,22 @@ export async function buildCustomTemplateBlob(
   for (const f of template.fields || []) {
     const key = f.systemField || f.key;
     if (key === 'marks_table') {
+      maskField(f);
       drawMarksTable(f);
       continue;
     }
     if (f.systemField && IMAGE_FIELDS.has(f.systemField)) {
       const src = resolveImageField(f.systemField, data);
-      if (src) await drawImage(src, f);
+      if (src) {
+        maskField(f);
+        await drawImage(src, f);
+      }
       continue;
     }
     const value = f.systemField
       ? resolveSystemFieldValue(f.systemField, data)
       : customValues[f.key] || '';
+    maskField(f);
     drawText(value, f);
   }
 
