@@ -111,12 +111,20 @@ const Templates = () => {
       if (upErr) throw upErr;
 
       // Ask the AI to read the template and locate every fillable field.
-      const base64 = await fileToBase64(file);
-      const { data: analysis, error: fnErr } = await supabase.functions.invoke('analyze-report-template', {
-        body: { fileBase64: base64, mimeType: file.type, availableFields: SYSTEM_FIELDS },
-      });
-      if (fnErr) throw new Error(fnErr.message);
-      if ((analysis as any)?.error) throw new Error((analysis as any).error);
+      // If the analysis fails the upload still succeeds: fields can be mapped by hand.
+      let analysis: any = null;
+      let analysisError = '';
+      try {
+        const base64 = await fileToBase64(file);
+        const { data, error: fnErr } = await supabase.functions.invoke('analyze-report-template', {
+          body: { fileBase64: base64, mimeType: file.type, availableFields: SYSTEM_FIELDS },
+        });
+        if (fnErr) analysisError = fnErr.message || 'AI analysis failed';
+        else if ((data as any)?.error) analysisError = (data as any).error;
+        else analysis = data;
+      } catch (err: any) {
+        analysisError = err?.message || 'AI analysis failed';
+      }
 
       const fields: TemplateField[] = ((analysis as any)?.fields || []).map((f: any, i: number) => ({
         key: f.key || `field_${i + 1}`,
@@ -147,10 +155,17 @@ const Templates = () => {
 
       await ensureCustomFields(fields);
 
-      toast({
-        title: 'Template analysed',
-        description: `${fields.length} fields detected. Review and adjust the positions, then activate it.`,
-      });
+      toast(
+        analysisError
+          ? {
+              title: 'Template uploaded (no auto-analysis)',
+              description: `${analysisError}. Add the fields manually in the editor.`,
+            }
+          : {
+              title: 'Template analysed',
+              description: `${fields.length} fields detected. Review and adjust the positions, then activate it.`,
+            },
+      );
       await load();
       openEditor({ ...(inserted as any), fields });
     } catch (e: any) {
