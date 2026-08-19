@@ -1,7 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
-const MODELS = ['google/gemini-3.6-flash', 'google/gemini-2.5-flash'];
+const MODELS = ['google/gemini-2.5-flash', 'google/gemini-2.5-flash-lite'];
 
 const SYSTEM = `You analyse school report-card templates (a PDF or an image of a blank/sample report card).
 Return the list of DATA FIELDS that must be filled in on the template, with the position of the blank area
@@ -108,6 +108,11 @@ Deno.serve(async (req) => {
 
       if (res.status === 429) return json({ error: 'AI rate limit reached, please retry shortly.' }, 429);
       if (res.status === 402) return json({ error: 'AI credits exhausted. Add credits to continue.' }, 402);
+      if (res.status === 401 || res.status === 403) {
+        const detail = await res.text();
+        console.error('AI gateway auth error:', detail);
+        return json({ error: 'AI is not available for this project right now.' }, 200);
+      }
       if (!res.ok) { lastError = await res.text(); continue; }
 
       const data = await res.json();
