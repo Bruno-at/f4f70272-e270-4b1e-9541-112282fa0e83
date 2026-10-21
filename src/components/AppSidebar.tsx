@@ -17,17 +17,16 @@ const menuItems = [
   { id: 'school', title: 'School', icon: School },
   { id: 'classes', title: 'Classes', icon: Users },
   { id: 'subjects', title: 'Subjects', icon: BookOpen },
+  { id: 'teachers', title: 'Teachers', icon: UserCog },
   { id: 'students', title: 'Students', icon: User },
-  { id: 'marks', title: 'Marks', icon: FileText },
   { id: 'grading', title: 'Grading', icon: Settings },
   { id: 'comments', title: 'Comments', icon: MessageSquare },
   { id: 'signatures', title: 'Signatures', icon: Pencil },
-  { id: 'teachers', title: 'Teachers', icon: UserCog },
-  { id: 'reports', title: 'Reports', icon: Download },
-  { id: 'marksheet', title: 'Marksheet', icon: Table2 },
   { id: 'templates', title: 'Templates', icon: LayoutTemplate, isRoute: true },
+  { id: 'marks', title: 'Marks', icon: FileText },
+  { id: 'marksheet', title: 'Marksheet', icon: Table2 },
+  { id: 'reports', title: 'Generate Report', icon: Download },
   { id: 'manage-reports', title: 'Manage Report Cards', icon: FolderOpen, isRoute: true },
-  { id: 'finance', title: 'Finance Portal', icon: DollarSign, isRoute: true },
   { id: 'settings', title: 'Settings', icon: Cog, isRoute: true },
 ];
 
@@ -47,8 +46,6 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
       navigate('/report-cards');
     } else if (isRoute && sectionId === 'templates') {
       navigate('/templates');
-    } else if (isRoute && sectionId === 'finance') {
-      navigate('/finance');
     } else if (isRoute && sectionId === 'settings') {
       navigate('/settings');
     } else if (location.pathname !== '/') {
