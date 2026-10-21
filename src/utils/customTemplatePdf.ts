@@ -213,9 +213,11 @@ export async function buildCustomTemplateBlob(
     const boxW = f.w * PW;
     const boxH = f.h * PH;
     const top = PH - f.y * PH;
-    const rowH = Math.min(18, boxH / (marks.length + 1));
-    const cols = [0.34, 0.13, 0.13, 0.13, 0.12, 0.15];
-    const headers = ['SUBJECT', '20%', '80%', '100%', 'GRADE', 'REMARK'];
+    const rowH = boxH / (marks.length + 1);
+    const weights = [13, 40, 8, 8, 8, 9, 9, 9, 10, 18, 11, 22, 9];
+    const sum = weights.reduce((a, b) => a + b, 0);
+    const cols = weights.map(w => w / sum);
+    const headers = ['CODE', 'SUBJECT', 'A1', 'A2', 'A3', 'AVG', '20%', '80%', '100%', 'IDENT', 'GRADE', 'REMARK', 'TR'];
     let size = Math.max(5.5, Math.min(8.5, rowH * 0.5));
 
     const drawRow = (cells: string[], y: number, font: PDFFont) => {
@@ -223,10 +225,12 @@ export async function buildCustomTemplateBlob(
       cells.forEach((cell, i) => {
         const cw = cols[i] * boxW;
         let text = cell || '';
-        while (font.widthOfTextAtSize(text, size) > cw - 4 && text.length > 1) {
+        let cellSize = size;
+        while (font.widthOfTextAtSize(text, cellSize) > cw - 4 && cellSize > 4) cellSize -= 0.25;
+        while (font.widthOfTextAtSize(text, cellSize) > cw - 4 && text.length > 1) {
           text = text.slice(0, -1);
         }
-        page.drawText(text, { x: cx + 2, y, size, font, color: BLACK });
+        page.drawText(text, { x: cx + 2, y, size: cellSize, font, color: BLACK });
         cx += cw;
       });
     };
@@ -237,30 +241,49 @@ export async function buildCustomTemplateBlob(
       if (y < top - boxH) return;
       drawRow(
         [
+          m.subjects?.subject_code || m.subject_code || '',
           m.subjects?.subject_name || '',
+          m.a1_score != null ? String(m.a1_score) : '',
+          m.a2_score != null ? String(m.a2_score) : '',
+          m.a3_score != null ? String(m.a3_score) : '',
+          m.average_score != null ? Number(m.average_score).toFixed(1) : '',
           m.twenty_percent != null ? String(Math.round(m.twenty_percent)) : '',
           m.eighty_percent != null ? String(Math.round(m.eighty_percent)) : '',
           m.hundred_percent != null ? String(Math.round(m.hundred_percent)) : '',
+          m.identifier != null ? String(m.identifier) : '',
           m.final_grade || '',
           m.achievement_level || '',
+          m.teacher_initials || '',
         ],
         y,
         reg,
       );
     });
+    const lineColor = rgb(0.3, 0.3, 0.3);
+    for (let i = 0; i <= marks.length + 1; i++) {
+      const y = top - i * rowH;
+      page.drawLine({ start: { x, y }, end: { x: x + boxW, y }, color: lineColor, thickness: 0.35 });
+    }
+    let cx = x;
+    [...cols, 0].forEach(col => {
+      page.drawLine({ start: { x: cx, y: top }, end: { x: cx, y: top - boxH }, color: lineColor, thickness: 0.35 });
+      cx += col * boxW;
+    });
   };
+
+  // Clear every sample field before drawing any real value. Intersecting
+  // boxes must not erase values already drawn by an earlier field.
+  for (const f of template.fields || []) maskField(f, 0, 0);
 
   for (const f of template.fields || []) {
     const key = f.systemField || f.key;
     if (key === 'marks_table') {
-      maskField(f);
       drawMarksTable(f);
       continue;
     }
     if (f.systemField && IMAGE_FIELDS.has(f.systemField)) {
       const src = resolveImageField(f.systemField, data);
       if (src) {
-        maskField(f);
         await drawImage(src, f);
       }
       continue;
@@ -268,7 +291,6 @@ export async function buildCustomTemplateBlob(
     const value = f.systemField
       ? resolveSystemFieldValue(f.systemField, data)
       : customValues[f.key] || '';
-    maskField(f);
     drawText(value, f);
   }
 
@@ -290,6 +312,16 @@ export async function buildCustomTemplateBlob(
     }
   }
 
-  const out = await pdf.save();
+  // A fixed A4 portrait sheet with a 5mm safe margin, even for landscape
+  // uploads. Fit uniformly instead of stretching or cropping the design.
+  const output = await PDFDocument.create();
+  const [content] = await output.embedPages([page]);
+  const sheet = output.addPage([595.28, 841.89]);
+  const margin = 14.18;
+  const scale = Math.min((sheet.getWidth() - margin * 2) / PW, (sheet.getHeight() - margin * 2) / PH);
+  const width = PW * scale;
+  const height = PH * scale;
+  sheet.drawPage(content, { x: (sheet.getWidth() - width) / 2, y: (sheet.getHeight() - height) / 2, width, height });
+  const out = await output.save();
   return new Blob([out.slice().buffer as ArrayBuffer], { type: 'application/pdf' });
 }

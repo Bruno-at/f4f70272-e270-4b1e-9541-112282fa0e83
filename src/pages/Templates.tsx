@@ -362,6 +362,7 @@ const Templates = () => {
           ) : (
             <div className="border rounded-lg overflow-hidden bg-white">
               <ReportCardPreview
+                templateMode="default"
                 student={sample.student}
                 term={sample.term}
                 schoolInfo={sample.schoolInfo}

@@ -29,7 +29,7 @@ const withOverlays = async (data: ReportCardData): Promise<ReportCardData> => {
  * O-Level (S1–S4) reports are rendered with pdf-lib (vector, no HTML rendering).
  * A-Level (S5–S6) reports still use the dedicated A-Level template.
  */
-export const buildReportCardBlob = async (input: ReportCardData): Promise<Blob> => {
+export const buildReportCardBlob = async (input: ReportCardData, options: { templateMode?: 'active' | 'default' } = {}): Promise<Blob> => {
   const data = await withOverlays(input);
   const className = data.student.classes?.class_name || '';
   const level = detectAcademicLevel(className);
@@ -64,7 +64,7 @@ export const buildReportCardBlob = async (input: ReportCardData): Promise<Blob> 
   // as-is (layout and design preserved) with values drawn into its mapped fields.
   try {
     const schoolId = schoolIdOf(data);
-    const custom = await fetchActiveTemplate(schoolId, 'o-level');
+    const custom = options.templateMode === 'default' ? null : await fetchActiveTemplate(schoolId, 'o-level');
     if (custom) return await buildCustomTemplateBlob(custom, data);
   } catch (e) {
     console.error('Custom template failed, falling back to the default template', e);
@@ -84,5 +84,5 @@ export const downloadBlob = (blob: Blob, fileName: string) => {
   document.body.appendChild(a);
   a.click();
   a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);
 };
