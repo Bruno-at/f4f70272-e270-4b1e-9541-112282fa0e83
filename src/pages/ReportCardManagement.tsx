@@ -284,10 +284,18 @@ const ReportCardManagement = () => {
   const executePrint = async () => {
     if (!selectedReport) return;
 
+    // Reserve the window during the click, before any network requests.
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.title = 'Report card';
+      printWindow.document.body.textContent = 'Preparing report card…';
+    }
+
     try {
       // Always fetch fresh data to prevent stale/wrong student data
       const reportData = await fetchFullReportData(selectedReport.id);
       if (!reportData) {
+        printWindow?.close();
         return;
       }
 
@@ -306,14 +314,9 @@ const ReportCardManagement = () => {
       const pdfBlob = await buildReportCardBlob(fullData as any);
       const blobUrl = URL.createObjectURL(pdfBlob);
 
-      // Try to open in new window
-      const printWindow = window.open(blobUrl, '_blank');
-      
-      if (printWindow) {
-        // Clean up blob URL after window loads
-        printWindow.onload = () => {
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-        };
+      if (printWindow && !printWindow.closed) {
+        printWindow.location.href = blobUrl;
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 300_000);
         
         toast({
           title: "Success",
@@ -332,6 +335,7 @@ const ReportCardManagement = () => {
         setPrintPreviewDialogOpen(false);
       }
     } catch (error) {
+      printWindow?.close();
       console.error('Error printing report:', error);
       toast({
         title: "Error",
@@ -869,7 +873,7 @@ const ReportCardManagement = () => {
       </AlertDialog>
 
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[850px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Report Card Preview</DialogTitle>
           </DialogHeader>
@@ -879,7 +883,7 @@ const ReportCardManagement = () => {
               <span className="ml-2 text-muted-foreground">Loading report card...</span>
             </div>
           ) : previewData ? (
-            <div className="border rounded-lg overflow-hidden">
+            <div className="overflow-hidden">
               <ReportCardPreview
                 student={previewData.student}
                 term={previewData.term}
@@ -924,7 +928,7 @@ const ReportCardManagement = () => {
 
       {/* Print Preview Dialog */}
       <Dialog open={printPreviewDialogOpen} onOpenChange={setPrintPreviewDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[850px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Printer className="w-5 h-5" />
@@ -940,7 +944,7 @@ const ReportCardManagement = () => {
               <span className="ml-2 text-muted-foreground">Loading preview...</span>
             </div>
           ) : printPreviewData ? (
-            <div className="border rounded-lg overflow-hidden bg-white">
+            <div className="overflow-hidden">
               <ReportCardPreview
                 student={printPreviewData.student}
                 term={printPreviewData.term}
