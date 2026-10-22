@@ -254,17 +254,6 @@ const MarksheetGenerator = () => {
     return map;
   }, [rows, gradingFull]);
 
-  const stats = useMemo(() => {
-    if (rows.length === 0) return null;
-    const totals = rows.map(r => r.total);
-    const hi = Math.max(...totals);
-    const lo = Math.min(...totals);
-    const hiStudent = rows.find(r => r.total === hi)?.student.name || '';
-    const loStudent = rows.find(r => r.total === lo)?.student.name || '';
-    const classAvg = totals.reduce((a, b) => a + b, 0) / rows.length;
-    return { hi, lo, hiStudent, loStudent, classAvg };
-  }, [rows]);
-
   // ---------- Exports ----------
   const exportExcel = () => {
     if (!klass || !term) return;
@@ -359,19 +348,9 @@ const MarksheetGenerator = () => {
 
     y = (doc as any).lastAutoTable.finalY + 4;
 
-    // Stats & grading scale side by side
-    const statsLines = stats ? [
-      `Highest Score : ${stats.hi} (${stats.hiStudent})`,
-      `Lowest Score  : ${stats.lo} (${stats.loStudent})`,
-      `Class Average : ${stats.classAvg.toFixed(2)}`,
-      `Total Students: ${rows.length}`,
-      `Total Subjects: ${subjects.length}`,
-    ] : [];
-
-    doc.setFontSize(9); doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'bold');
-    doc.text('CLASS STATISTICS', 10, y + 4);
-    doc.setFont('helvetica', 'normal');
-    statsLines.forEach((ln, i) => doc.text(ln, 10, y + 9 + i * 5));
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(30, 58, 138);
+    doc.text('GRADING SCALE', pageW / 2, y, { align: 'center' });
+    y += 3;
 
     autoTable(doc, {
       head: [['Grade', 'Range (%)', 'Description']],
@@ -379,8 +358,7 @@ const MarksheetGenerator = () => {
       startY: y,
       styles: { fontSize: 8, cellPadding: 1.2, lineColor: [30, 58, 138], lineWidth: 0.2 },
       headStyles: { fillColor: [239, 246, 255], textColor: [30, 58, 138], fontStyle: 'bold', halign: 'center', lineColor: [30, 58, 138], lineWidth: 0.3 },
-      margin: { left: 95, right: pageW - 95 - 110 },
-      tableWidth: 110,
+      margin: { left: 6, right: 6 },
       theme: 'grid',
     });
 
@@ -543,20 +521,7 @@ const MarksheetGenerator = () => {
             </tbody>
           </table>
 
-          {/* Stats + grading scale + comment */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 text-[11px]">
-            <div className="border-2 border-[#1e3a8a]">
-              <div className="text-center font-bold text-[#1e3a8a] bg-[#eff6ff] py-1.5 border-b-2 border-[#1e3a8a]">CLASS STATISTICS</div>
-              {stats && (
-                <div className="p-3 space-y-1">
-                  <div className="flex"><span className="w-32">Highest Score</span><span>: <span className="font-semibold">{stats.hi}</span> ({stats.hiStudent})</span></div>
-                  <div className="flex"><span className="w-32">Lowest Score</span><span>: <span className="font-semibold">{stats.lo}</span> ({stats.loStudent})</span></div>
-                  <div className="flex"><span className="w-32">Class Average</span><span>: <span className="font-semibold">{stats.classAvg.toFixed(2)}</span></span></div>
-                  <div className="flex"><span className="w-32">Total Students</span><span>: <span className="font-semibold">{rows.length}</span></span></div>
-                  <div className="flex"><span className="w-32">Total Subjects</span><span>: <span className="font-semibold">{subjects.length}</span></span></div>
-                </div>
-              )}
-            </div>
+          <div className="mt-4 text-[11px]">
             <div className="border-2 border-[#1e3a8a]">
               <div className="text-center font-bold text-[#1e3a8a] bg-[#eff6ff] py-1.5 border-b-2 border-[#1e3a8a]">GRADING SCALE</div>
               <table className="w-full text-[10px] border-collapse">
@@ -578,13 +543,7 @@ const MarksheetGenerator = () => {
                 </tbody>
               </table>
             </div>
-            <div className="border-2 border-[#1e3a8a] p-3">
-              <div className="font-semibold mb-2">Class Teacher's Comment: <span className="inline-block border-b border-slate-500 w-56 align-bottom" /></div>
-              <div className="border-b border-slate-500 h-5 mt-3" />
-              <div className="flex gap-6 mt-8 text-[11px]">
-                <div className="flex-1">Signature: <span className="inline-block border-b border-slate-500 w-40 align-bottom" /></div>
-                <div>Date: <span className="inline-block border-b border-slate-500 w-24 align-bottom" /></div>
-              </div>
+          </div>
             </div>
           </div>
         </div>
