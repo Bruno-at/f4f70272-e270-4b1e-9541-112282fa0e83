@@ -171,11 +171,13 @@ export async function buildCustomTemplateBlob(
     const top = PH - f.y * PH;
     let size = f.fontSize || Math.min(10, Math.max(6, boxH * 0.55));
     let lines = wrap(text, font, size, boxW);
-    while (lines.length * (size * 1.2) > boxH && size > 5) {
+    while ((lines.length * (size * 1.2) > boxH || lines.some(line => font.widthOfTextAtSize(line, size) > boxW)) && size > 4) {
       size -= 0.5;
       lines = wrap(text, font, size, boxW);
     }
-    lines.slice(0, Math.max(1, Math.floor(boxH / (size * 1.2)))).forEach((line, i) => {
+    lines.slice(0, Math.max(1, Math.floor(boxH / (size * 1.2)))).forEach((rawLine, i) => {
+      let line = rawLine;
+      while (font.widthOfTextAtSize(line, size) > boxW && line.length > 1) line = line.slice(0, -1);
       const lw = font.widthOfTextAtSize(line, size);
       const lx = f.align === 'center' ? x + (boxW - lw) / 2 : f.align === 'right' ? x + boxW - lw : x;
       page.drawText(line, { x: lx, y: top - size - i * size * 1.2, size, font, color: BLACK });
@@ -282,6 +284,7 @@ export async function buildCustomTemplateBlob(
       continue;
     }
     if (f.systemField && IMAGE_FIELDS.has(f.systemField)) {
+      if (f.systemField === 'school_stamp' && data.stampConfig) continue;
       const src = resolveImageField(f.systemField, data);
       if (src) {
         await drawImage(src, f);
