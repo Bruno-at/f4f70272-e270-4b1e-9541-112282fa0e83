@@ -13,8 +13,8 @@ const schoolIdOf = (data: ReportCardData) =>
  */
 const withOverlays = async (data: ReportCardData): Promise<ReportCardData> => {
   const overlays = await loadReportOverlays(schoolIdOf(data));
-  const stampUrl = data.stampUrl?.startsWith('data:image') ? data.stampUrl : overlays.stampUrl;
-  const watermarkUrl = data.watermarkUrl?.startsWith('data:image') ? data.watermarkUrl : overlays.watermarkUrl;
+  const stampUrl = data.stampUrl === null ? null : data.stampUrl?.startsWith('data:image') ? data.stampUrl : overlays.stampUrl;
+  const watermarkUrl = data.watermarkUrl === null ? null : data.watermarkUrl?.startsWith('data:image') ? data.watermarkUrl : overlays.watermarkUrl;
   return {
     ...data,
     stampUrl,

@@ -91,7 +91,7 @@ const OverlayPositioner = ({
               style={{
                 left: `${config.positionX}%`,
                 top: `${config.positionY}%`,
-                width: `${config.size}px`,
+                width: `${(config.size * 0.35 / 210) * 100}%`,
                 height: 'auto',
                 opacity: config.opacity / 100,
                 transform: `translate(-50%, -50%) rotate(${config.rotation ?? 0}deg)`,
