@@ -1,3 +1,4 @@
+/// <reference types="bun" />
 import { describe, expect, test } from 'bun:test';
 import { PDFDocument } from 'pdf-lib';
 import { buildOLevelReportPdf, type OLevelPdfData } from './pdfLibOLevelTemplate';
