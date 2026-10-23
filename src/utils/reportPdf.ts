@@ -1,4 +1,4 @@
-import { detectAcademicLevel } from './academicLevel';
+import { resolveAcademicLevel } from './academicLevel';
 import { buildOLevelReportBlob, OLevelPdfData } from './pdfLibOLevelTemplate';
 import type { ReportCardData } from './pdfGenerator';
 import { fetchActiveTemplate, buildCustomTemplateBlob } from './customTemplatePdf';
@@ -31,8 +31,11 @@ const withOverlays = async (data: ReportCardData): Promise<ReportCardData> => {
  */
 export const buildReportCardBlob = async (input: ReportCardData, options: { templateMode?: 'active' | 'default' } = {}): Promise<Blob> => {
   const data = await withOverlays(input);
-  const className = data.student.classes?.class_name || '';
-  const level = detectAcademicLevel(className);
+  const level = resolveAcademicLevel(data.student.classes);
+
+  // Both education levels use only their own school's active uploaded template.
+  const custom = options.templateMode === 'default' ? null : await fetchActiveTemplate(schoolIdOf(data), level);
+  if (custom) return buildCustomTemplateBlob(custom, data);
 
   if (level === 'a-level') {
     const [{ generateALevelTemplate }, { addStampOverlayToPdf, addWatermarkOverlayToPdf }] = await Promise.all([
@@ -58,16 +61,6 @@ export const buildReportCardBlob = async (input: ReportCardData, options: { temp
       addStampOverlayToPdf(pdf, data.stampUrl, data.stampConfig);
     }
     return pdf.output('blob');
-  }
-
-  // A school may upload its own O-Level template. When one is active it is used
-  // as-is (layout and design preserved) with values drawn into its mapped fields.
-  try {
-    const schoolId = schoolIdOf(data);
-    const custom = options.templateMode === 'default' ? null : await fetchActiveTemplate(schoolId, 'o-level');
-    if (custom) return await buildCustomTemplateBlob(custom, data);
-  } catch (e) {
-    console.error('Custom template failed, falling back to the default template', e);
   }
 
   return buildOLevelReportBlob(data as unknown as OLevelPdfData);

@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { isAcademicLevel, type AcademicLevel } from '@/utils/academicLevel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -49,6 +51,9 @@ const Templates = () => {
   const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadLevel, setUploadLevel] = useState<AcademicLevel | ''>('');
+  const [viewLevel, setViewLevel] = useState<AcademicLevel>('o-level');
+  const [updatingLevel, setUpdatingLevel] = useState<string | null>(null);
   const [editing, setEditing] = useState<TemplateRow | null>(null);
   const [editingUrl, setEditingUrl] = useState('');
   const [savingFields, setSavingFields] = useState(false);
@@ -96,6 +101,11 @@ const Templates = () => {
 
   const handleUpload = async (file: File) => {
     if (!schoolId) return;
+    if (!isAcademicLevel(uploadLevel)) {
+      toast({ title: 'Select Education Level', description: 'Choose O-Level or A-Level before uploading.', variant: 'destructive' });
+      return;
+    }
+    const selectedLevel = uploadLevel;
     if (file.size > MAX_SIZE) {
       toast({ title: 'File too large', description: 'Templates must be 15MB or smaller.', variant: 'destructive' });
       return;
@@ -142,7 +152,7 @@ const Templates = () => {
         .insert({
           school_id: schoolId,
           name: file.name.replace(/\.[^.]+$/, ''),
-          level: 'o-level',
+          level: selectedLevel,
           file_path: path,
           mime_type: file.type,
           page_width_mm: (analysis as any)?.pageWidthMm || 210,
@@ -210,9 +220,14 @@ const Templates = () => {
 
   const activate = async (t: TemplateRow | null) => {
     if (!schoolId) return;
-    await supabase.from('report_templates').update({ is_active: false }).eq('school_id', schoolId).eq('level', 'o-level');
+    const level = t?.level || viewLevel;
+    const { error: resetError } = await supabase.from('report_templates').update({ is_active: false }).eq('school_id', schoolId).eq('level', level);
+    if (resetError) {
+      toast({ title: 'Could not activate', description: resetError.message, variant: 'destructive' });
+      return;
+    }
     if (t) {
-      const { error } = await supabase.from('report_templates').update({ is_active: true }).eq('id', t.id);
+      const { error } = await supabase.from('report_templates').update({ is_active: true }).eq('school_id', schoolId).eq('id', t.id).eq('level', level);
       if (error) {
         toast({ title: 'Could not activate', description: error.message, variant: 'destructive' });
         return;
@@ -220,6 +235,20 @@ const Templates = () => {
     }
     toast({ title: t ? 'Template activated' : 'Default template restored' });
     load();
+  };
+
+  const changeLevel = async (t: TemplateRow, level: string) => {
+    if (!schoolId || !isAcademicLevel(level) || level === t.level) return;
+    setUpdatingLevel(t.id);
+    // A reclassified template must be explicitly activated for its new level.
+    const { error } = await supabase.from('report_templates').update({ level, is_active: false }).eq('school_id', schoolId).eq('id', t.id);
+    setUpdatingLevel(null);
+    if (error) {
+      toast({ title: 'Could not update level', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Education level updated', description: 'Select Use this to activate it for the new level.' });
+    await load();
   };
 
   const remove = async (t: TemplateRow) => {
@@ -230,7 +259,7 @@ const Templates = () => {
     load();
   };
 
-  const activeTemplate = templates.find((t) => t.is_active) || null;
+  const activeTemplate = templates.find((t) => t.is_active && t.level === viewLevel) || null;
 
   return (
     <SidebarProvider>
@@ -251,12 +280,19 @@ const Templates = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><LayoutTemplate className="w-5 h-5" /> Report card template</CardTitle>
                 <CardDescription>
-                  O-Level (S1–S4) report cards use the default template unless you upload and activate your own.
+                  Each education level uses its default template unless you upload and activate your own.
                   Uploaded templates keep their exact layout and design — the system only prints values into them.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap items-center gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="upload-education-level">Education Level</Label>
+                    <Select value={uploadLevel} onValueChange={(value) => isAcademicLevel(value) && setUploadLevel(value)} disabled={uploading}>
+                      <SelectTrigger id="upload-education-level" className="w-48"><SelectValue placeholder="Select education level" /></SelectTrigger>
+                      <SelectContent><SelectItem value="o-level">O-Level</SelectItem><SelectItem value="a-level">A-Level</SelectItem></SelectContent>
+                    </Select>
+                  </div>
                   <input
                     ref={inputRef}
                     type="file"
@@ -264,7 +300,7 @@ const Templates = () => {
                     className="hidden"
                     onChange={(e) => e.target.files?.[0] && handleUpload(e.target.files[0])}
                   />
-                  <Button onClick={() => inputRef.current?.click()} disabled={uploading || !schoolId}>
+                  <Button onClick={() => inputRef.current?.click()} disabled={uploading || !schoolId || !uploadLevel}>
                     {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileUp className="w-4 h-4 mr-2" />}
                     {uploading ? 'Analysing template…' : 'Upload your template'}
                   </Button>
@@ -278,7 +314,13 @@ const Templates = () => {
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="font-semibold">Default template</p>
-                        <p className="text-sm text-muted-foreground">The built-in O-Level report card design.</p>
+                        <div className="mt-2 space-y-1">
+                          <Label htmlFor="default-education-level">Education Level</Label>
+                          <Select value={viewLevel} onValueChange={(value) => isAcademicLevel(value) && setViewLevel(value)}>
+                            <SelectTrigger id="default-education-level" className="w-40"><SelectValue /></SelectTrigger>
+                            <SelectContent><SelectItem value="o-level">O-Level</SelectItem><SelectItem value="a-level">A-Level</SelectItem></SelectContent>
+                          </Select>
+                        </div>
                       </div>
                       {!activeTemplate ? (
                         <Badge className="gap-1"><CheckCircle2 className="w-3 h-3" /> In use</Badge>
@@ -308,6 +350,13 @@ const Templates = () => {
                             </p>
                           </div>
                           {t.is_active && <Badge className="gap-1"><CheckCircle2 className="w-3 h-3" /> In use</Badge>}
+                        </div>
+                        <div className="mt-3 space-y-1">
+                          <Label htmlFor={`template-level-${t.id}`}>Education Level</Label>
+                          <Select value={t.level} onValueChange={(level) => changeLevel(t, level)} disabled={updatingLevel === t.id}>
+                            <SelectTrigger id={`template-level-${t.id}`} className="w-40"><SelectValue /></SelectTrigger>
+                            <SelectContent><SelectItem value="o-level">O-Level</SelectItem><SelectItem value="a-level">A-Level</SelectItem></SelectContent>
+                          </Select>
                         </div>
                         <div className="flex flex-wrap gap-2 mt-3">
                           {!t.is_active && <Button size="sm" variant="outline" onClick={() => activate(t)}>Use this</Button>}
@@ -363,7 +412,7 @@ const Templates = () => {
             <div className="border rounded-lg overflow-hidden bg-white">
               <ReportCardPreview
                 templateMode="default"
-                student={sample.student}
+                student={{ ...sample.student, classes: { ...sample.student.classes, education_level: viewLevel } }}
                 term={sample.term}
                 schoolInfo={sample.schoolInfo}
                 marks={sample.marks}

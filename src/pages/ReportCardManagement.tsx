@@ -23,6 +23,7 @@ import { generateReportCardPDF, addStampOverlayToPdf } from '@/utils/pdfGenerato
 import { calculateStudentFees } from '@/utils/feesCalculator';
 import { enrichMarksForReport } from '@/utils/reportEnrichment';
 import { blobToDataUrl, resolveImageDataUrl } from '@/utils/photoUrl';
+import ActiveReportTemplate from '@/components/ActiveReportTemplate';
 
 interface ReportCardWithDetails {
   id: string;
@@ -884,6 +885,7 @@ const ReportCardManagement = () => {
             </div>
           ) : previewData ? (
             <div className="overflow-hidden">
+              <ActiveReportTemplate klass={previewData.student.classes} schoolId={previewData.schoolInfo.id} />
               <ReportCardPreview
                 student={previewData.student}
                 term={previewData.term}
@@ -945,6 +947,7 @@ const ReportCardManagement = () => {
             </div>
           ) : printPreviewData ? (
             <div className="overflow-hidden">
+              <ActiveReportTemplate klass={printPreviewData.student.classes} schoolId={printPreviewData.schoolInfo.id} />
               <ReportCardPreview
                 student={printPreviewData.student}
                 term={printPreviewData.term}

@@ -5,6 +5,7 @@
 - [ ] Verify signed-in report download and print with school records. Blocked: external unmanaged authentication is unavailable for automated checks.
 
 # Marksheet and template education levels
-- [ ] Remove marksheet statistics/comment sections and expand the grading scale.
-- [ ] Require and allow correcting uploaded template levels; activate separately per level.
-- [ ] Match report generation to class level and test mismatch prevention.
+- [x] Remove marksheet statistics/comment sections and expand the grading scale.
+- [x] Require and allow correcting uploaded template levels; activate separately per level.
+- [x] Match report generation to class level and test mismatch prevention.
+- [ ] Verify signed-in template upload and generation. Blocked: external unmanaged authentication is unavailable for automated checks.

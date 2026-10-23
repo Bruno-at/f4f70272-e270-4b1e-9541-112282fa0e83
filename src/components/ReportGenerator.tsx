@@ -13,6 +13,7 @@ import { generateReportCardPDF } from '@/utils/pdfGenerator';
 import { calculateStudentFees } from '@/utils/feesCalculator';
 import { enrichMarksForReport } from '@/utils/reportEnrichment';
 import { blobToDataUrl, resolveImageDataUrl } from '@/utils/photoUrl';
+import ActiveReportTemplate from './ActiveReportTemplate';
 
 const ReportGenerator = () => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -413,6 +414,8 @@ const ReportGenerator = () => {
           </Select>
         </div>
       </div>
+
+      <ActiveReportTemplate klass={students.find(s => s.id === selectedStudent)?.classes || classes.find(c => c.id === selectedClass)} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>

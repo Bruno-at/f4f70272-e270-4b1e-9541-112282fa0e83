@@ -1,6 +1,7 @@
 import { PDFDocument, PDFFont, StandardFonts, degrees, rgb } from 'pdf-lib';
 import { supabase } from '@/integrations/supabase/client';
 import type { ReportCardData } from './pdfGenerator';
+import { assertTemplateLevel, resolveAcademicLevel, type AcademicLevel } from './academicLevel';
 import {
   TemplateField,
   IMAGE_FIELDS,
@@ -22,7 +23,7 @@ export interface StoredTemplate {
 /** Fetch the active uploaded template for a school & level (null when none). */
 export async function fetchActiveTemplate(
   schoolId: string | null | undefined,
-  level: string = 'o-level',
+  level: AcademicLevel = 'o-level',
 ): Promise<StoredTemplate | null> {
   if (!schoolId) return null;
   const { data, error } = await supabase
@@ -32,7 +33,8 @@ export async function fetchActiveTemplate(
     .eq('level', level)
     .eq('is_active', true)
     .maybeSingle();
-  if (error || !data) return null;
+  if (error) throw error;
+  if (!data) return null;
   return { ...(data as any), fields: (data as any).fields || [] } as StoredTemplate;
 }
 
@@ -75,6 +77,9 @@ export async function buildCustomTemplateBlob(
   template: StoredTemplate,
   data: ReportCardData,
 ): Promise<Blob> {
+  assertTemplateLevel(template.level, resolveAcademicLevel(data.student.classes));
+  const schoolId = (data.student as any).school_id || data.schoolInfo.id;
+  if (template.school_id !== schoolId) throw new Error('The template does not belong to this school.');
   const { data: file, error } = await supabase.storage.from('report-templates').download(template.file_path);
   if (error || !file) throw new Error('Template file could not be loaded');
   const bytes = new Uint8Array(await file.arrayBuffer());
