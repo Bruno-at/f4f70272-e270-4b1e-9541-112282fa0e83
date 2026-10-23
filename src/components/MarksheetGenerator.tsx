@@ -271,6 +271,10 @@ const MarksheetGenerator = () => {
       ['Grade', ...gradingFull.map(g => g.grade_name), 'Total Students'],
       ['Number of Students', ...gradingFull.map(g => gradeCounts[g.grade_name] || 0), rows.length],
       ['Percentage (%)', ...gradingFull.map(g => rows.length ? `${(((gradeCounts[g.grade_name] || 0) / rows.length) * 100).toFixed(2)}%` : '0%'), '100%'],
+      [],
+      ['GRADING SCALE'],
+      ['Grade', 'Range (%)', 'Description'],
+      ...gradingFull.map(g => [g.grade_name, `${g.min_percentage}% - ${g.max_percentage}%`, g.description || '']),
     ]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Marksheet');
