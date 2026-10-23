@@ -630,7 +630,7 @@ export type Database = {
           file_path: string
           id?: string
           is_active?: boolean
-          level?: string
+          level: string
           mime_type: string
           name: string
           page_height_mm?: number
