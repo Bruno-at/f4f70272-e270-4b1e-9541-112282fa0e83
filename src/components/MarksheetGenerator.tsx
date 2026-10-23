@@ -544,8 +544,6 @@ const MarksheetGenerator = () => {
               </table>
             </div>
           </div>
-            </div>
-          </div>
         </div>
       )}
 
