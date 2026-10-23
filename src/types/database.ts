@@ -27,6 +27,8 @@ export interface Class {
   id: string;
   class_name: string;
   section?: string;
+  education_level?: 'o-level' | 'a-level' | null;
+  level?: 'o-level' | 'a-level' | null;
   created_at: string;
 }
 
