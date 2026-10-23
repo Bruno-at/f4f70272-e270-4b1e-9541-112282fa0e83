@@ -31,6 +31,8 @@ interface ALevelTemplateData {
   reportColor?: ReportColor;
   classTeacherSignature?: string | null;
   headteacherSignature?: string | null;
+  classTeacherName?: string | null;
+  headteacherName?: string | null;
   feesData?: { feesBalance: number; feesNextTerm: number; otherRequirements: string };
   template?: ALevelTemplateStyle;
 }
@@ -536,10 +538,14 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   pdf.text('Comment:', M + 2, y + 7.5);
   pdf.setFont('helvetica', 'italic');
   pdf.setTextColor(VAL_BLUE.r, VAL_BLUE.g, VAL_BLUE.b);
-  const ctLines = pdf.splitTextToSize(reportData.class_teacher_comment || '', contentW - 70);
+  const ctLines = pdf.splitTextToSize(reportData.class_teacher_comment || '', contentW - 100);
   pdf.text(ctLines, M + 28, y + 4.5);
   if (classTeacherSignature && classTeacherSignature.startsWith('data:image')) {
     try { pdf.addImage(classTeacherSignature, 'PNG', pageW - M - 38, y + 1, 35, cmtH - 2); } catch {}
+  }
+  if (data.classTeacherName) {
+    pdf.setFont('helvetica', 'bold'); pdf.setFontSize(7); pdf.setTextColor(BLACK.r, BLACK.g, BLACK.b);
+    pdf.text(`Name: ${String(data.classTeacherName)}`.slice(0, 45), pageW - M - 68, y + cmtH - 1.5);
   }
   y += cmtH;
 
@@ -551,10 +557,14 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   pdf.text('Comment:', M + 2, y + 7.5);
   pdf.setFont('helvetica', 'italic');
   pdf.setTextColor(VAL_BLUE.r, VAL_BLUE.g, VAL_BLUE.b);
-  const htLines = pdf.splitTextToSize(reportData.headteacher_comment || '', contentW - 70);
+  const htLines = pdf.splitTextToSize(reportData.headteacher_comment || '', contentW - 100);
   pdf.text(htLines, M + 28, y + 4.5);
   if (headteacherSignature && headteacherSignature.startsWith('data:image')) {
     try { pdf.addImage(headteacherSignature, 'PNG', pageW - M - 38, y + 1, 35, cmtH - 2); } catch {}
+  }
+  if (data.headteacherName) {
+    pdf.setFont('helvetica', 'bold'); pdf.setFontSize(7); pdf.setTextColor(BLACK.r, BLACK.g, BLACK.b);
+    pdf.text(`Name: ${String(data.headteacherName)}`.slice(0, 45), pageW - M - 68, y + cmtH - 1.5);
   }
   y += cmtH + 1.5;
 

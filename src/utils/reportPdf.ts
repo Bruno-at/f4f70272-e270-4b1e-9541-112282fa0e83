@@ -3,6 +3,28 @@ import { buildOLevelReportBlob, OLevelPdfData } from './pdfLibOLevelTemplate';
 import type { ReportCardData } from './pdfGenerator';
 import { fetchActiveTemplate, buildCustomTemplateBlob } from './customTemplatePdf';
 import { loadReportOverlays } from './reportOverlays';
+import { supabase } from '@/integrations/supabase/client';
+
+/** Look up the class teacher (assigned on the class) and head teacher (Signatures page) names. */
+const loadSignatoryNames = async (data: ReportCardData) => {
+  const d = data as any;
+  let classTeacherName: string | null = d.classTeacherName ?? null;
+  let headteacherName: string | null = d.headteacherName ?? null;
+  try {
+    const classId = (data.student as any)?.class_id;
+    if (!classTeacherName && classId) {
+      const { data: cls } = await (supabase as any).from('classes')
+        .select('profiles!classes_class_teacher_id_fkey(full_name)').eq('id', classId).maybeSingle();
+      classTeacherName = cls?.profiles?.full_name || null;
+    }
+    const sid = schoolIdOf(data);
+    if (!headteacherName && sid) {
+      const { data: sch } = await (supabase as any).from('schools').select('headteacher_name').eq('id', sid).maybeSingle();
+      headteacherName = sch?.headteacher_name || null;
+    }
+  } catch { /* names are optional */ }
+  return { classTeacherName, headteacherName };
+};
 
 const schoolIdOf = (data: ReportCardData) =>
   (data.student as any)?.school_id || (data.schoolInfo as any)?.id || (data.schoolInfo as any)?.school_id || null;
@@ -12,11 +34,12 @@ const schoolIdOf = (data: ReportCardData) =>
  * school-configured stamp and watermark settings.
  */
 const withOverlays = async (data: ReportCardData): Promise<ReportCardData> => {
-  const overlays = await loadReportOverlays(schoolIdOf(data));
+  const [overlays, names] = await Promise.all([loadReportOverlays(schoolIdOf(data)), loadSignatoryNames(data)]);
   const stampUrl = data.stampUrl === null ? null : data.stampUrl?.startsWith('data:image') ? data.stampUrl : overlays.stampUrl;
   const watermarkUrl = data.watermarkUrl === null ? null : data.watermarkUrl?.startsWith('data:image') ? data.watermarkUrl : overlays.watermarkUrl;
   return {
     ...data,
+    ...names,
     stampUrl,
     stampConfig: data.stampConfig || overlays.stampConfig,
     watermarkUrl,
@@ -51,6 +74,8 @@ export const buildReportCardBlob = async (input: ReportCardData, options: { temp
       reportColor: data.reportColor,
       classTeacherSignature: data.classTeacherSignature,
       headteacherSignature: data.headteacherSignature,
+      classTeacherName: (data as any).classTeacherName,
+      headteacherName: (data as any).headteacherName,
       feesData: data.feesData,
       template: data.template || 'classic',
     } as any);
