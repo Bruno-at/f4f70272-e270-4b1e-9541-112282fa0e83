@@ -46,6 +46,8 @@ export interface OLevelPdfData {
   reportColor?: ReportColor;
   classTeacherSignature?: string | null;
   headteacherSignature?: string | null;
+  classTeacherName?: string | null;
+  headteacherName?: string | null;
   stampUrl?: string | null;
   stampConfig?: { positionX: number; positionY: number; size: number; opacity: number } | null;
   watermarkUrl?: string | null;
@@ -435,17 +437,21 @@ export const buildOLevelReportPdf = async (data: OLevelPdfData): Promise<Uint8Ar
   const sigCT = await embedImage(doc, classTeacherSignature);
   const sigHT = await embedImage(doc, headteacherSignature);
 
-  const drawComment = (x: number, title: string, body: string, sig: any) => {
+  const drawComment = (x: number, title: string, body: string, sig: any, name?: string | null) => {
     c.rect(x, y, cmtW, cmtH, { border: NAVY, lw: 0.6 });
     c.rect(x, y, cmtW, 5.5, { fill: LIGHT });
     c.text(title, x + 2, y + 3.9, { size: 7.4, font: c.bold, color: NAVY, maxWidth: cmtW - 4 });
     c.paragraph(body || 'No comment provided.', x + 2, y + 9, cmtW - 4, 6.8, 3, c.italic, BLACK, 2);
-    c.text('Signature:', x + 2, y + cmtH - 3.5, { size: 7, font: c.bold, color: BLACK });
-    if (sig) c.image(sig, x + 18, y + cmtH - 8, 24, 5);
-    c.line(x + 17, y + cmtH - 3, x + cmtW - 2, y + cmtH - 3, GREY, 0.4);
+    const half = cmtW * 0.5;
+    c.text('Name:', x + 2, y + cmtH - 3.5, { size: 7, font: c.bold, color: NAVY });
+    c.text(name || '', x + 12, y + cmtH - 3.5, { size: 7, color: BLACK, maxWidth: half - 13 });
+    const sx = x + half;
+    c.text('Signature:', sx, y + cmtH - 3.5, { size: 7, font: c.bold, color: NAVY });
+    if (sig) c.image(sig, sx + 15, y + cmtH - 8.5, Math.min(24, cmtW - half - 17), 5);
+    c.line(sx + 14, y + cmtH - 3, x + cmtW - 2, y + cmtH - 3, GREY, 0.4);
   };
-  drawComment(L, "CLASS TEACHER'S COMMENT", reportData.class_teacher_comment, sigCT);
-  drawComment(L + cmtW + 3, "HEADTEACHER'S COMMENT", reportData.headteacher_comment, sigHT);
+  drawComment(L, "CLASS TEACHER'S COMMENT", reportData.class_teacher_comment, sigCT, data.classTeacherName);
+  drawComment(L + cmtW + 3, "HEADTEACHER'S COMMENT", reportData.headteacher_comment, sigHT, data.headteacherName);
   y += cmtH + 3;
 
   /* ---------------- Key to identifier ---------------- */

@@ -729,6 +729,7 @@ export type Database = {
           address: string | null
           created_at: string
           email: string | null
+          headteacher_name: string | null
           headteacher_signature_url: string | null
           id: string
           is_active: boolean
@@ -760,6 +761,7 @@ export type Database = {
           address?: string | null
           created_at?: string
           email?: string | null
+          headteacher_name?: string | null
           headteacher_signature_url?: string | null
           id?: string
           is_active?: boolean
@@ -791,6 +793,7 @@ export type Database = {
           address?: string | null
           created_at?: string
           email?: string | null
+          headteacher_name?: string | null
           headteacher_signature_url?: string | null
           id?: string
           is_active?: boolean
