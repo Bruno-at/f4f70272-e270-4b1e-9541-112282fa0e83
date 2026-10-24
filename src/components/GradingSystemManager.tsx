@@ -253,23 +253,34 @@ const GradingSystemManager = () => {
           </div>
         </div>
 
+        {/* Transposed layout: labels run down as rows, each grade is a column */}
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Grade</TableHead>
-              <TableHead>Range (%)</TableHead>
-              <TableHead>Description</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
           <TableBody>
-            {gradingSystems.map((grade) => (
-              <TableRow key={grade.id}>
-                <TableCell className="font-medium">{grade.grade_name}</TableCell>
-                <TableCell>{grade.min_percentage}% - {grade.max_percentage}%</TableCell>
-                <TableCell>{grade.description || '-'}</TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
+            <TableRow>
+              <TableCell className="w-28 font-semibold align-middle">Grade</TableCell>
+              {gradingSystems.map((grade) => (
+                <TableCell key={`g-${grade.id}`} className="text-center font-medium">{grade.grade_name}</TableCell>
+              ))}
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-semibold align-middle">Range (%)</TableCell>
+              {gradingSystems.map((grade) => (
+                <TableCell key={`r-${grade.id}`} className="text-center whitespace-nowrap">
+                  {grade.min_percentage}% - {grade.max_percentage}%
+                </TableCell>
+              ))}
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-semibold align-middle">Description</TableCell>
+              {gradingSystems.map((grade) => (
+                <TableCell key={`d-${grade.id}`} className="text-center">{grade.description || '-'}</TableCell>
+              ))}
+            </TableRow>
+            <TableRow>
+              <TableCell className="font-semibold align-middle">Actions</TableCell>
+              {gradingSystems.map((grade) => (
+                <TableCell key={`a-${grade.id}`}>
+                  <div className="flex justify-center space-x-2">
                     <Button
                       variant="outline"
                       size="sm"
@@ -286,8 +297,8 @@ const GradingSystemManager = () => {
                     </Button>
                   </div>
                 </TableCell>
-              </TableRow>
-            ))}
+              ))}
+            </TableRow>
           </TableBody>
         </Table>
       </CardContent>
