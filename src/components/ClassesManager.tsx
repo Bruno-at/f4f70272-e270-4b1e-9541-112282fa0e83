@@ -103,12 +103,14 @@ const ClassesManager = () => {
       };
 
       if (editingId) {
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('classes')
           .update(dataToSave)
-          .eq('id', editingId);
+          .eq('id', editingId)
+          .select('id');
 
         if (error) throw error;
+        if (!data?.length) throw new Error('You do not have permission to edit this class');
 
         toast({
           title: "Success",
@@ -138,7 +140,7 @@ const ClassesManager = () => {
       console.error('Error saving class:', error);
       toast({
         title: "Error",
-        description: "Failed to save class",
+        description: (error as any)?.message || "Failed to save class",
         variant: "destructive"
       });
     } finally {
@@ -153,6 +155,7 @@ const ClassesManager = () => {
       class_teacher_id: classData.class_teacher_id || ''
     });
     setEditingId(classData.id);
+    setTimeout(() => document.querySelector('form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   };
 
   const handleDelete = async (id: string) => {
