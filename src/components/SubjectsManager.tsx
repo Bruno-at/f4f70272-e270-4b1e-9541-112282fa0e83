@@ -87,15 +87,17 @@ const SubjectsManager = () => {
       let subjectId = editingId;
 
       if (editingId) {
-        const { error } = await supabase
+        const { data: upd, error } = await supabase
           .from('subjects')
           .update({
             subject_name: formData.subject_name,
             subject_code: formData.subject_code,
             max_marks: formData.max_marks,
           })
-          .eq('id', editingId);
+          .eq('id', editingId)
+          .select('id');
         if (error) throw error;
+        if (!upd?.length) throw new Error('You do not have permission to edit this subject');
       } else {
         // Re-use existing subject if same name in this school
         const { data: existing } = await supabase
@@ -135,13 +137,15 @@ const SubjectsManager = () => {
         const toAdd = formData.class_ids.filter(id => !existingClassIds.has(id));
         const toRemove = [...existingClassIds].filter(id => !desired.has(id));
         if (toAdd.length) {
-          await supabase.from('class_subjects').insert(
+          const { error: addErr } = await supabase.from('class_subjects').insert(
             toAdd.map(class_id => ({ class_id, subject_id: subjectId, school_id: schoolId }))
           );
+          if (addErr) throw addErr;
         }
         if (toRemove.length) {
-          await supabase.from('class_subjects').delete()
+          const { error: rmErr } = await supabase.from('class_subjects').delete()
             .eq('subject_id', subjectId).in('class_id', toRemove);
+          if (rmErr) throw rmErr;
         }
       }
 
@@ -165,6 +169,7 @@ const SubjectsManager = () => {
       max_marks: subject.max_marks || 100,
     });
     setEditingId(subject.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id: string) => {

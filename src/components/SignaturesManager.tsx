@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Pencil, User } from 'lucide-react';
@@ -18,6 +20,7 @@ interface SchoolInfo {
   id: string;
   school_name: string;
   headteacher_signature_url: string | null;
+  headteacher_name?: string | null;
 }
 
 const SignaturesManager = () => {
@@ -25,6 +28,8 @@ const SignaturesManager = () => {
   const [schoolInfo, setSchoolInfo] = useState<SchoolInfo | null>(null);
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [htName, setHtName] = useState('');
+  const [savingName, setSavingName] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -35,14 +40,15 @@ const SignaturesManager = () => {
     try {
       const [classesResult, schoolResult] = await Promise.all([
         supabase.from('classes').select('id, class_name, section, class_signature_url').order('class_name'),
-        supabase.from('schools').select('id, school_name, headteacher_signature_url').limit(1).maybeSingle()
+        supabase.from('schools').select('id, school_name, headteacher_signature_url, headteacher_name' as any).limit(1).maybeSingle()
       ]);
 
       if (classesResult.error) throw classesResult.error;
       if (schoolResult.error) throw schoolResult.error;
 
       setClasses(classesResult.data || []);
-      setSchoolInfo(schoolResult.data);
+      setSchoolInfo(schoolResult.data as any);
+      setHtName((schoolResult.data as any)?.headteacher_name || '');
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -66,6 +72,19 @@ const SignaturesManager = () => {
   const handleHeadteacherSignatureSaved = (signatureUrl: string) => {
     if (schoolInfo) {
       setSchoolInfo({ ...schoolInfo, headteacher_signature_url: signatureUrl });
+    }
+  };
+
+  const saveHeadteacherName = async () => {
+    if (!schoolInfo) return;
+    setSavingName(true);
+    const { data, error } = await (supabase as any).from('schools')
+      .update({ headteacher_name: htName.trim() || null }).eq('id', schoolInfo.id).select('id');
+    setSavingName(false);
+    if (error || !data?.length) {
+      toast({ title: 'Error', description: error?.message || 'Only school admins can change this name', variant: 'destructive' });
+    } else {
+      toast({ title: 'Saved', description: 'Head teacher name will appear on report cards' });
     }
   };
 
@@ -135,7 +154,16 @@ const SignaturesManager = () => {
             Add a digital signature for the head teacher. This signature will appear on ALL report cards across the school.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {schoolInfo && (
+            <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+              <div className="flex-1">
+                <Label htmlFor="ht-name">Head Teacher's Name</Label>
+                <Input id="ht-name" value={htName} onChange={(e) => setHtName(e.target.value)} placeholder="e.g., Mr. Robert S. Kato" />
+              </div>
+              <Button onClick={saveHeadteacherName} disabled={savingName}>{savingName ? 'Saving...' : 'Save Name'}</Button>
+            </div>
+          )}
           {schoolInfo ? (
             <SignaturePad
               targetType="headteacher"
