@@ -155,7 +155,7 @@ const ClassesManager = () => {
       class_teacher_id: classData.class_teacher_id || ''
     });
     setEditingId(classData.id);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => document.querySelector('form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   };
 
   const handleDelete = async (id: string) => {

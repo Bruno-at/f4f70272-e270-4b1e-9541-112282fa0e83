@@ -169,7 +169,7 @@ const SubjectsManager = () => {
       max_marks: subject.max_marks || 100,
     });
     setEditingId(subject.id);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => document.querySelector('form')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
   };
 
   const handleDelete = async (id: string) => {
