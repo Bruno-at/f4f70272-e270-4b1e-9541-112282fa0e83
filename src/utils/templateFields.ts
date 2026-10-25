@@ -12,6 +12,10 @@ export interface TemplateField {
   h: number;
   align?: 'left' | 'center' | 'right';
   fontSize?: number;
+  dataType?: 'text' | 'number' | 'date' | 'boolean';
+  scope?: 'school' | 'student';
+  confidence?: number;
+  needsReview?: boolean;
 }
 
 /** Fields the system can already supply from its own data. */
