@@ -18,6 +18,8 @@ import { CheckCircle2, Eye, FileUp, Loader2, LayoutTemplate, Pencil, Trash2, Spa
 import TemplateFieldEditor from '@/components/templates/TemplateFieldEditor';
 import CustomFieldValues from '@/components/templates/CustomFieldValues';
 import { SYSTEM_FIELDS, TemplateField } from '@/utils/templateFields';
+import { normalizeDetectedFields, syncExtraDefinitions } from '@/utils/extraTemplateFields';
+import { detectTemplateText } from '@/utils/templateTextDetection';
 import ReportCardPreview from '@/components/ReportCardPreview';
 import { useReportPreviewSample } from '@/hooks/useReportPreviewSample';
 import { loadReportOverlays, DEFAULT_STAMP_CONFIG, DEFAULT_WATERMARK_CONFIG, type OverlayConfig } from '@/utils/reportOverlays';
@@ -50,6 +52,7 @@ const Templates = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fieldRevision, setFieldRevision] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [uploadLevel, setUploadLevel] = useState<AcademicLevel | ''>('');
   const [viewLevel, setViewLevel] = useState<AcademicLevel>('o-level');
@@ -85,6 +88,7 @@ const Templates = () => {
     if (error) toast({ title: 'Could not load templates', description: error.message, variant: 'destructive' });
     setTemplates(((data as any) || []).map((t: any) => ({ ...t, fields: t.fields || [] })));
     setLoading(false);
+    setFieldRevision(r => r + 1);
   }, [schoolId, toast]);
 
   useEffect(() => { load(); }, [load]);
@@ -136,16 +140,17 @@ const Templates = () => {
         analysisError = err?.message || 'AI analysis failed';
       }
 
-      const fields: TemplateField[] = ((analysis as any)?.fields || []).map((f: any, i: number) => ({
-        key: f.key || `field_${i + 1}`,
-        label: f.label || f.key || `Field ${i + 1}`,
-        systemField: f.systemField || null,
-        x: Math.min(Math.max(Number(f.x) || 0, 0), 0.98),
-        y: Math.min(Math.max(Number(f.y) || 0, 0), 0.98),
-        w: Math.min(Math.max(Number(f.w) || 0.2, 0.02), 1),
-        h: Math.min(Math.max(Number(f.h) || 0.03, 0.01), 1),
-        align: f.align || 'left',
-      }));
+      let detected: TemplateField[] = Array.isArray(analysis?.fields) ? analysis.fields : [];
+      // Native PDF text extraction and local OCR keep detection available without AI.
+      try {
+        const local = await detectTemplateText(file);
+        if (!detected.length) detected = local;
+        else for (const f of local) {
+          const duplicate = detected.some(d => d.label.toLowerCase().trim() === f.label.toLowerCase().trim() || (Math.abs(d.x-f.x)<.04 && Math.abs(d.y-f.y)<.025));
+          if (!duplicate) detected.push(f);
+        }
+      } catch { /* Manual fields remain available for unreadable scans. */ }
+      const fields = normalizeDetectedFields(detected);
 
       const { data: inserted, error: insErr } = await supabase
         .from('report_templates')
@@ -163,7 +168,7 @@ const Templates = () => {
         .single();
       if (insErr) throw insErr;
 
-      await ensureCustomFields(fields);
+      await syncExtraDefinitions(schoolId, inserted.id, fields);
 
       toast(
         analysisError
@@ -186,17 +191,6 @@ const Templates = () => {
     }
   };
 
-  /** Any field with no system data source becomes a custom field the school can fill in. */
-  const ensureCustomFields = async (fields: TemplateField[]) => {
-    if (!schoolId) return;
-    const custom = fields.filter((f) => !f.systemField);
-    if (!custom.length) return;
-    await supabase.from('template_custom_fields').upsert(
-      custom.map((f) => ({ school_id: schoolId, field_key: f.key, label: f.label })),
-      { onConflict: 'school_id,field_key' },
-    );
-  };
-
   const openEditor = async (t: TemplateRow) => {
     const { data } = await supabase.storage.from('report-templates').createSignedUrl(t.file_path, 3600);
     setEditingUrl(data?.signedUrl || '');
@@ -204,18 +198,20 @@ const Templates = () => {
   };
 
   const saveFields = async (fields: TemplateField[]) => {
-    if (!editing) return;
+    if (!editing || !schoolId) return;
     setSavingFields(true);
-    const { error } = await supabase.from('report_templates').update({ fields: fields as any }).eq('id', editing.id);
-    await ensureCustomFields(fields);
-    setSavingFields(false);
-    if (error) {
-      toast({ title: 'Could not save', description: error.message, variant: 'destructive' });
-      return;
-    }
-    toast({ title: 'Layout saved' });
-    setEditing(null);
-    load();
+    try {
+      if (fields.some(f => !f.label.trim())) throw new Error('Every field needs a label.');
+      const normalized = normalizeDetectedFields(fields);
+      const { error } = await supabase.from('report_templates').update({ fields: normalized as any }).eq('id', editing.id).eq('school_id', schoolId);
+      if (error) throw error;
+      await syncExtraDefinitions(schoolId, editing.id, normalized);
+      toast({ title: 'Layout saved' });
+      setEditing(null);
+      await load();
+    } catch (e: any) {
+      toast({ title: 'Could not save', description: e.message, variant: 'destructive' });
+    } finally { setSavingFields(false); }
   };
 
   const activate = async (t: TemplateRow | null) => {
@@ -377,7 +373,7 @@ const Templates = () => {
               </CardContent>
             </Card>
 
-            <CustomFieldValues />
+            <CustomFieldValues templates={templates} revision={fieldRevision} onEdit={id => { const t = templates.find(t => t.id === id); if (t) void openEditor(t); }} />
           </div>
         </main>
       </div>
