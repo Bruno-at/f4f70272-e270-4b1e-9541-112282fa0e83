@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Trash2, Plus, Save } from 'lucide-react';
 import { SYSTEM_FIELDS, TemplateField } from '@/utils/templateFields';
 
@@ -58,7 +57,7 @@ const TemplateFieldEditor = ({ backgroundUrl, mimeType, fields, saving, onSave }
   const addField = () => {
     setItems((prev) => [
       ...prev,
-      { key: `field_${prev.length + 1}`, label: `Field ${prev.length + 1}`, systemField: null, x: 0.1, y: 0.1, w: 0.25, h: 0.03, align: 'left' },
+      { key: `field_${crypto.randomUUID().replaceAll("-", "_")}`, label: `Field ${prev.length + 1}`, systemField: null, x: 0.1, y: 0.1, w: 0.25, h: 0.03, align: 'left' },
     ]);
     setSelected(items.length);
   };
@@ -107,7 +106,7 @@ const TemplateFieldEditor = ({ backgroundUrl, mimeType, fields, saving, onSave }
           </Button>
         </div>
 
-        <ScrollArea className="h-[520px] pr-3">
+        <div>
           <div className="space-y-3">
             {items.map((f, i) => (
               <div
@@ -134,19 +133,24 @@ const TemplateFieldEditor = ({ backgroundUrl, mimeType, fields, saving, onSave }
                   <Label className="text-xs text-muted-foreground">Data source</Label>
                   <Select
                     value={f.systemField ?? NONE}
-                    onValueChange={(v) => update(i, { systemField: v === NONE ? null : v })}
+                    onValueChange={(v) => update(i, { systemField: v === NONE ? null : v, needsReview: false })}
                   >
                     <SelectTrigger className="h-8">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="max-h-72">
-                      <SelectItem value={NONE}>Custom field (entered per student)</SelectItem>
+                      <SelectItem value={NONE}>Extra template field</SelectItem>
                       {SYSTEM_FIELDS.map((sf) => (
                         <SelectItem key={sf.key} value={sf.key}>{sf.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+                {f.needsReview && <p className="text-xs text-muted-foreground">Mapping needs review</p>}
+                {!f.systemField && <div className="grid grid-cols-2 gap-2">
+                  <div><Label className="text-xs">Data type</Label><Select value={f.dataType || 'text'} onValueChange={v => update(i, { dataType: v as TemplateField['dataType'] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="text">Text</SelectItem><SelectItem value="number">Number</SelectItem><SelectItem value="date">Date</SelectItem><SelectItem value="boolean">Yes / No</SelectItem></SelectContent></Select></div>
+                  <div><Label className="text-xs">Applies to</Label><Select value={f.scope || 'student'} onValueChange={v => update(i, { scope: v as TemplateField['scope'] })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="school">Whole school</SelectItem><SelectItem value="student">Each student</SelectItem></SelectContent></Select></div>
+                </div>}
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <Label className="text-xs text-muted-foreground">Alignment</Label>
@@ -176,7 +180,7 @@ const TemplateFieldEditor = ({ backgroundUrl, mimeType, fields, saving, onSave }
               <p className="text-sm text-muted-foreground">No fields yet. Add one and drag it onto the template.</p>
             )}
           </div>
-        </ScrollArea>
+        </div>
       </div>
     </div>
   );

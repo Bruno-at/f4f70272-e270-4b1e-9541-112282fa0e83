@@ -1,6 +1,7 @@
 import { PDFDocument, PDFFont, StandardFonts, degrees, rgb } from 'pdf-lib';
 import { supabase } from '@/integrations/supabase/client';
 import type { ReportCardData } from './pdfGenerator';
+import { resolveExtraValues, type ExtraField } from './extraTemplateFields';
 import { assertTemplateLevel, resolveAcademicLevel, type AcademicLevel } from './academicLevel';
 import {
   TemplateField,
@@ -38,21 +39,14 @@ export async function fetchActiveTemplate(
   return { ...(data as any), fields: (data as any).fields || [] } as StoredTemplate;
 }
 
-async function fetchCustomValues(studentId: string, termId: string, schoolId: string) {
-  const map: Record<string, string> = {};
-  const [{ data: defs }, { data: values }] = await Promise.all([
-    supabase.from('template_custom_fields').select('field_key, default_value').eq('school_id', schoolId),
-    supabase
-      .from('student_custom_field_values')
-      .select('field_key, value, term_id')
-      .eq('school_id', schoolId)
-      .eq('student_id', studentId),
+async function fetchCustomValues(studentId: string, termId: string, schoolId: string, templateId: string) {
+  const [defs, values, legacy] = await Promise.all([
+    supabase.from('template_custom_fields').select('*').eq('school_id', schoolId).or(`template_id.eq.${templateId},template_id.is.null`),
+    supabase.from('template_field_values').select('field_id,student_id,term_id,value').eq('school_id', schoolId).or(`student_id.eq.${studentId},student_id.is.null`).or(`term_id.eq.${termId},term_id.is.null`),
+    supabase.from('student_custom_field_values').select('field_key,value,term_id').eq('school_id', schoolId).eq('student_id', studentId).or(`term_id.eq.${termId},term_id.is.null`),
   ]);
-  (defs || []).forEach((d: any) => { if (d.default_value) map[d.field_key] = d.default_value; });
-  (values || [])
-    .filter((v: any) => !v.term_id || v.term_id === termId)
-    .forEach((v: any) => { if (v.value) map[v.field_key] = v.value; });
-  return map;
+  for (const result of [defs, values, legacy]) if (result.error) throw result.error;
+  return resolveExtraValues((defs.data || []) as ExtraField[], values.data || [], legacy.data || [], templateId, studentId, termId);
 }
 
 function wrap(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
@@ -167,6 +161,7 @@ export async function buildCustomTemplateBlob(
     data.student.id,
     data.term.id,
     (data.student as any).school_id || template.school_id,
+    template.id,
   );
 
   const drawText = (text: string, f: TemplateField, font: PDFFont = reg) => {
