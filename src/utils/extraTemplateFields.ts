@@ -13,8 +13,9 @@ export function resolveExtraValues(defs: ExtraField[], values: ExtraValue[], leg
   for (const d of defs.filter(d => d.template_id === templateId)) selected.set(d.field_key, d);
   for (const [key, d] of selected) {
     if (!d.is_active) { map[key] = ''; continue; }
-    let value = d.default_value ?? '';
-    if (!d.template_id && d.scope === 'student') {
+    const legacyDef = defs.find(old => old.template_id === null && old.field_key === key);
+    let value = d.default_value ?? legacyDef?.default_value ?? '';
+    if (legacyDef && d.scope === 'student') {
       for (const period of [null, termId]) {
         const v = legacy.find(v => v.field_key === key && v.term_id === period);
         if (v) value = v.value ?? '';
@@ -45,7 +46,7 @@ export async function syncExtraDefinitions(schoolId: string, templateId: string,
   const custom = fields.filter(f => !f.systemField);
   for (const f of custom) {
     const old = existing.find(d => d.field_key === f.key);
-    const row = { school_id: schoolId, template_id: templateId, field_key: f.key, label: f.label, scope: old?.scope || f.scope || 'student', data_type: old?.data_type || f.dataType || 'text', is_active: old?.is_active ?? true };
+    const row = { school_id: schoolId, template_id: templateId, field_key: f.key, label: f.label, scope: f.scope || old?.scope || 'student', data_type: f.dataType || old?.data_type || 'text', is_active: old?.is_active ?? true };
     const result = old ? await supabase.from('template_custom_fields').update(row).eq('id', old.id).eq('school_id', schoolId) : await supabase.from('template_custom_fields').insert(row);
     if (result.error) throw result.error;
   }
