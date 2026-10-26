@@ -63,7 +63,8 @@ const TemplateFieldEditor = ({ backgroundUrl, mimeType, fields, saving, onSave }
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 lg:h-[calc(92vh-7rem)]">
+      <div className="lg:h-full lg:overflow-y-auto lg:pr-2 overscroll-contain">
       <div
         ref={areaRef}
         onPointerMove={onPointerMove}
@@ -95,8 +96,9 @@ const TemplateFieldEditor = ({ backgroundUrl, mimeType, fields, saving, onSave }
           </div>
         ))}
       </div>
+      </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 lg:h-full lg:overflow-y-auto lg:pr-2 overscroll-contain">
         <div className="flex gap-2">
           <Button type="button" variant="outline" size="sm" onClick={addField}>
             <Plus className="w-4 h-4 mr-1" /> Add field

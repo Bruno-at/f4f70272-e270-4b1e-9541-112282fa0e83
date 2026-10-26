@@ -386,7 +386,7 @@ const Templates = () => {
       </div>
 
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto">
+        <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto lg:overflow-hidden">
           <DialogHeader>
             <DialogTitle>{editing?.name} — field positions</DialogTitle>
           </DialogHeader>
