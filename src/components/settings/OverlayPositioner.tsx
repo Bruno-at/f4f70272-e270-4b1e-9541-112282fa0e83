@@ -75,8 +75,8 @@ const OverlayPositioner = ({
   }, [dragging, moveTo]);
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-      <div className="xl:col-span-2">
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 xl:h-[calc(100vh-10rem)]">
+      <div className="xl:col-span-2 xl:h-full xl:overflow-y-auto xl:pr-2 overscroll-contain">
         <Label className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
           <Move className="w-3 h-3" /> Drag the {label.toLowerCase()} onto the live report card preview
         </Label>
@@ -107,7 +107,7 @@ const OverlayPositioner = ({
         </div>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-5 xl:h-full xl:overflow-y-auto xl:pr-2 overscroll-contain">
         <div>
           <Label className="text-xs mb-1.5 block">Quick positions</Label>
           <div className="grid grid-cols-3 gap-1.5">
