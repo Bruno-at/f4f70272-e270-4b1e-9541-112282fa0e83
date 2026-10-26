@@ -9,6 +9,7 @@ export type StampPosition = 'bottom-right' | 'bottom-center' | 'over-signatures'
 
 interface ReportCardPreviewProps {
   templateMode?: 'active' | 'default';
+  templateId?: string;
   student: Student;
   term: Term;
   schoolInfo: SchoolInfo;
@@ -40,7 +41,7 @@ const ReportCardPreview = (props: ReportCardPreviewProps) => {
   const [blob, setBlob] = useState<Blob | null>(null);
   const [error, setError] = useState('');
   const { student, term, schoolInfo, marks, subjects, reportData, classTeacherSignature,
-    headteacherSignature, stampUrl, stampConfig, watermarkUrl, watermarkConfig, feesData, templateMode } = props;
+     headteacherSignature, stampUrl, stampConfig, watermarkUrl, watermarkConfig, feesData, templateMode, templateId } = props;
   useEffect(() => {
     let cancelled = false;
     setBlob(null);
@@ -48,12 +49,12 @@ const ReportCardPreview = (props: ReportCardPreviewProps) => {
     buildReportCardBlob({ student, term, schoolInfo, marks, subjects, reportData,
       classTeacherSignature, headteacherSignature, stampUrl, stampConfig,
       watermarkUrl, watermarkConfig, feesData: feesData || undefined,
-    }, { templateMode }).then(result => {
+    }, { templateMode, templateId }).then(result => {
       if (!cancelled) setBlob(result);
     }).catch(() => { if (!cancelled) setError('Could not generate the report card preview.'); });
     return () => { cancelled = true; };
   }, [student, term, schoolInfo, marks, subjects, reportData, classTeacherSignature,
-    headteacherSignature, stampUrl, stampConfig, watermarkUrl, watermarkConfig, feesData, templateMode]);
+    headteacherSignature, stampUrl, stampConfig, watermarkUrl, watermarkConfig, feesData, templateMode, templateId]);
   return error ? <p role="alert" className="py-12 text-center text-destructive">{error}</p> : <PdfPagePreview blob={blob} />;
 };
 

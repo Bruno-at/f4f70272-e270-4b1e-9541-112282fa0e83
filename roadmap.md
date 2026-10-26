@@ -1,8 +1,8 @@
-# Report output correction
 # Extra template fields
-- [ ] Add template-scoped definitions and typed school/student period values with legacy compatibility.
-- [ ] Improve automatic mapping, detection review and manual field management.
-- [ ] Use saved values in the shared PDF renderer; verify scoped resolution and detection rules.
+- [x] Add template-scoped definitions and typed school/student period values with legacy compatibility.
+- [x] Improve automatic mapping, detection review and manual field management.
+- [x] Use saved values in the shared PDF renderer; verify scoped resolution and detection rules.
+- [ ] Verify signed-in field saving and generated reports with school records. Blocked: external unmanaged authentication is unavailable for automated checks.
 
 # Report output correction
 - [x] Use the generated PDF for an A4 portrait preview.

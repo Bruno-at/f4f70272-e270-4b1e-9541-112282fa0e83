@@ -41,6 +41,8 @@ export interface ReportCardData {
   reportColor?: ReportColor;
   classTeacherSignature?: string | null;
   headteacherSignature?: string | null;
+  classTeacherName?: string | null;
+  headteacherName?: string | null;
   stampUrl?: string | null;
   stampConfig?: StampConfig | null;
   watermarkUrl?: string | null;

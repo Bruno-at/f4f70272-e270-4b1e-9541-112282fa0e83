@@ -52,9 +52,14 @@ const withOverlays = async (data: ReportCardData): Promise<ReportCardData> => {
  * O-Level (S1–S4) reports are rendered with pdf-lib (vector, no HTML rendering).
  * A-Level (S5–S6) reports still use the dedicated A-Level template.
  */
-export const buildReportCardBlob = async (input: ReportCardData, options: { templateMode?: 'active' | 'default' } = {}): Promise<Blob> => {
+export const buildReportCardBlob = async (input: ReportCardData, options: { templateMode?: 'active' | 'default'; templateId?: string } = {}): Promise<Blob> => {
   const data = await withOverlays(input);
   const level = resolveAcademicLevel(data.student.classes);
+  if (options.templateId) {
+    const { data: selected, error } = await supabase.from('report_templates').select('*').eq('school_id', schoolIdOf(data)).eq('id', options.templateId).eq('level', level).single();
+    if (error || !selected) throw error || new Error('Template unavailable for this education level.');
+    return buildCustomTemplateBlob({ ...selected, fields: selected.fields as unknown as import('./templateFields').TemplateField[] }, data);
+  }
 
   // Both education levels use only their own school's active uploaded template.
   const custom = options.templateMode === 'default' ? null : await fetchActiveTemplate(schoolIdOf(data), level);

@@ -171,7 +171,7 @@ const Templates = () => {
       await syncExtraDefinitions(schoolId, inserted.id, fields);
 
       toast(
-        analysisError
+        analysisError && !fields.length
           ? {
               title: 'Template uploaded (no auto-analysis)',
               description: `${analysisError}. Add the fields manually in the editor.`,
@@ -192,9 +192,16 @@ const Templates = () => {
   };
 
   const openEditor = async (t: TemplateRow) => {
-    const { data } = await supabase.storage.from('report-templates').createSignedUrl(t.file_path, 3600);
-    setEditingUrl(data?.signedUrl || '');
-    setEditing(t);
+    if (!schoolId) return;
+    const [url, definitions] = await Promise.all([
+      supabase.storage.from('report-templates').createSignedUrl(t.file_path, 3600),
+      supabase.from('template_custom_fields').select('*').eq('school_id', schoolId).eq('template_id', t.id),
+    ]);
+    setEditingUrl(url.data?.signedUrl || '');
+    setEditing({ ...t, fields: t.fields.map(f => {
+      const d = definitions.data?.find(d => d.field_key === f.key);
+      return d ? { ...f, label: d.label, scope: d.scope as TemplateField['scope'], dataType: d.data_type as TemplateField['dataType'] } : f;
+    }) });
   };
 
   const saveFields = async (fields: TemplateField[]) => {
@@ -432,7 +439,15 @@ const Templates = () => {
           <DialogHeader>
             <DialogTitle>{previewTemplate?.name} — template preview</DialogTitle>
           </DialogHeader>
-          {previewUrl ? (
+          {previewTemplate && sample ? (
+            <ReportCardPreview
+              templateId={previewTemplate.id}
+              student={{ ...sample.student, classes: { ...sample.student.classes, education_level: isAcademicLevel(previewTemplate.level) ? previewTemplate.level : 'o-level' } }}
+              term={sample.term} schoolInfo={sample.schoolInfo} marks={sample.marks} subjects={sample.subjects}
+              reportData={sample.reportData} classTeacherSignature={sample.classTeacherSignature}
+              headteacherSignature={sample.headteacherSignature} feesData={sample.feesData}
+            />
+          ) : previewUrl ? (
             previewTemplate?.mime_type.includes('pdf') ? (
               <iframe src={previewUrl} title="Template preview" className="w-full h-[75vh] rounded-lg border" />
             ) : (

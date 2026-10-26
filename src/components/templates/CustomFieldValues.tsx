@@ -11,7 +11,7 @@ import { Loader2, Save, Trash2 } from 'lucide-react';
 import { resolveExtraValues, validateExtraValue, type ExtraField } from '@/utils/extraTemplateFields';
 import { resolveAcademicLevel } from '@/utils/academicLevel';
 
-type Choice = { id: string; name: string; level: string };
+type Choice = { id: string; name: string; level: string; fields: { key: string; systemField: string | null }[] };
 interface Props { templates: Choice[]; revision: number; onEdit: (id: string) => void }
 const ALL = '__all__';
 export default function CustomFieldValues({ templates, revision, onEdit }: Props) {
@@ -39,7 +39,10 @@ export default function CustomFieldValues({ templates, revision, onEdit }: Props
     return () => { cancelled = true; };
   }, [schoolId]);
   useEffect(() => {
-    if (!templateId && templates.length) setTemplateId(templates[0].id);
+    if (!templates.some(t => t.id === templateId)) {
+      setTemplateId(templates[0]?.id || '');
+      setFields([]); setStudents([]); setValues({});
+    }
   }, [templates, templateId]);
   useEffect(() => {
     if (!schoolId || !templateId) return;
@@ -55,13 +58,14 @@ export default function CustomFieldValues({ templates, revision, onEdit }: Props
         ]);
         for (const r of [f,v,st,legacy]) if (r.error) throw r.error;
         const selected = new Map<string, ExtraField>();
-        const definitions = (f.data || []) as ExtraField[];
+        const keys = templates.find(t => t.id === templateId)?.fields.filter(f => !f.systemField).map(f => f.key) || [];
+        const definitions = ((f.data || []) as ExtraField[]).filter(d => keys.includes(d.field_key));
         definitions.filter(d => !d.template_id).forEach(d => selected.set(d.field_key, d));
         definitions.filter(d => d.template_id === templateId).forEach(d => selected.set(d.field_key, d));
         const active = [...selected.values()].filter(d => d.is_active);
         const map: Record<string,string> = {};
         for (const s of [{ id: '__school__', name: '' }, ...(st.data || [])]) {
-          const resolved = resolveExtraValues(active, v.data || [], (legacy.data || []).filter(l => l.student_id === s.id), templateId, s.id, termId === ALL ? '' : termId);
+          const resolved = resolveExtraValues(definitions, v.data || [], (legacy.data || []).filter(l => l.student_id === s.id), templateId, s.id, termId === ALL ? '' : termId);
           active.forEach(d => {
             const printed = resolved[d.field_key] || '';
             map[`${s.id}|${d.id}`] = d.data_type === 'boolean' ? printed === 'Yes' ? 'true' : printed === 'No' ? 'false' : '' : printed;
@@ -72,7 +76,7 @@ export default function CustomFieldValues({ templates, revision, onEdit }: Props
       finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [schoolId, templateId, classId, termId, revision, reload]);
+  }, [schoolId, templateId, classId, termId, revision, reload, templates]);
   const configure = async (field: ExtraField, patch: Partial<ExtraField>) => {
     if (!schoolId) return;
     setSaving(true);
