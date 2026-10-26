@@ -45,6 +45,8 @@ export const SYSTEM_FIELDS: { key: string; label: string }[] = [
   { key: 'achievement_level', label: 'Achievement level' },
   { key: 'class_teacher_comment', label: "Class teacher's comment" },
   { key: 'headteacher_comment', label: "Headteacher's comment" },
+  { key: 'class_teacher_name', label: 'Class teacher name' },
+  { key: 'headteacher_name', label: 'Headteacher name' },
   { key: 'class_teacher_signature', label: 'Class teacher signature (image)' },
   { key: 'headteacher_signature', label: 'Headteacher signature (image)' },
   { key: 'school_stamp', label: 'School stamp (image)' },
@@ -100,6 +102,8 @@ export function resolveSystemFieldValue(key: string, data: ReportCardData): stri
     case 'achievement_level': return r.achievement_level || '';
     case 'class_teacher_comment': return r.class_teacher_comment || '';
     case 'headteacher_comment': return r.headteacher_comment || '';
+    case 'class_teacher_name': return data.classTeacherName || '';
+    case 'headteacher_name': return data.headteacherName || '';
     case 'fees_balance': return data.feesData ? `UGX ${Number(data.feesData.feesBalance || 0).toLocaleString()}` : '';
     case 'other_requirements': return data.feesData?.otherRequirements || '';
     case 'printed_date': return new Date().toLocaleDateString('en-GB');

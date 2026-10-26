@@ -1,4 +1,3 @@
-# Report output correction
 # Extra template fields
 - [ ] Add template-scoped definitions and typed school/student period values with legacy compatibility.
 - [ ] Improve automatic mapping, detection review and manual field management.

@@ -57,7 +57,7 @@ const TemplateFieldEditor = ({ backgroundUrl, mimeType, fields, saving, onSave }
   const addField = () => {
     setItems((prev) => [
       ...prev,
-      { key: `field_${crypto.randomUUID().replaceAll("-", "_")}`, label: `Field ${prev.length + 1}`, systemField: null, x: 0.1, y: 0.1, w: 0.25, h: 0.03, align: 'left' },
+      { key: `field_${crypto.randomUUID().replace(/-/g, '_')}`, label: `Field ${prev.length + 1}`, systemField: null, x: 0.1, y: 0.1, w: 0.25, h: 0.03, align: 'left', needsReview: false },
     ]);
     setSelected(items.length);
   };

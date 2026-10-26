@@ -1,4 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
 import { SYSTEM_FIELDS, type TemplateField } from './templateFields';
 
 export interface ExtraField {
@@ -39,13 +38,14 @@ export function validateExtraValue(type: string, value: string): boolean {
 }
 
 export async function syncExtraDefinitions(schoolId: string, templateId: string, fields: TemplateField[]) {
+  const { supabase } = await import('@/integrations/supabase/client');
   const { data, error } = await supabase.from('template_custom_fields').select('*').eq('school_id', schoolId).eq('template_id', templateId);
   if (error) throw error;
   const existing = data || [];
   const custom = fields.filter(f => !f.systemField);
   for (const f of custom) {
     const old = existing.find(d => d.field_key === f.key);
-    const row = { school_id: schoolId, template_id: templateId, field_key: f.key, label: f.label, scope: f.scope || old?.scope || 'student', data_type: f.dataType || old?.data_type || 'text', is_active: true };
+    const row = { school_id: schoolId, template_id: templateId, field_key: f.key, label: f.label, scope: old?.scope || f.scope || 'student', data_type: old?.data_type || f.dataType || 'text', is_active: old?.is_active ?? true };
     const result = old ? await supabase.from('template_custom_fields').update(row).eq('id', old.id).eq('school_id', schoolId) : await supabase.from('template_custom_fields').insert(row);
     if (result.error) throw result.error;
   }
@@ -64,7 +64,7 @@ export function normalizeDetectedFields(input: TemplateField[]): TemplateField[]
     const labelKey = normalize(f.label);
     const known = SYSTEM_FIELDS.find(s => normalize(s.label.replace(/\s*\(.*\)/, '')) === labelKey || s.key === labelKey);
     const matched = known?.key || aliases[labelKey] || null;
-    const source = SYSTEM_FIELDS.some(s => s.key === f.systemField) ? f.systemField : matched;
+    const source = f.systemField === null && f.needsReview === false ? null : SYSTEM_FIELDS.some(s => s.key === f.systemField) ? f.systemField : matched;
     const base = normalize(f.key || f.label) || `field_${i + 1}`;
     let key = base; let n = 2;
     while (used.has(key)) key = `${base}_${n++}`;
