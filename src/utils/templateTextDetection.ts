@@ -1,9 +1,6 @@
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import type { TemplateField } from './templateFields';
 import { normalizeDetectedFields } from './extraTemplateFields';
 
-GlobalWorkerOptions.workerSrc = workerUrl;
 export interface TextRegion { text: string; x: number; y: number; w: number; h: number; confidence?: number }
 export function fieldsFromText(regions: TextRegion[]): TemplateField[] {
   return normalizeDetectedFields(regions.flatMap((r, i) => {
@@ -18,6 +15,10 @@ export function fieldsFromText(regions: TextRegion[]): TemplateField[] {
 export async function detectTemplateText(file: File): Promise<TemplateField[]> {
   let image: File | HTMLCanvasElement = file;
   if (file.type === 'application/pdf') {
+    const [{ getDocument, GlobalWorkerOptions }, { default: workerUrl }] = await Promise.all([
+      import('pdfjs-dist'), import('pdfjs-dist/build/pdf.worker.min.mjs?url'),
+    ]);
+    GlobalWorkerOptions.workerSrc = workerUrl;
     const task = getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
     try {
       const pdf = await task.promise;

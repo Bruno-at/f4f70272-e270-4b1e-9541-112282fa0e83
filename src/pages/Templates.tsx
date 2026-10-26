@@ -171,7 +171,7 @@ const Templates = () => {
       await syncExtraDefinitions(schoolId, inserted.id, fields);
 
       toast(
-        analysisError
+        analysisError && !fields.length
           ? {
               title: 'Template uploaded (no auto-analysis)',
               description: `${analysisError}. Add the fields manually in the editor.`,
