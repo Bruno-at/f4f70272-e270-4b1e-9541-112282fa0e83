@@ -28,9 +28,44 @@ const TermsManager = () => {
     is_active: false
   });
 
+  const [years, setYears] = useState<{ id: string; year: number; is_active: boolean }[]>([]);
+  const [newYear, setNewYear] = useState(new Date().getFullYear());
+  const activeYear = years.find((y) => y.is_active) || null;
+
   useEffect(() => {
     fetchTerms();
+    fetchYears();
   }, []);
+
+  const fetchYears = async () => {
+    const { data } = await (supabase as any).from('academic_years').select('id, year, is_active').order('year', { ascending: false });
+    setYears(data || []);
+  };
+
+  const addYear = async () => {
+    const { error } = await (supabase as any).from('academic_years').insert({ school_id: schoolId, year: newYear, is_active: years.length === 0 });
+    if (error) return toast({ title: 'Error', description: error.code === '23505' ? 'That year already exists' : error.message, variant: 'destructive' });
+    toast({ title: 'Success', description: 'Academic year added' });
+    fetchYears();
+  };
+
+  const setActiveYear = async (id: string) => {
+    const { error: e1 } = await (supabase as any).from('academic_years').update({ is_active: false }).eq('school_id', schoolId!).eq('is_active', true);
+    const { error } = e1 ? { error: e1 } : await (supabase as any).from('academic_years').update({ is_active: true }).eq('id', id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    toast({ title: 'Success', description: 'Current academic year updated' });
+    fetchYears();
+  };
+
+  const deleteYear = async (y: { id: string; year: number }) => {
+    if (terms.some((t) => t.year === y.year)) {
+      return toast({ title: 'Cannot delete', description: 'This year still has terms. Delete its terms first.', variant: 'destructive' });
+    }
+    if (!confirm(`Delete academic year ${y.year}?`)) return;
+    const { error } = await (supabase as any).from('academic_years').delete().eq('id', y.id);
+    if (error) return toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    fetchYears();
+  };
 
   const fetchTerms = async () => {
     try {
@@ -65,13 +100,18 @@ const TermsManager = () => {
       });
       return;
     }
+    if (!editingId && !activeYear) {
+      toast({ title: "Error", description: "Set a current academic year first", variant: "destructive" });
+      return;
+    }
+    const payload = { ...formData, year: editingId ? formData.year : activeYear!.year };
 
     setSaving(true);
     try {
       if (editingId) {
         const { error } = await supabase
           .from('terms')
-          .update(formData)
+          .update(payload)
           .eq('id', editingId);
 
         if (error) throw error;
@@ -92,7 +132,7 @@ const TermsManager = () => {
 
         const { error } = await supabase
           .from('terms')
-          .insert([{ ...formData, school_id: schoolId }]);
+          .insert([{ ...payload, school_id: schoolId }]);
 
         if (error) throw error;
 
@@ -216,6 +256,39 @@ const TermsManager = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Calendar className="w-5 h-5" /> Academic Year Settings</CardTitle>
+          <CardDescription>Create academic years and choose the current one. New terms use the active academic year.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2 max-w-sm">
+            <Input type="number" value={newYear} min={2000} max={2100}
+              onChange={(e) => setNewYear(parseInt(e.target.value) || new Date().getFullYear())} aria-label="Academic year" />
+            <Button type="button" onClick={addYear}><Plus className="w-4 h-4 mr-1" /> Add Year</Button>
+          </div>
+          {years.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No academic years yet.</p>
+          ) : (
+            <div className="grid gap-2">
+              {years.map((y) => (
+                <div key={y.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-2 font-medium">
+                    {y.year} {y.is_active && <Badge>Current</Badge>}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant={y.is_active ? 'default' : 'outline'} disabled={y.is_active} onClick={() => setActiveYear(y.id)}>
+                      {y.is_active ? 'Current' : 'Set Current'}
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={() => deleteYear(y)}><Trash2 className="w-4 h-4" /></Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <div className="flex items-start justify-between gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
@@ -249,16 +322,10 @@ const TermsManager = () => {
               </div>
 
               <div>
-                <Label htmlFor="year">Year *</Label>
-                <Input
-                  id="year"
-                  type="number"
-                  value={formData.year}
-                  onChange={(e) => setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }))}
-                  required
-                  min="2020"
-                  max="2030"
-                />
+                <Label>Academic Year</Label>
+                <div className="h-10 flex items-center px-3 rounded-md border bg-muted text-sm">
+                  {editingId ? formData.year : (activeYear?.year ?? 'No active academic year — set one above')}
+                </div>
               </div>
 
               <div>
