@@ -93,7 +93,7 @@ export async function buildCustomTemplateBlob(
     const img = template.mime_type.includes('png')
       ? await pdf.embedPng(bytes)
       : await pdf.embedJpg(bytes);
-    // A4-width page matched to the image's own aspect ratio and orientation.
+    // A4-sized page following the image's own aspect ratio and orientation.
     const W = img.width > img.height ? 841.89 : 595.28;
     const H = (img.height / img.width) * W;
     page = pdf.addPage([W, H]);

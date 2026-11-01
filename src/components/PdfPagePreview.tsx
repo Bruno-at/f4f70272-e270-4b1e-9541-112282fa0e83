@@ -9,6 +9,7 @@ export default function PdfPagePreview({ blob }: { blob: Blob | null }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [aspect, setAspect] = useState('210 / 297');
 
   useEffect(() => {
     if (!blob) return;
@@ -29,6 +30,7 @@ export default function PdfPagePreview({ blob }: { blob: Blob | null }) {
         const viewport = page.getViewport({ scale: 2 });
         canvas.width = Math.ceil(viewport.width);
         canvas.height = Math.ceil(viewport.height);
+        setAspect(`${viewport.width} / ${viewport.height}`);
         await page.render({ canvasContext: context, viewport }).promise;
         if (!cancelled) setLoading(false);
       } catch {
@@ -40,8 +42,8 @@ export default function PdfPagePreview({ blob }: { blob: Blob | null }) {
   }, [blob]);
 
   return (
-    <div className="report-pdf-page relative mx-auto w-full max-w-[794px] aspect-[210/297] overflow-hidden bg-background">
-      <canvas ref={canvasRef} aria-label="A4 portrait report card" className="block h-full w-full" />
+    <div className="report-pdf-page relative mx-auto w-full max-w-[794px] overflow-hidden bg-background" style={{ aspectRatio: aspect }}>
+      <canvas ref={canvasRef} aria-label="Report card page" className="block h-full w-full" />
       {(loading || error) && (
         <div className="absolute inset-0 flex items-center justify-center gap-2 bg-background text-muted-foreground" role="status">
           {error || <><Loader2 className="h-5 w-5 animate-spin" /> Loading report card…</>}
