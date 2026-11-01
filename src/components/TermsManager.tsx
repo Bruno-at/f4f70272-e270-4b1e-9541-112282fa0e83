@@ -111,7 +111,7 @@ const TermsManager = () => {
       if (editingId) {
         const { error } = await supabase
           .from('terms')
-          .update(formData)
+          .update(payload)
           .eq('id', editingId);
 
         if (error) throw error;
@@ -132,7 +132,7 @@ const TermsManager = () => {
 
         const { error } = await supabase
           .from('terms')
-          .insert([{ ...formData, school_id: schoolId }]);
+          .insert([{ ...payload, school_id: schoolId }]);
 
         if (error) throw error;
 
