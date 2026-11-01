@@ -12,11 +12,26 @@ export interface TemplateField {
   h: number;
   align?: 'left' | 'center' | 'right';
   fontSize?: number;
-  dataType?: 'text' | 'number' | 'date' | 'boolean';
+  dataType?: ExtraFieldType;
   scope?: 'school' | 'student';
+  description?: string;
+  defaultValue?: string;
+  /** Cover sample text printed on the template under this box (default true). */
+  mask?: boolean;
   confidence?: number;
   needsReview?: boolean;
 }
+
+export type ExtraFieldType = 'text' | 'number' | 'date' | 'multiline' | 'percentage' | 'boolean';
+
+export const EXTRA_FIELD_TYPES: { value: ExtraFieldType; label: string }[] = [
+  { value: 'text', label: 'Text' },
+  { value: 'number', label: 'Number' },
+  { value: 'date', label: 'Date' },
+  { value: 'multiline', label: 'Multiline text' },
+  { value: 'percentage', label: 'Percentage' },
+  { value: 'boolean', label: 'Yes / No' },
+];
 
 /** Fields the system can already supply from its own data. */
 export const SYSTEM_FIELDS: { key: string; label: string }[] = [

@@ -1317,6 +1317,7 @@ export type Database = {
           created_at: string
           data_type: string
           default_value: string | null
+          description: string | null
           field_key: string
           id: string
           is_active: boolean
@@ -1330,6 +1331,7 @@ export type Database = {
           created_at?: string
           data_type?: string
           default_value?: string | null
+          description?: string | null
           field_key: string
           id?: string
           is_active?: boolean
@@ -1343,6 +1345,7 @@ export type Database = {
           created_at?: string
           data_type?: string
           default_value?: string | null
+          description?: string | null
           field_key?: string
           id?: string
           is_active?: boolean
