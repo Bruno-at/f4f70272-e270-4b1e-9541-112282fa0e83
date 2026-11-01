@@ -50,15 +50,18 @@ async function fetchCustomValues(studentId: string, termId: string, schoolId: st
 }
 
 function wrap(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
-  const words = String(text).split(/\s+/).filter(Boolean);
   const lines: string[] = [];
-  let line = '';
-  for (const word of words) {
-    const next = line ? `${line} ${word}` : word;
-    if (font.widthOfTextAtSize(next, size) <= maxWidth || !line) line = next;
-    else { lines.push(line); line = word; }
+  // Respect line breaks typed into multiline fields, then wrap each paragraph.
+  for (const paragraph of String(text).split(/\r?\n/)) {
+    const words = paragraph.split(/\s+/).filter(Boolean);
+    let line = '';
+    for (const word of words) {
+      const next = line ? `${line} ${word}` : word;
+      if (font.widthOfTextAtSize(next, size) <= maxWidth || !line) line = next;
+      else { lines.push(line); line = word; }
+    }
+    if (line) lines.push(line);
   }
-  if (line) lines.push(line);
   return lines;
 }
 
@@ -90,8 +93,8 @@ export async function buildCustomTemplateBlob(
     const img = template.mime_type.includes('png')
       ? await pdf.embedPng(bytes)
       : await pdf.embedJpg(bytes);
-    // A4 portrait page matched to the image aspect ratio
-    const W = 595.28;
+    // A4-width page matched to the image's own aspect ratio and orientation.
+    const W = img.width > img.height ? 841.89 : 595.28;
     const H = (img.height / img.width) * W;
     page = pdf.addPage([W, H]);
     page.drawImage(img, { x: 0, y: 0, width: W, height: H });
@@ -107,7 +110,7 @@ export async function buildCustomTemplateBlob(
 
   /**
    * Uploaded templates often ship with sample data already printed on them.
-   * Blank out each mapped box first so the school's real values replace the
+   * Unless the admin turned it off for a field, blank out each mapped box first so the school's real values replace the
    * template's own content instead of printing on top of it.
    */
   const maskField = (f: TemplateField, padX = 1, padY = 1) => {
@@ -275,7 +278,7 @@ export async function buildCustomTemplateBlob(
 
   // Clear every sample field before drawing any real value. Intersecting
   // boxes must not erase values already drawn by an earlier field.
-  for (const f of template.fields || []) maskField(f, 0, 0);
+  for (const f of template.fields || []) if (f.mask !== false) maskField(f, 0, 0);
 
   for (const f of template.fields || []) {
     const key = f.systemField || f.key;
@@ -315,16 +318,7 @@ export async function buildCustomTemplateBlob(
     }
   }
 
-  // A fixed A4 portrait sheet with a 5mm safe margin, even for landscape
-  // uploads. Fit uniformly instead of stretching or cropping the design.
-  const output = await PDFDocument.create();
-  const [content] = await output.embedPages([page]);
-  const sheet = output.addPage([595.28, 841.89]);
-  const margin = 14.18;
-  const scale = Math.min((sheet.getWidth() - margin * 2) / PW, (sheet.getHeight() - margin * 2) / PH);
-  const width = PW * scale;
-  const height = PH * scale;
-  sheet.drawPage(content, { x: (sheet.getWidth() - width) / 2, y: (sheet.getHeight() - height) / 2, width, height });
-  const out = await output.save();
+  // Keep the uploaded template's own page size and orientation.
+  const out = await pdf.save();
   return new Blob([out.slice().buffer as ArrayBuffer], { type: 'application/pdf' });
 }
