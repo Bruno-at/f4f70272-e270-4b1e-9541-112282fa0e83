@@ -15,3 +15,9 @@
 - [x] Require and allow correcting uploaded template levels; activate separately per level.
 - [x] Match report generation to class level and test mismatch prevention.
 - [ ] Verify signed-in template upload and generation. Blocked: external unmanaged authentication is unavailable for automated checks.
+# Fixed template + manual field mapping
+- [x] Remove AI/OCR detection; upload stores the original and opens mapping.
+- [x] Click-to-assign on the real template preview and a mapped/unmapped field panel.
+- [x] Custom fields with label, type (incl. multiline, percentage), description, scope, default, position; confirm before removal.
+- [x] Keep the template's page size/orientation in preview, download and print.
+- [ ] Verify signed-in upload, mapping save and generated report. Blocked: external unmanaged authentication is unavailable for automated checks.

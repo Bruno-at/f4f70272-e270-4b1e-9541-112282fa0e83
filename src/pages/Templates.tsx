@@ -14,12 +14,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSchool } from '@/contexts/SchoolContext';
-import { CheckCircle2, Eye, FileUp, Loader2, LayoutTemplate, Pencil, Trash2, Sparkles } from 'lucide-react';
+import { CheckCircle2, Eye, FileUp, Loader2, LayoutTemplate, Pencil, Trash2 } from 'lucide-react';
 import TemplateFieldEditor from '@/components/templates/TemplateFieldEditor';
 import CustomFieldValues from '@/components/templates/CustomFieldValues';
-import { SYSTEM_FIELDS, TemplateField } from '@/utils/templateFields';
-import { normalizeDetectedFields, syncExtraDefinitions } from '@/utils/extraTemplateFields';
-import { detectTemplateText } from '@/utils/templateTextDetection';
+import { TemplateField } from '@/utils/templateFields';
+import { normalizeTemplateFields, syncExtraDefinitions } from '@/utils/extraTemplateFields';
+import { templatePageSizeMm } from '@/utils/templateBackground';
 import ReportCardPreview from '@/components/ReportCardPreview';
 import { useReportPreviewSample } from '@/hooks/useReportPreviewSample';
 import { loadReportOverlays, DEFAULT_STAMP_CONFIG, DEFAULT_WATERMARK_CONFIG, type OverlayConfig } from '@/utils/reportOverlays';
@@ -37,14 +37,6 @@ interface TemplateRow {
 
 const ACCEPT = 'application/pdf,image/png,image/jpeg,image/webp';
 const MAX_SIZE = 15 * 1024 * 1024;
-
-const fileToBase64 = (file: File) =>
-  new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
 
 const Templates = () => {
   const { schoolId } = useSchool();
@@ -124,33 +116,8 @@ const Templates = () => {
       });
       if (upErr) throw upErr;
 
-      // Ask the AI to read the template and locate every fillable field.
-      // If the analysis fails the upload still succeeds: fields can be mapped by hand.
-      let analysis: any = null;
-      let analysisError = '';
-      try {
-        const base64 = await fileToBase64(file);
-        const { data, error: fnErr } = await supabase.functions.invoke('analyze-report-template', {
-          body: { fileBase64: base64, mimeType: file.type, availableFields: SYSTEM_FIELDS },
-        });
-        if (fnErr) analysisError = fnErr.message || 'AI analysis failed';
-        else if ((data as any)?.error) analysisError = (data as any).error;
-        else analysis = data;
-      } catch (err: any) {
-        analysisError = err?.message || 'AI analysis failed';
-      }
-
-      let detected: TemplateField[] = Array.isArray(analysis?.fields) ? analysis.fields : [];
-      // Native PDF text extraction and local OCR keep detection available without AI.
-      try {
-        const local = await detectTemplateText(file);
-        if (!detected.length) detected = local;
-        else for (const f of local) {
-          const duplicate = detected.some(d => d.label.toLowerCase().trim() === f.label.toLowerCase().trim() || (Math.abs(d.x-f.x)<.04 && Math.abs(d.y-f.y)<.025));
-          if (!duplicate) detected.push(f);
-        }
-      } catch { /* Manual fields remain available for unreadable scans. */ }
-      const fields = normalizeDetectedFields(detected);
+      // The file is stored untouched; fields are mapped by hand afterwards.
+      const size = await templatePageSizeMm(file).catch(() => ({ width: 210, height: 297 }));
 
       const { data: inserted, error: insErr } = await supabase
         .from('report_templates')
@@ -160,29 +127,17 @@ const Templates = () => {
           level: selectedLevel,
           file_path: path,
           mime_type: file.type,
-          page_width_mm: (analysis as any)?.pageWidthMm || 210,
-          page_height_mm: (analysis as any)?.pageHeightMm || 297,
-          fields: fields as any,
+          page_width_mm: size.width,
+          page_height_mm: size.height,
+          fields: [] as any,
         })
         .select()
         .single();
       if (insErr) throw insErr;
 
-      await syncExtraDefinitions(schoolId, inserted.id, fields);
-
-      toast(
-        analysisError && !fields.length
-          ? {
-              title: 'Template uploaded (no auto-analysis)',
-              description: `${analysisError}. Add the fields manually in the editor.`,
-            }
-          : {
-              title: 'Template analysed',
-              description: `${fields.length} fields detected. Review and adjust the positions, then activate it.`,
-            },
-      );
+      toast({ title: 'Template uploaded', description: 'Click on the report card to place each field, then save the mapping.' });
       await load();
-      openEditor({ ...(inserted as any), fields });
+      openEditor({ ...(inserted as any), fields: [] });
     } catch (e: any) {
       toast({ title: 'Upload failed', description: e.message || 'Could not process the template.', variant: 'destructive' });
     } finally {
@@ -200,7 +155,7 @@ const Templates = () => {
     setEditingUrl(url.data?.signedUrl || '');
     setEditing({ ...t, fields: t.fields.map(f => {
       const d = definitions.data?.find(d => d.field_key === f.key);
-      return d ? { ...f, label: d.label, scope: d.scope as TemplateField['scope'], dataType: d.data_type as TemplateField['dataType'] } : f;
+      return d && !f.systemField ? { ...f, label: d.label, scope: d.scope as TemplateField['scope'], dataType: d.data_type as TemplateField['dataType'], description: d.description || '', defaultValue: d.default_value || '' } : f;
     }) });
   };
 
@@ -209,11 +164,11 @@ const Templates = () => {
     setSavingFields(true);
     try {
       if (fields.some(f => !f.label.trim())) throw new Error('Every field needs a label.');
-      const normalized = normalizeDetectedFields(fields);
+      const normalized = normalizeTemplateFields(fields);
       const { error } = await supabase.from('report_templates').update({ fields: normalized as any }).eq('id', editing.id).eq('school_id', schoolId);
       if (error) throw error;
       await syncExtraDefinitions(schoolId, editing.id, normalized);
-      toast({ title: 'Layout saved' });
+      toast({ title: 'Field mapping saved' });
       setEditing(null);
       await load();
     } catch (e: any) {
@@ -305,10 +260,10 @@ const Templates = () => {
                   />
                   <Button onClick={() => inputRef.current?.click()} disabled={uploading || !schoolId || !uploadLevel}>
                     {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileUp className="w-4 h-4 mr-2" />}
-                    {uploading ? 'Analysing template…' : 'Upload your template'}
+                    {uploading ? 'Uploading…' : 'Upload your template'}
                   </Button>
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" /> PDF, PNG, JPG or WEBP · fields detected automatically
+                  <span className="text-xs text-muted-foreground">
+                    PDF, PNG, JPG or WEBP · you place the fields yourself after uploading
                   </span>
                 </div>
 
@@ -367,7 +322,7 @@ const Templates = () => {
                             <Eye className="w-4 h-4 mr-1" /> Preview
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => openEditor(t)}>
-                            <Pencil className="w-4 h-4 mr-1" /> Fields
+                            <Pencil className="w-4 h-4 mr-1" /> Map fields
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => setDeleteTarget(t)}>
                             <Trash2 className="w-4 h-4 text-destructive" />
@@ -388,7 +343,7 @@ const Templates = () => {
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto lg:overflow-hidden">
           <DialogHeader>
-            <DialogTitle>{editing?.name} — field positions</DialogTitle>
+            <DialogTitle>{editing?.name} — field mapping</DialogTitle>
           </DialogHeader>
           {editing && editingUrl && (
             <TemplateFieldEditor
