@@ -4,6 +4,8 @@ import { useSchool } from '@/contexts/SchoolContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { EXTRA_FIELD_TYPES } from '@/utils/templateFields';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -68,7 +70,7 @@ export default function CustomFieldValues({ templates, revision, onEdit }: Props
           const resolved = resolveExtraValues(definitions, v.data || [], (legacy.data || []).filter(l => l.student_id === s.id), templateId, s.id, termId === ALL ? '' : termId);
           active.forEach(d => {
             const printed = resolved[d.field_key] || '';
-            map[`${s.id}|${d.id}`] = d.data_type === 'boolean' ? printed === 'Yes' ? 'true' : printed === 'No' ? 'false' : '' : printed;
+            map[`${s.id}|${d.id}`] = d.data_type === 'boolean' ? printed === 'Yes' ? 'true' : printed === 'No' ? 'false' : '' : d.data_type === 'percentage' ? printed.replace(/%$/, '') : printed;
           });
         }
         if (!cancelled) { setFields(active); setStudents(st.data || []); setValues(map); }
@@ -110,7 +112,8 @@ export default function CustomFieldValues({ templates, revision, onEdit }: Props
   };
   const valueInput = (f: ExtraField, studentId: string) => {
     const key = `${studentId}|${f.id}`;
-    return f.data_type === 'boolean' ? <Select value={values[key] || '__empty__'} onValueChange={v => setValues(p => ({ ...p, [key]: v === '__empty__' ? '' : v }))}><SelectTrigger aria-label={`${f.label} value`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__empty__">—</SelectItem><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select> : <Input aria-label={`${f.label} value`} type={f.data_type === 'number' ? 'number' : f.data_type === 'date' ? 'date' : 'text'} step="any" maxLength={4000} value={values[key] || ''} onChange={e => setValues(p => ({ ...p, [key]: e.target.value }))} />;
+    if (f.data_type === 'multiline') return <Textarea aria-label={`${f.label} value`} rows={2} maxLength={4000} value={values[key] || ''} onChange={e => setValues(p => ({ ...p, [key]: e.target.value }))} />;
+    return f.data_type === 'boolean' ? <Select value={values[key] || '__empty__'} onValueChange={v => setValues(p => ({ ...p, [key]: v === '__empty__' ? '' : v }))}><SelectTrigger aria-label={`${f.label} value`}><SelectValue /></SelectTrigger><SelectContent><SelectItem value="__empty__">—</SelectItem><SelectItem value="true">Yes</SelectItem><SelectItem value="false">No</SelectItem></SelectContent></Select> : <Input aria-label={`${f.label} value`} min={f.data_type === 'percentage' ? 0 : undefined} max={f.data_type === 'percentage' ? 100 : undefined} placeholder={f.data_type === 'percentage' ? '0–100' : undefined} type={f.data_type === 'number' || f.data_type === 'percentage' ? 'number' : f.data_type === 'date' ? 'date' : 'text'} step="any" maxLength={4000} value={values[key] || ''} onChange={e => setValues(p => ({ ...p, [key]: e.target.value }))} />;
   };
   const level = templates.find(t => t.id === templateId)?.level;
   const studentFields = fields.filter(f => f.scope === 'student');
@@ -123,7 +126,7 @@ export default function CustomFieldValues({ templates, revision, onEdit }: Props
     {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : !fields.length ? <p className="text-sm text-muted-foreground">No extra fields for this template.</p> : <>
       <div className="space-y-3">{fields.map(f => <div key={f.id} className="border-b pb-4 space-y-2">
         <div className="flex gap-2"><Input aria-label="Field label" defaultValue={f.label} key={`${f.id}-${f.label}`} onBlur={e => { if (e.target.value.trim() && e.target.value !== f.label) void configure(f, { label: e.target.value.trim() }); }} /><Button aria-label={`Remove ${f.label}`} variant="ghost" size="icon" disabled={saving} onClick={() => { if (window.confirm(`Remove ${f.label} from this template? Saved values will be retained.`)) void configure(f, { is_active: false }); }}><Trash2 className="h-4 w-4 text-destructive" /></Button></div>
-        <div className="grid gap-3 sm:grid-cols-2"><div><Label>Data type</Label><Select value={f.data_type} disabled={saving} onValueChange={data_type => void configure(f, { data_type })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{['text','number','date','boolean'].map(t => <SelectItem key={t} value={t}>{t === 'boolean' ? 'Yes / No' : t[0].toUpperCase()+t.slice(1)}</SelectItem>)}</SelectContent></Select></div><div><Label>Value applies to</Label><Select value={f.scope} disabled={saving} onValueChange={scope => void configure(f, { scope })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="school">Whole school</SelectItem><SelectItem value="student">Each student</SelectItem></SelectContent></Select></div></div>
+        <div className="grid gap-3 sm:grid-cols-2"><div><Label>Data type</Label><Select value={f.data_type} disabled={saving} onValueChange={data_type => void configure(f, { data_type })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{EXTRA_FIELD_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div><div><Label>Value applies to</Label><Select value={f.scope} disabled={saving} onValueChange={scope => void configure(f, { scope })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="school">Whole school</SelectItem><SelectItem value="student">Each student</SelectItem></SelectContent></Select></div></div>
         {f.scope === 'school' && <div><Label>{f.label}</Label>{valueInput(f,'__school__')}</div>}
       </div>)}</div>
       {!!studentFields.length && <><div><Label>Class</Label><Select value={classId} onValueChange={setClassId}><SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger><SelectContent>{classes.filter(c => resolveAcademicLevel(c) === level).map(c => <SelectItem key={c.id} value={c.id}>{c.class_name} {c.section}</SelectItem>)}</SelectContent></Select></div><div className="overflow-x-auto"><table className="w-full text-sm border"><thead className="bg-muted"><tr><th className="p-2 text-left border">Student</th>{studentFields.map(f => <th className="p-2 text-left border" key={f.id}>{f.label}</th>)}</tr></thead><tbody>{students.map(s => <tr key={s.id}><td className="p-2 border whitespace-nowrap">{s.name}</td>{studentFields.map(f => <td key={f.id} className="p-2 border min-w-40">{valueInput(f,s.id)}</td>)}</tr>)}</tbody></table></div></>}
