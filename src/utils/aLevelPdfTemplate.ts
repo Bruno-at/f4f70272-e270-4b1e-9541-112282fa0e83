@@ -181,7 +181,7 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   box(M, y, W, infoH, undefined, NAVY, 0.35);
   const cols3 = [
     { lx: M + 3, vx: M + 22, end: M + 70 },
-    { lx: M + 72, vx: M + 91, end: M + 124 },
+    { lx: M + 72, vx: M + 93, end: M + 124 },
     { lx: M + 126, vx: M + 154, end: right - 2 },
   ];
   const infoRows: [number, string, string][][] = [
@@ -241,9 +241,9 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   y += h1 + h2;
 
   // Space budget below the marks table (mm)
-  const BELOW = 6 + 6.5 + 2 + 11 + 2 + 19 + 2.5 + 7.5 + 9 + 6 + 20 + 2.5 + 12 + 10;
+  const BELOW = 6.5 + 8 + 13 + 20.5 + 7.5 + 15 + 22.5 + 16 + 4;
   const subjectCount = Math.max(marks.length, 1);
-  const rowH = Math.max(3.4, Math.min(5.6, (pageH - 8 - BELOW - y) / (subjectCount * 2)));
+  const rowH = Math.max(3.4, Math.min(7.5, (pageH - 11 - BELOW - y) / (subjectCount * 2)));
 
   const fmt = (v: any, d = 1) => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? '' : Number(v).toFixed(d);
   for (let s = 0; s < subjectCount; s++) {
