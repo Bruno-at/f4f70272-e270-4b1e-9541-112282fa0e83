@@ -92,7 +92,9 @@ export const buildReportCardBlob = async (input: ReportCardData, options: { temp
       feesData: data.feesData,
       template: data.template || 'classic',
       gradeBands: helpers.toGradeBands((grading as any)?.data),
-      nextTermBegins: helpers.pickNextTermStart(data.term.end_date, (terms as any)?.data),
+      nextTermBegins: helpers.pickNextTermStart(data.term.end_date, (terms as any)?.data)
+        // Same fallback as before when no next term is recorded: 30 days after this term ends.
+        ?? (data.term.end_date ? new Date(new Date(data.term.end_date).getTime() + 30 * 86400000).toISOString() : null),
     });
     if (data.watermarkUrl && data.watermarkConfig) {
       addWatermarkOverlayToPdf(pdf, data.watermarkUrl, data.watermarkConfig);
