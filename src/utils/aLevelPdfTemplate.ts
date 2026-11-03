@@ -243,7 +243,7 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   // Space budget below the marks table (mm)
   const BELOW = 6.5 + 8 + 13 + 20.5 + 7.5 + 15 + 22.5 + 16 + 4;
   const subjectCount = Math.max(marks.length, 1);
-  const rowH = Math.max(3.4, Math.min(7.5, (pageH - 11 - BELOW - y) / (subjectCount * 2)));
+  const rowH = Math.max(3.2, Math.min(7.5, (pageH - 11 - BELOW - y) / (subjectCount * 2)));
 
   const fmt = (v: any, d = 1) => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? '' : Number(v).toFixed(d);
   for (let s = 0; s < subjectCount; s++) {
