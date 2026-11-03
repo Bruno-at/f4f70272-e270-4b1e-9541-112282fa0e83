@@ -66,9 +66,17 @@ export const buildReportCardBlob = async (input: ReportCardData, options: { temp
   if (custom) return buildCustomTemplateBlob(custom, data);
 
   if (level === 'a-level') {
-    const [{ generateALevelTemplate }, { addStampOverlayToPdf, addWatermarkOverlayToPdf }] = await Promise.all([
+    const sid = schoolIdOf(data);
+    const [{ generateALevelTemplate }, { addStampOverlayToPdf, addWatermarkOverlayToPdf }, helpers, grading, terms] = await Promise.all([
       import('./aLevelPdfTemplate'),
       import('./pdfGenerator'),
+      import('./aLevelReportData'),
+      sid
+        ? supabase.from('grading_systems').select('grade_name,min_percentage,max_percentage').eq('school_id', sid).eq('is_active', true)
+        : Promise.resolve({ data: null }),
+      sid
+        ? supabase.from('terms').select('start_date').eq('school_id', sid).gt('start_date', data.term.end_date || '1900-01-01')
+        : Promise.resolve({ data: null }),
     ]);
     const pdf = generateALevelTemplate({
       student: data.student,
@@ -79,11 +87,15 @@ export const buildReportCardBlob = async (input: ReportCardData, options: { temp
       reportColor: data.reportColor,
       classTeacherSignature: data.classTeacherSignature,
       headteacherSignature: data.headteacherSignature,
-      classTeacherName: (data as any).classTeacherName,
-      headteacherName: (data as any).headteacherName,
+      classTeacherName: data.classTeacherName,
+      headteacherName: data.headteacherName,
       feesData: data.feesData,
       template: data.template || 'classic',
-    } as any);
+      gradeBands: helpers.toGradeBands((grading as any)?.data),
+      nextTermBegins: helpers.pickNextTermStart(data.term.end_date, (terms as any)?.data)
+        // Same fallback as before when no next term is recorded: 30 days after this term ends.
+        ?? (data.term.end_date ? new Date(new Date(data.term.end_date).getTime() + 30 * 86400000).toISOString() : null),
+    });
     if (data.watermarkUrl && data.watermarkConfig) {
       addWatermarkOverlayToPdf(pdf, data.watermarkUrl, data.watermarkConfig);
     }
