@@ -148,7 +148,7 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
 
   const address = formatSchoolAddress(schoolInfo);
   const contactLines = [
-    address ? `P.O BOX ${address.replace(/^P\.O\. Box\s*/i, '')}`.replace(/^P\.O BOX ([^,]*)$/, 'P.O BOX $1') : '',
+    address,
     schoolInfo.email ? `EMAIL: ${schoolInfo.email}` : '',
     [schoolInfo.telephone ? `TEL: ${schoolInfo.telephone}` : '', schoolInfo.website ? `WEBSITE: ${schoolInfo.website}` : ''].filter(Boolean).join('   '),
   ].filter(Boolean);
@@ -246,7 +246,6 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   const rowH = Math.max(3.4, Math.min(5.6, (pageH - 8 - BELOW - y) / (subjectCount * 2)));
 
   const fmt = (v: any, d = 1) => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? '' : Number(v).toFixed(d);
-  const bodyTop = y;
   for (let s = 0; s < subjectCount; s++) {
     const m = marks[s];
     const top = y, blockH = rowH * 2, blockMid = top + blockH / 2 + 1.3;
@@ -285,15 +284,13 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
     y += blockH;
   }
   box(M, hTop, W, y - hTop, undefined, LINE, 0.35);
-  void bodyTop;
 
   // AVERAGE SCORES
   const avgH = 6;
   const avgOf = (k: keyof StudentMark) => {
-    const v = marks.map((m) => Number(m[k])).filter((n) => !isNaN(n) && m0(n));
+    const v = marks.map((m) => m[k]).filter((n) => n !== null && n !== undefined && (n as any) !== '' && !isNaN(Number(n))).map(Number);
     return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
   };
-  function m0(_n: number) { return true; }
   box(M, y, W, avgH);
   [ci('r'), ci('a1'), ci('a2'), ci('a3'), ci('avg'), ci('p20'), ci('eot'), ci('p80'), ci('p100'), ci('grade'), ci('comment'), ci('tr')]
     .forEach((i) => vline(xs[i], y, y + avgH));
