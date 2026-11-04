@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAssignedSubjectIds, filterToAssigned } from '@/utils/studentSubjects';
 import { useSchool } from '@/contexts/SchoolContext';
 import { Student, Term, Class, Subject, SchoolInfo } from '@/types/database';
 import { Download, FileText, Users } from 'lucide-react';
@@ -157,7 +158,7 @@ const ReportGenerator = () => {
 
   const generateReportForStudent = async (studentId: string) => {
     // Fetch student marks for the selected term
-    const { data: marks, error: marksError } = await supabase
+    const { data: rawMarks, error: marksError } = await supabase
       .from('student_marks')
       .select(`
         *,
@@ -167,6 +168,10 @@ const ReportGenerator = () => {
       .eq('term_id', selectedTerm);
 
     if (marksError) throw marksError;
+
+    // Only subjects currently assigned to this student may appear.
+    const assignedSubjectIds = await fetchAssignedSubjectIds(studentId);
+    const marks = filterToAssigned(rawMarks || [], assignedSubjectIds, (m: any) => m.subject_id);
 
     // Find the student
     const student = students.find(s => s.id === studentId);
@@ -201,13 +206,8 @@ const ReportGenerator = () => {
 
     const headteacherSignature = schoolData?.headteacher_signature_url || null;
 
-    // Fetch subjects assigned to this student's class via class_subjects
-    const { data: csLinks } = await supabase
-      .from('class_subjects')
-      .select('subject_id')
-      .eq('class_id', student.class_id);
-    const classSubjectIds = new Set((csLinks || []).map((l: any) => l.subject_id));
-    const classSubjects = subjects.filter(s => classSubjectIds.has(s.id));
+    // Subjects assigned to this individual student
+    const classSubjects = subjects.filter(s => assignedSubjectIds.has(s.id));
 
     // Generate or update report card record
     const { data: existingReport } = await supabase

@@ -235,6 +235,10 @@ const StudentMarksManager = () => {
   const saveRow = useCallback(
     async (studentId: string, row: MarkRow) => {
       if (!activeTermId || !schoolId || !selectedSubject) return;
+      if (!assignedStudentIds.has(studentId)) {
+        toast({ title: 'Not assigned', description: 'This subject is not assigned to this student.', variant: 'destructive' });
+        return;
+      }
       setMarks((prev) => ({ ...prev, [studentId]: { ...prev[studentId], saving: true, dirty: false } }));
 
       const num = (v: string) => (v.trim() === '' ? null : Number(v));
@@ -300,7 +304,7 @@ const StudentMarksManager = () => {
         },
       }));
     },
-    [activeTermId, schoolId, selectedSubject, toast],
+    [activeTermId, schoolId, selectedSubject, assignedStudentIds, toast],
   );
 
   const updateField = (studentId: string, field: keyof MarkRow, value: string) => {
