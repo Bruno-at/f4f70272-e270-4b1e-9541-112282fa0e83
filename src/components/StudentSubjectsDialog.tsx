@@ -78,24 +78,13 @@ const StudentSubjectsDialog = ({ student, open, onOpenChange }: Props) => {
     if (!student || !schoolId) return;
     setSaving(true);
     try {
-      // Replace existing assignments
-      const { error: delErr } = await supabase
-        .from('student_subjects')
-        .delete()
-        .eq('student_id', student.id);
-      if (delErr) throw delErr;
-
-      const rows = Array.from(selected).map((subject_id) => ({
-        student_id: student.id,
-        subject_id,
-        school_id: schoolId,
-      }));
-      if (rows.length) {
-        const { error: insErr } = await supabase
-          .from('student_subjects')
-          .upsert(rows, { onConflict: 'student_id,subject_id', ignoreDuplicates: true });
-        if (insErr) throw insErr;
-      }
+      // One atomic call: removes only unticked subjects (and, in the database,
+      // that student's marks for them) and adds newly ticked subjects.
+      const { error } = await supabase.rpc('set_student_subjects' as any, {
+        p_student_id: student.id,
+        p_subject_ids: Array.from(selected),
+      });
+      if (error) throw error;
       toast({ title: 'Saved', description: `Updated subjects for ${student.name}` });
       onOpenChange(false);
     } catch (err: any) {
