@@ -1507,6 +1507,10 @@ export type Database = {
         Returns: string
       }
       remove_school_member: { Args: { p_user_id: string }; Returns: undefined }
+      set_student_subjects: {
+        Args: { p_student_id: string; p_subject_ids: string[] }
+        Returns: undefined
+      }
       update_school_member_profile: {
         Args: {
           p_full_name: string
