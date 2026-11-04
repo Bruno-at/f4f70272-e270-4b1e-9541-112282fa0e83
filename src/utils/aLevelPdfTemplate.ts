@@ -246,9 +246,10 @@ export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   const BELOW = 6.5 + 8 + 13 + 20.5 + 7.5 + 15 + 22.5 + (hasMotto ? 16 + 3 : 11);
   const bottomLimit = pageH - 8; // just inside the page frame
   const available = bottomLimit - BELOW - y;
-  const PREF_BLOCK = 11; // comfortable height for one subject (two paper rows)
-  const subjectCount = Math.max(marks.length, Math.floor(available / PREF_BLOCK), 1);
-  const rowH = Math.max(3.2, available / (subjectCount * 2));
+  // Always 4 subject rows by default; one extra row per assigned subject beyond 4.
+  // Rows share the available height equally, shrinking as subjects are added so it stays on one page.
+  const subjectCount = aLevelSubjectRowCount(marks.length);
+  const rowH = available / (subjectCount * 2);
 
   const fmt = (v: any, d = 1) => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? '' : Number(v).toFixed(d);
   for (let s = 0; s < subjectCount; s++) {
