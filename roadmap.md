@@ -21,3 +21,9 @@
 - [x] Custom fields with label, type (incl. multiline, percentage), description, scope, default, position; confirm before removal.
 - [x] Keep the template's page size/orientation in preview, download and print.
 - [ ] Verify signed-in upload, mapping save and generated report. Blocked: external unmanaged authentication is unavailable for automated checks.
+
+# Subject unassignment cleanup
+- [x] Removing a subject from a student deletes that student's marks for it in the same database step.
+- [x] Reports (O-Level and A-Level preview, download, print) show only the student's assigned subjects.
+- [x] Block saving marks for unassigned subjects.
+- [ ] Verify signed-in unassignment and report regeneration. Blocked: external unmanaged authentication is unavailable for automated checks.
