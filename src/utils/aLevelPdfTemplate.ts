@@ -58,6 +58,9 @@ const imgFormat = (url: string) => {
  * Default A-Level (S5–S6) report card. Every value comes from the school,
  * student, marks, comments, fees and term records passed in — nothing is sample data.
  */
+/** Number of subject rows in the A-Level performance table: at least 4, more when more subjects are assigned. */
+export const aLevelSubjectRowCount = (subjects: number): number => Math.max(4, subjects);
+
 export const generateALevelTemplate = (data: ALevelTemplateData): jsPDF => {
   const {
     student, term, schoolInfo, marks, reportData, reportColor = 'white',
