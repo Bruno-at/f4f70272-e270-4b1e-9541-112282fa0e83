@@ -23,6 +23,7 @@ const StudentSubjectsDialog = ({ student, open, onOpenChange }: Props) => {
   const [saving, setSaving] = useState(false);
   const [subjects, setSubjects] = useState<SubjectRow[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [initial, setInitial] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!open || !student || !schoolId) return;
@@ -54,7 +55,9 @@ const StudentSubjectsDialog = ({ student, open, onOpenChange }: Props) => {
           .select('subject_id')
           .eq('student_id', student.id);
         if (ssErr) throw ssErr;
-        setSelected(new Set((ss || []).map((r: any) => r.subject_id)));
+        const current = new Set<string>((ss || []).map((r: any) => r.subject_id));
+        setSelected(current);
+        setInitial(new Set(current));
       } catch (err: any) {
         toast({ title: 'Error', description: err.message || 'Failed to load subjects', variant: 'destructive' });
       } finally {
@@ -76,6 +79,17 @@ const StudentSubjectsDialog = ({ student, open, onOpenChange }: Props) => {
 
   const save = async () => {
     if (!student || !schoolId) return;
+    const removed = Array.from(initial).filter((id) => !selected.has(id));
+    if (removed.length) {
+      const names = removed
+        .map((id) => subjects.find((s) => s.id === id)?.subject_name)
+        .filter(Boolean)
+        .join(', ');
+      const ok = window.confirm(
+        `Removing ${names || `${removed.length} subject(s)`} will permanently delete ${student.name}'s marks for ${removed.length === 1 ? 'that subject' : 'those subjects'} in every term. Continue?`,
+      );
+      if (!ok) return;
+    }
     setSaving(true);
     try {
       // One atomic call: removes only unticked subjects (and, in the database,
