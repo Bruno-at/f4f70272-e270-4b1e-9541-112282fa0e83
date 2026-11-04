@@ -94,7 +94,7 @@ const StudentSubjectsDialog = ({ student, open, onOpenChange }: Props) => {
     try {
       // One atomic call: removes only unticked subjects (and, in the database,
       // that student's marks for them) and adds newly ticked subjects.
-      const { error } = await supabase.rpc('set_student_subjects' as any, {
+      const { error } = await supabase.rpc('set_student_subjects', {
         p_student_id: student.id,
         p_subject_ids: Array.from(selected),
       });
