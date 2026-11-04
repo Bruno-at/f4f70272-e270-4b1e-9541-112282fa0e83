@@ -1,0 +1,1 @@
+ALTER FUNCTION public.set_student_subjects(uuid, uuid[]) SECURITY INVOKER;

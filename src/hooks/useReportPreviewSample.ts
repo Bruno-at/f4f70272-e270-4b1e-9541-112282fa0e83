@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAssignedSubjectIds, filterToAssigned } from '@/utils/studentSubjects';
 import { useSchool } from '@/contexts/SchoolContext';
 import { resolveImageDataUrl } from '@/utils/photoUrl';
 import { enrichMarksForReport } from '@/utils/reportEnrichment';
@@ -77,13 +78,13 @@ export const useReportPreviewSample = () => {
           .select('*, subjects!student_marks_subject_id_fkey(*)')
           .eq('student_id', student.id)
           .eq('term_id', term.id);
-        marks = await enrichMarksForReport(rawMarks || [], {
+        const assignedIds = await fetchAssignedSubjectIds(student.id);
+        marks = await enrichMarksForReport(filterToAssigned(rawMarks || [], assignedIds, (m: any) => m.subject_id), {
           classId: student.class_id,
           schoolId: (student as any).school_id || schoolId,
         });
 
-        const { data: links } = await supabase.from('class_subjects').select('subject_id').eq('class_id', student.class_id);
-        const ids = (links || []).map((l: any) => l.subject_id);
+        const ids = Array.from(assignedIds);
         if (ids.length) {
           const { data: subs } = await supabase.from('subjects').select('*').in('id', ids);
           subjects = subs || [];

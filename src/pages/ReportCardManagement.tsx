@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAssignedSubjectIds, filterToAssigned } from '@/utils/studentSubjects';
 import { ReportCard, Student, Term, SchoolInfo, StudentMark, Subject } from '@/types/database';
 import { Eye, Pencil, Printer, Download, Share2, Trash2, ArrowLeft, FileText, Loader2 } from 'lucide-react';
 import ReportCardPreview, { StampPosition } from '@/components/ReportCardPreview';
@@ -518,20 +519,19 @@ const ReportCardManagement = () => {
 
       if (marksError) throw marksError;
 
+      // Only subjects currently assigned to this student may appear.
+      const assignedSubjectIds = await fetchAssignedSubjectIds(report.student_id);
+      const assignedMarks = filterToAssigned(marksData || [], assignedSubjectIds, (m: any) => m.subject_id);
+
       // Enrich marks with auto-filled subject_code, teacher_initials (class+subject teacher),
       // and final_grade computed from the active grading system.
-      const enrichedMarks = await enrichMarksForReport(marksData || [], {
+      const enrichedMarks = await enrichMarksForReport(assignedMarks, {
         classId: studentData.class_id,
         schoolId: (studentData as any).school_id,
       });
 
-      // Fetch subjects assigned to the student's class via class_subjects
-      const { data: csLinks, error: csError } = await supabase
-        .from('class_subjects')
-        .select('subject_id')
-        .eq('class_id', studentData.class_id);
-      if (csError) throw csError;
-      const subjectIds = (csLinks || []).map((l: any) => l.subject_id);
+      // Subjects assigned to this individual student
+      const subjectIds = Array.from(assignedSubjectIds);
       let subjectsData: any[] = [];
       if (subjectIds.length) {
         const { data: subs, error: subjectsError } = await supabase
