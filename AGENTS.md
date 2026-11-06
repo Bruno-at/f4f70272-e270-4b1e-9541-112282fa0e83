@@ -1,6 +1,6 @@
 # Extra template fields
 - Store new values by field-definition ID and template, keeping legacy school-keyed definitions and student values as read fallbacks; this prevents collisions between uploaded templates without deleting old records.
-- Map template fields manually only (click-to-assign plus a mapping panel); no AI, OCR or label-guessing, so uploads stay free and predictable. Mappings and display settings live in `report_templates.fields`, never in the uploaded file.
+- Uploaded templates are managed only (upload, activate, replace, deactivate, delete); there is no field editor or layout customization, so the system never alters a school's design. Previously saved mappings in `report_templates.fields` are still honoured by the renderer.
 - Resolve extra values in the shared PDF renderer with period-specific values overriding all-period values; this keeps preview, print and download consistent.
 
 # Report rendering

@@ -14,11 +14,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSchool } from '@/contexts/SchoolContext';
-import { CheckCircle2, Eye, FileUp, Loader2, LayoutTemplate, Pencil, Trash2 } from 'lucide-react';
-import TemplateFieldEditor from '@/components/templates/TemplateFieldEditor';
-import CustomFieldValues from '@/components/templates/CustomFieldValues';
+import { CheckCircle2, Eye, FileUp, Loader2, LayoutTemplate, RefreshCw, Trash2 } from 'lucide-react';
 import { TemplateField } from '@/utils/templateFields';
-import { normalizeTemplateFields, syncExtraDefinitions } from '@/utils/extraTemplateFields';
 import { templatePageSizeMm } from '@/utils/templateBackground';
 import ReportCardPreview from '@/components/ReportCardPreview';
 import { useReportPreviewSample } from '@/hooks/useReportPreviewSample';
@@ -44,14 +41,12 @@ const Templates = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [templates, setTemplates] = useState<TemplateRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [fieldRevision, setFieldRevision] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [uploadLevel, setUploadLevel] = useState<AcademicLevel | ''>('');
   const [viewLevel, setViewLevel] = useState<AcademicLevel>('o-level');
   const [updatingLevel, setUpdatingLevel] = useState<string | null>(null);
-  const [editing, setEditing] = useState<TemplateRow | null>(null);
-  const [editingUrl, setEditingUrl] = useState('');
-  const [savingFields, setSavingFields] = useState(false);
+  const replaceRef = useRef<HTMLInputElement>(null);
+  const [replaceTarget, setReplaceTarget] = useState<TemplateRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TemplateRow | null>(null);
   const [previewDefault, setPreviewDefault] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<TemplateRow | null>(null);
@@ -80,7 +75,6 @@ const Templates = () => {
     if (error) toast({ title: 'Could not load templates', description: error.message, variant: 'destructive' });
     setTemplates(((data as any) || []).map((t: any) => ({ ...t, fields: t.fields || [] })));
     setLoading(false);
-    setFieldRevision(r => r + 1);
   }, [schoolId, toast]);
 
   useEffect(() => { load(); }, [load]);
@@ -116,7 +110,7 @@ const Templates = () => {
       });
       if (upErr) throw upErr;
 
-      // The file is stored untouched; fields are mapped by hand afterwards.
+      // The file is stored untouched; the system never edits its design.
       const size = await templatePageSizeMm(file).catch(() => ({ width: 210, height: 297 }));
 
       const { data: inserted, error: insErr } = await supabase
@@ -135,9 +129,8 @@ const Templates = () => {
         .single();
       if (insErr) throw insErr;
 
-      toast({ title: 'Template uploaded', description: 'Click on the report card to place each field, then save the mapping.' });
+      toast({ title: 'Template uploaded', description: 'Select Use this to activate it.' });
       await load();
-      openEditor({ ...(inserted as any), fields: [] });
     } catch (e: any) {
       toast({ title: 'Upload failed', description: e.message || 'Could not process the template.', variant: 'destructive' });
     } finally {
@@ -146,34 +139,45 @@ const Templates = () => {
     }
   };
 
-  const openEditor = async (t: TemplateRow) => {
-    if (!schoolId) return;
-    const [url, definitions] = await Promise.all([
-      supabase.storage.from('report-templates').createSignedUrl(t.file_path, 3600),
-      supabase.from('template_custom_fields').select('*').eq('school_id', schoolId).eq('template_id', t.id),
-    ]);
-    setEditingUrl(url.data?.signedUrl || '');
-    setEditing({ ...t, fields: t.fields.map(f => {
-      const d = definitions.data?.find(d => d.field_key === f.key);
-      return d && !f.systemField ? { ...f, label: d.label, scope: d.scope as TemplateField['scope'], dataType: d.data_type as TemplateField['dataType'], description: d.description || '', defaultValue: d.default_value || '' } : f;
-    }) });
-  };
-
-  const saveFields = async (fields: TemplateField[]) => {
-    if (!editing || !schoolId) return;
-    setSavingFields(true);
+  const handleReplace = async (file: File) => {
+    const t = replaceTarget;
+    if (!schoolId || !t) return;
+    if (file.size > MAX_SIZE) {
+      toast({ title: 'File too large', description: 'Templates must be 15MB or smaller.', variant: 'destructive' });
+      return;
+    }
+    setUploading(true);
     try {
-      if (fields.some(f => !f.label.trim())) throw new Error('Every field needs a label.');
-      const normalized = normalizeTemplateFields(fields);
-      const { error } = await supabase.from('report_templates').update({ fields: normalized as any }).eq('id', editing.id).eq('school_id', schoolId);
-      if (error) throw error;
-      await syncExtraDefinitions(schoolId, editing.id, normalized);
-      toast({ title: 'Field mapping saved' });
-      setEditing(null);
+      const ext = file.name.split('.').pop() || 'pdf';
+      const path = `${schoolId}/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('report-templates').upload(path, file, { contentType: file.type, upsert: false });
+      if (upErr) throw upErr;
+      const size = await templatePageSizeMm(file).catch(() => ({ width: 210, height: 297 }));
+      const { error } = await supabase.from('report_templates').update({
+        file_path: path, mime_type: file.type, page_width_mm: size.width, page_height_mm: size.height,
+      }).eq('id', t.id).eq('school_id', schoolId);
+      if (error) {
+        await supabase.storage.from('report-templates').remove([path]);
+        throw error;
+      }
+      await supabase.storage.from('report-templates').remove([t.file_path]);
+      toast({ title: 'Template replaced' });
       await load();
     } catch (e: any) {
-      toast({ title: 'Could not save', description: e.message, variant: 'destructive' });
-    } finally { setSavingFields(false); }
+      toast({ title: 'Replace failed', description: e.message || 'Could not replace the template.', variant: 'destructive' });
+    } finally {
+      setUploading(false);
+      setReplaceTarget(null);
+      if (replaceRef.current) replaceRef.current.value = '';
+    }
+  };
+
+  const deactivate = async (t: TemplateRow) => {
+    if (!schoolId) return;
+    const { error } = await supabase.from('report_templates').update({ is_active: false }).eq('school_id', schoolId).eq('id', t.id);
+    if (error) toast({ title: 'Could not deactivate', description: error.message, variant: 'destructive' });
+    else toast({ title: 'Template deactivated', description: 'The default template is now used for this level.' });
+    load();
   };
 
   const activate = async (t: TemplateRow | null) => {
@@ -263,7 +267,7 @@ const Templates = () => {
                     {uploading ? 'Uploading…' : 'Upload your template'}
                   </Button>
                   <span className="text-xs text-muted-foreground">
-                    PDF, PNG, JPG or WEBP · you place the fields yourself after uploading
+                    PDF, PNG, JPG or WEBP · kept exactly as uploaded
                   </span>
                 </div>
 
@@ -304,7 +308,7 @@ const Templates = () => {
                           <div className="min-w-0">
                             <p className="font-semibold truncate">{t.name}</p>
                             <p className="text-sm text-muted-foreground">
-                              {(t.fields || []).length} mapped fields · {t.mime_type.includes('pdf') ? 'PDF' : 'Image'}
+                              {t.level === 'a-level' ? 'A-Level' : 'O-Level'} · {t.mime_type.includes('pdf') ? 'PDF' : 'Image'}
                             </p>
                           </div>
                           {t.is_active && <Badge className="gap-1"><CheckCircle2 className="w-3 h-3" /> In use</Badge>}
@@ -321,8 +325,9 @@ const Templates = () => {
                           <Button size="sm" variant="outline" onClick={() => openPreview(t)}>
                             <Eye className="w-4 h-4 mr-1" /> Preview
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => openEditor(t)}>
-                            <Pencil className="w-4 h-4 mr-1" /> Map fields
+                          {t.is_active && <Button size="sm" variant="outline" onClick={() => deactivate(t)}>Deactivate</Button>}
+                          <Button size="sm" variant="outline" disabled={uploading} onClick={() => { setReplaceTarget(t); replaceRef.current?.click(); }}>
+                            <RefreshCw className="w-4 h-4 mr-1" /> Replace
                           </Button>
                           <Button size="sm" variant="ghost" onClick={() => setDeleteTarget(t)}>
                             <Trash2 className="w-4 h-4 text-destructive" />
@@ -335,27 +340,16 @@ const Templates = () => {
               </CardContent>
             </Card>
 
-            <CustomFieldValues templates={templates} revision={fieldRevision} onEdit={id => { const t = templates.find(t => t.id === id); if (t) void openEditor(t); }} />
+            <input
+              ref={replaceRef}
+              type="file"
+              accept={ACCEPT}
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && handleReplace(e.target.files[0])}
+            />
           </div>
         </main>
       </div>
-
-      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
-        <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto lg:overflow-hidden">
-          <DialogHeader>
-            <DialogTitle>{editing?.name} — field mapping</DialogTitle>
-          </DialogHeader>
-          {editing && editingUrl && (
-            <TemplateFieldEditor
-              backgroundUrl={editingUrl}
-              mimeType={editing.mime_type}
-              fields={editing.fields || []}
-              saving={savingFields}
-              onSave={saveFields}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={previewDefault} onOpenChange={setPreviewDefault}>
         <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
