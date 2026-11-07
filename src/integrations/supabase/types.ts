@@ -546,6 +546,124 @@ export type Database = {
           },
         ]
       }
+      report_card_field_values: {
+        Row: {
+          created_at: string
+          field_id: string
+          id: string
+          school_id: string
+          student_id: string
+          term_id: string | null
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          created_at?: string
+          field_id: string
+          id?: string
+          school_id: string
+          student_id: string
+          term_id?: string | null
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          created_at?: string
+          field_id?: string
+          id?: string
+          school_id?: string
+          student_id?: string
+          term_id?: string | null
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_card_field_values_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "report_card_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_card_field_values_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_card_field_values_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_card_field_values_term_id_fkey"
+            columns: ["term_id"]
+            isOneToOne: false
+            referencedRelation: "terms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_card_fields: {
+        Row: {
+          created_at: string
+          data_type: string
+          entry_location: string
+          field_key: string
+          id: string
+          is_active: boolean
+          is_required: boolean
+          is_system: boolean
+          label: string
+          school_id: string
+          sort_order: number
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_type?: string
+          entry_location?: string
+          field_key: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          is_system?: boolean
+          label: string
+          school_id: string
+          sort_order?: number
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_type?: string
+          entry_location?: string
+          field_key?: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          is_system?: boolean
+          label?: string
+          school_id?: string
+          sort_order?: number
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_card_fields_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_cards: {
         Row: {
           achievement_level: string | null

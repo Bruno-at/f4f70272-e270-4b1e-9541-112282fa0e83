@@ -4,6 +4,7 @@ import type { ReportCardData } from './pdfGenerator';
 import { fetchActiveTemplate, buildCustomTemplateBlob } from './customTemplatePdf';
 import { loadReportOverlays } from './reportOverlays';
 import { supabase } from '@/integrations/supabase/client';
+import { loadReportCustomFields } from './reportCardFields';
 
 /** Look up the class teacher (assigned on the class) and head teacher (Signatures page) names. */
 const loadSignatoryNames = async (data: ReportCardData) => {
@@ -34,12 +35,17 @@ const schoolIdOf = (data: ReportCardData) =>
  * school-configured stamp and watermark settings.
  */
 const withOverlays = async (data: ReportCardData): Promise<ReportCardData> => {
-  const [overlays, names] = await Promise.all([loadReportOverlays(schoolIdOf(data)), loadSignatoryNames(data)]);
+  const [overlays, names, customFields] = await Promise.all([
+    loadReportOverlays(schoolIdOf(data)),
+    loadSignatoryNames(data),
+    loadReportCustomFields(schoolIdOf(data), (data.student as any)?.id, (data.term as any)?.id ?? null),
+  ]);
   const stampUrl = data.stampUrl === null ? null : data.stampUrl?.startsWith('data:image') ? data.stampUrl : overlays.stampUrl;
   const watermarkUrl = data.watermarkUrl === null ? null : data.watermarkUrl?.startsWith('data:image') ? data.watermarkUrl : overlays.watermarkUrl;
   return {
     ...data,
     ...names,
+    customFields,
     stampUrl,
     stampConfig: data.stampConfig || overlays.stampConfig,
     watermarkUrl,

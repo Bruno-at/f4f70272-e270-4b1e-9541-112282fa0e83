@@ -47,6 +47,8 @@ export interface ReportCardData {
   stampConfig?: StampConfig | null;
   watermarkUrl?: string | null;
   watermarkConfig?: WatermarkConfig | null;
+  /** School custom report card field values keyed by field name (for future template population). */
+  customFields?: Record<string, { label: string; value: string }>;
   feesData?: {
     feesBalance: number;
     feesNextTerm: number;

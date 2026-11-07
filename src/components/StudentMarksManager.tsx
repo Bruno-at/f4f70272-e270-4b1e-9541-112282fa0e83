@@ -1,3 +1,4 @@
+import MarksEntryCustomFields from '@/components/MarksEntryCustomFields';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useSchool } from '@/contexts/SchoolContext';
@@ -529,6 +530,7 @@ const StudentMarksManager = () => {
             </table>
           </div>
         )}
+        <MarksEntryCustomFields schoolId={schoolId} termId={activeTermId} students={students} />
       </div>
     </TooltipProvider>
   );

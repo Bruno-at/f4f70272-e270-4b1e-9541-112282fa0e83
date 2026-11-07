@@ -8,9 +8,10 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useSchool } from '@/contexts/SchoolContext';
-import { Calendar, Droplets, Loader2, Stamp, Upload } from 'lucide-react';
+import { Calendar, Droplets, ListChecks, Loader2, Stamp, Upload } from 'lucide-react';
 import ReportCardPreview from '@/components/ReportCardPreview';
 import TermsManager from '@/components/TermsManager';
+import ReportCardFieldsManager from '@/components/settings/ReportCardFieldsManager';
 import OverlayPositioner from '@/components/settings/OverlayPositioner';
 import { useReportPreviewSample } from '@/hooks/useReportPreviewSample';
 import {
@@ -153,6 +154,7 @@ const SettingsPage = () => {
                 <TabsTrigger value="stamp" className="gap-1.5"><Stamp className="w-4 h-4" /> Stamp</TabsTrigger>
                 <TabsTrigger value="watermark" className="gap-1.5"><Droplets className="w-4 h-4" /> Watermark</TabsTrigger>
                 <TabsTrigger value="terms" className="gap-1.5"><Calendar className="w-4 h-4" /> Terms</TabsTrigger>
+                <TabsTrigger value="fields" className="gap-1.5"><ListChecks className="w-4 h-4" /> Report Card Fields</TabsTrigger>
               </TabsList>
 
               <TabsContent value="stamp">
@@ -253,6 +255,18 @@ const SettingsPage = () => {
                   </CardHeader>
                   <CardContent>
                     <TermsManager />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="fields">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><ListChecks className="w-5 h-5" /> Report card fields</CardTitle>
+                    <CardDescription>Manage the information collected for your school's report cards.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ReportCardFieldsManager />
                   </CardContent>
                 </Card>
               </TabsContent>
